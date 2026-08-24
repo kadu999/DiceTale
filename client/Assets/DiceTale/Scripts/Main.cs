@@ -4,13 +4,9 @@ namespace DiceTale
 {
     public class Main : MonoBehaviour
     {
-        // Start is called once before the first execution of Update after the MonoBehaviour is created
-        void Start()
+        private void Awake()
         {
-            gameObject.AddComponent<SceneManager>();
-            gameObject.AddComponent<CharacterManager>();
+            gameObject.AddComponent<GameManager>();
         }
     }
 }
-
-

@@ -1,23 +1,27 @@
-using System;
 using UnityEngine;
 
 namespace DiceTale
 {
     public class CharacterManager : MonoBehaviour
     {
-        private static CharacterManager instance;
+        public Player Player { get; private set; }
 
-        public static CharacterManager Instance
+        public Player CreatePlayer()
         {
-            get
+            if (Player != null)
             {
-                return instance;
+                return Player;
             }
+
+            var playerGo = new GameObject(nameof(Player));
+            var player = playerGo.AddComponent<Player>();
+            Player = player;
+            return player;
         }
 
-        private void Awake()
+        public void SetPlayer(Player player)
         {
-            instance = this;
+            Player = player;
         }
     }
 }
