@@ -29,6 +29,7 @@ namespace DiceTale
 
         private HashSet<Vector2Int> obstacleSet = new HashSet<Vector2Int>();
         private List<Vector2Int> obstacles = new List<Vector2Int>();
+        private HashSet<Vector2Int> dynamicObstacles = new HashSet<Vector2Int>();
 
         public Vector2Int GridSize => gridSize;
         public float CellSize => cellSize;
@@ -117,7 +118,7 @@ namespace DiceTale
                 return false;
             }
 
-            return !obstacleSet.Contains(gridPos);
+            return !obstacleSet.Contains(gridPos) && !dynamicObstacles.Contains(gridPos);
         }
 
         public void SetObstacle(Vector2Int gridPos, bool isObstacle)
@@ -145,6 +146,26 @@ namespace DiceTale
         public IReadOnlyCollection<Vector2Int> GetObstacles()
         {
             return obstacles;
+        }
+
+        public void AddDynamicObstacle(Vector2Int gridPos)
+        {
+            if (gridPos.x < 0 || gridPos.x >= gridSize.x || gridPos.y < 0 || gridPos.y >= gridSize.y)
+            {
+                return;
+            }
+
+            dynamicObstacles.Add(gridPos);
+        }
+
+        public void RemoveDynamicObstacle(Vector2Int gridPos)
+        {
+            dynamicObstacles.Remove(gridPos);
+        }
+
+        public void ClearDynamicObstacles()
+        {
+            dynamicObstacles.Clear();
         }
 
         public Vector2Int WorldToGrid(Vector3 worldPosition)

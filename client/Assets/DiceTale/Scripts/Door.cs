@@ -4,7 +4,7 @@ using UnityEngine.Events;
 namespace DiceTale
 {
     [RequireComponent(typeof(Collider2D))]
-    public class Door : MonoBehaviour
+    public class Door : MonoBehaviour, IInteractable
     {
         [SerializeField]
         private string targetSceneName;
@@ -21,18 +21,49 @@ namespace DiceTale
         [SerializeField]
         private UnityEvent onUnlocked;
 
+        private Collider2D doorCollider;
+        private bool isUnlocked;
+
         private void Awake()
         {
-            var collider = GetComponent<Collider2D>();
-            if (collider != null)
-            {
-                collider.isTrigger = true;
-            }
+            doorCollider = GetComponent<Collider2D>();
+            UpdateBlockingState();
+        }
+
+        private void OnEnable()
+        {
+            RegisterBlocking();
+        }
+
+        private void OnDisable()
+        {
+            UnregisterBlocking();
         }
 
         private void OnTriggerEnter2D(Collider2D other)
         {
+            if (!isPortal)
+            {
+                return;
+            }
+
             var player = other.GetComponent<Player>();
+            if (player == null)
+            {
+                return;
+            }
+
+            Interact(player);
+        }
+
+        private void OnCollisionEnter2D(Collision2D collision)
+        {
+            if (isPortal || isUnlocked)
+            {
+                return;
+            }
+
+            var player = collision.collider.GetComponent<Player>();
             if (player == null)
             {
                 return;
@@ -52,10 +83,58 @@ namespace DiceTale
             {
                 LoadTargetMap();
             }
-            else
+            else if (!isUnlocked)
             {
+                isUnlocked = true;
+                UpdateBlockingState();
                 onUnlocked?.Invoke();
             }
+        }
+
+        private void UpdateBlockingState()
+        {
+            if (doorCollider == null)
+            {
+                return;
+            }
+
+            doorCollider.isTrigger = isPortal || isUnlocked;
+
+            if (isPortal || isUnlocked)
+            {
+                UnregisterBlocking();
+            }
+            else
+            {
+                RegisterBlocking();
+            }
+        }
+
+        private void RegisterBlocking()
+        {
+            if (isPortal || isUnlocked)
+            {
+                return;
+            }
+
+            var gridMap = Object.FindFirstObjectByType<GridMap>();
+            if (gridMap == null)
+            {
+                return;
+            }
+
+            gridMap.AddDynamicObstacle(gridMap.WorldToGrid(transform.position));
+        }
+
+        private void UnregisterBlocking()
+        {
+            var gridMap = Object.FindFirstObjectByType<GridMap>();
+            if (gridMap == null)
+            {
+                return;
+            }
+
+            gridMap.RemoveDynamicObstacle(gridMap.WorldToGrid(transform.position));
         }
 
         private bool CheckConditions(Player player)
