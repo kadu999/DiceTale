@@ -36,6 +36,7 @@ namespace DiceTale
         private SpriteRenderer fogRenderer;
         private Color[] maskPixels;
         private float[] visibility;
+        private bool[] explored;
         private float lastUpdateTime;
 
         private void Start()
@@ -68,6 +69,7 @@ namespace DiceTale
 
             maskPixels = new Color[maskSize.x * maskSize.y];
             visibility = new float[maskSize.x * maskSize.y];
+            explored = new bool[maskSize.x * maskSize.y];
 
             for (int i = 0; i < maskPixels.Length; i++)
             {
@@ -128,17 +130,22 @@ namespace DiceTale
             for (int i = 0; i < maskPixels.Length; i++)
             {
                 float v = visibility[i];
-                if (v > 0f)
+                if (v >= 0.5f)
                 {
-                    maskPixels[i].r = v;
-                    maskPixels[i].g = v;
-                    maskPixels[i].b = v;
+                    explored[i] = true;
                 }
-                else if (maskPixels[i].r > 0f)
+
+                if (explored[i])
                 {
                     maskPixels[i].r = 1f;
                     maskPixels[i].g = 1f;
                     maskPixels[i].b = 1f;
+                }
+                else if (v > 0f)
+                {
+                    maskPixels[i].r = v;
+                    maskPixels[i].g = v;
+                    maskPixels[i].b = v;
                 }
                 else
                 {
