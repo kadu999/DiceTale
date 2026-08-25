@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 namespace DiceTale
 {
-    public class InteractionManager : MonoBehaviour
+    public class InputManager : MonoBehaviour
     {
         [SerializeField]
         private Camera playerCamera;
@@ -19,24 +19,13 @@ namespace DiceTale
                 return;
             }
 
-            bool pressed = false;
-
             var mouse = Mouse.current;
-            if (mouse != null && mouse.leftButton.wasPressedThisFrame)
+            if (mouse == null || !mouse.leftButton.wasPressedThisFrame)
             {
-                pressed = true;
+                return;
             }
 
-            var touchscreen = Touchscreen.current;
-            if (touchscreen != null && touchscreen.primaryTouch.press.wasPressedThisFrame)
-            {
-                pressed = true;
-            }
-
-            if (pressed)
-            {
-                HandleClick();
-            }
+            HandleClick();
         }
 
         public void HandleClick()
@@ -47,13 +36,13 @@ namespace DiceTale
                 return;
             }
 
-            var pointer = Pointer.current;
-            if (pointer == null)
+            var mouse = Mouse.current;
+            if (mouse == null)
             {
                 return;
             }
 
-            var screenPosition = pointer.position.ReadValue();
+            var screenPosition = mouse.position.ReadValue();
             var worldPosition = camera.ScreenToWorldPoint(screenPosition);
             worldPosition.z = 0f;
 

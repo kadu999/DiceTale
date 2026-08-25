@@ -16,7 +16,7 @@ namespace DiceTale
         public SceneManager SceneManager { get; private set; }
         public CharacterManager CharacterManager { get; private set; }
         public ProgressManager ProgressManager { get; private set; }
-        public InteractionManager InteractionManager { get; private set; }
+        public InputManager InputManager { get; private set; }
         public MapManager MapManager { get; private set; }
 
         public GameState State { get; private set; } = GameState.Boot;
@@ -27,7 +27,7 @@ namespace DiceTale
             SceneManager = GetOrCreateManager<SceneManager>();
             CharacterManager = GetOrCreateManager<CharacterManager>();
             ProgressManager = GetOrCreateManager<ProgressManager>();
-            InteractionManager = GetOrCreateManager<InteractionManager>();
+            InputManager = GetOrCreateManager<InputManager>();
             MapManager = GetOrCreateManager<MapManager>();
         }
 

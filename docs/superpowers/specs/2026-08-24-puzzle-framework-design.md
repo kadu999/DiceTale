@@ -29,7 +29,7 @@
 - `ICondition.cs` / `Condition.cs`：条件接口和基类
 - `EventCondition.cs`：事件条件检查
 - `ItemCondition.cs`：物品条件检查
-- `InteractionManager.cs`：输入交互管理器
+- `InputManager.cs`：输入管理器
 - `Item.cs`：物品行为组件
 - `Door.cs`：门行为组件
 - `SpawnPoint.cs`：玩家出生点/传送点
@@ -37,7 +37,7 @@
 
 ### 修改文件
 
-- `Game.cs`：初始化所有子管理器，所有管理器挂在 `Game` 下
+- `Game.cs`：初始化 `InputManager` 等所有子管理器，所有管理器挂在 `Game` 下
 - `Character.cs`：完善背包 API
 
 ### 删除文件
@@ -139,13 +139,13 @@ public interface IInteractable
 | `EventName` | `string` | 监听的事件名 |
 | `OnEvent` | `UnityEvent` | 事件触发时调用 |
 
-### `InteractionManager`
+### `InputManager`
 
-处理输入并分发交互。使用 Input System 和 `Physics2D.Raycast`。
+处理鼠标输入。使用 Input System 和 `Physics2D.Raycast`。
 
 | 成员 | 类型 | 说明 |
 |------|------|------|
-| `TryInteract()` | `void` | 从鼠标/触摸位置发射 2D 射线，找到 `Interactable` 并调用 |
+| `HandleClick()` | `void` | 从鼠标位置发射 2D 射线，判断点击的是 Item 还是地面 |
 
 ### `MapManager`
 
@@ -181,7 +181,7 @@ Main.Awake()
         ├── SceneManager（挂在 Game 下）
         ├── CharacterManager（挂在 Game 下）
         ├── ProgressManager（挂在 Game 下）
-        ├── InteractionManager（挂在 Game 下）
+        ├── InputManager（挂在 Game 下）
         └── MapManager（挂在 Game 下）
               └── 加载 InitialMapName 并创建玩家
 ```
@@ -194,7 +194,7 @@ Main.Awake()
    - 可拾取物品：`Interactable + Item`
    - 可开启的门：`Interactable + Door + ItemCondition`
    - 环境机关：`Interactable + GameEventListener`
-4. 确保 2D 可交互对象上有 **2D Collider**，否则 `InteractionManager` 的 2D 射线检测不到。
+4. 确保 2D 可交互对象上有 **2D Collider**，否则 `InputManager` 的 2D 射线检测不到。
 
 ## 使用示例
 
