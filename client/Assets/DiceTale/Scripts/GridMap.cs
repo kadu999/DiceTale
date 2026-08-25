@@ -15,6 +15,8 @@ namespace DiceTale
     [System.Serializable]
     public class GridMapData
     {
+        public int gridSizeX = 20;
+        public int gridSizeY = 20;
         public List<GridCellData> cells = new List<GridCellData>();
     }
 
@@ -56,7 +58,6 @@ namespace DiceTale
         private void Awake()
         {
             UpdateCellSize();
-            LoadData();
         }
 
         private void OnEnable()
@@ -94,11 +95,12 @@ namespace DiceTale
             }
         }
 
-        public void LoadData()
+        public void LoadData(string fileName = null)
         {
             cellTypes.Clear();
 
-            var textAsset = Resources.Load<TextAsset>(this.name.Replace("(Clone)", ""));
+            var name = fileName ?? this.name.Replace("(Clone)", "");
+            var textAsset = Resources.Load<TextAsset>(name);
             if (textAsset == null)
             {
                 return;
@@ -110,15 +112,22 @@ namespace DiceTale
                 return;
             }
 
+            gridSize = new Vector2Int(data.gridSizeX, data.gridSizeY);
+
             foreach (var cell in data.cells)
             {
                 cellTypes[new Vector2Int(cell.x, cell.y)] = (GridCellType)cell.type;
             }
         }
 
-        public void SaveData()
+        public void SaveData(string fileName = null)
         {
-            var data = new GridMapData();
+            var data = new GridMapData
+            {
+                gridSizeX = gridSize.x,
+                gridSizeY = gridSize.y
+            };
+
             foreach (var pair in cellTypes)
             {
                 if (pair.Value == GridCellType.Empty)
@@ -143,7 +152,7 @@ namespace DiceTale
                 Directory.CreateDirectory(directory);
             }
 
-            var path = Path.Combine(directory, $"{this.name}.json");
+            var path = Path.Combine(directory, $"{fileName ?? this.name}.json");
             File.WriteAllText(path, json);
             UnityEditor.AssetDatabase.Refresh();
 #endif

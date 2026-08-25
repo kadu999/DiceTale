@@ -9,5 +9,10 @@ namespace DiceTale
 
         public string Id => id;
         public Vector3 Position => transform.position;
+
+        public void SetId(string id)
+        {
+            this.id = id;
+        }
     }
 }
