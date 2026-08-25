@@ -11,13 +11,13 @@ namespace DiceTale
         private int revealRadius = 5;
 
         [SerializeField]
-        private float softEdgeWidth = 0.5f;
+        private float softEdgeWidth = 2f;
 
         [SerializeField]
         private int maskResolution = 8;
 
         [SerializeField]
-        private Color fogColor = new Color(0.85f, 0.88f, 0.9f, 0.9f);
+        private Color fogColor = new Color(0.85f, 0.88f, 0.9f, 0.75f);
 
         [SerializeField]
         private float updateInterval = 0.05f;

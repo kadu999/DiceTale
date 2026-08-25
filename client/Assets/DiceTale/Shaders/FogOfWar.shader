@@ -48,7 +48,7 @@ Shader "DiceTale/FogOfWar"
             fixed4 frag (v2f i) : SV_Target
             {
                 float mask = tex2D(_FogMask, i.uv).r;
-                float fogAlpha = saturate(1.0 - mask);
+                float fogAlpha = pow(saturate(1.0 - mask), 0.7);
                 return fixed4(_FogColor.rgb, fogAlpha * _FogColor.a);
             }
             ENDCG
