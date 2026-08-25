@@ -238,7 +238,8 @@ namespace DiceTale.Editor
                 return;
             }
 
-            referenceTexture = Resources.Load<Texture2D>(referenceImageName);
+            var path = $"Assets/DiceTale/Res/Textures/{referenceImageName}.png";
+            referenceTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
         }
 
         private static Color GetCellColor(GridCellType type)
