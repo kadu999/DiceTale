@@ -68,6 +68,15 @@ namespace DiceTale
             }
 
             var target = path[currentPathIndex];
+
+            var gridMap = Object.FindFirstObjectByType<GridMap>();
+            if (gridMap != null && !gridMap.IsWalkable(gridMap.WorldToGrid(target)))
+            {
+                isMoving = false;
+                path.Clear();
+                return;
+            }
+
             transform.position = Vector3.MoveTowards(transform.position, target, moveSpeed * Time.deltaTime);
 
             if (Vector3.Distance(transform.position, target) < 0.01f)

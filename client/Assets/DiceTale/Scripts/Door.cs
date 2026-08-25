@@ -27,7 +27,7 @@ namespace DiceTale
         private void Awake()
         {
             doorCollider = GetComponent<Collider2D>();
-            UpdateBlockingState();
+            RefreshBlocking();
         }
 
         private void OnEnable()
@@ -86,12 +86,12 @@ namespace DiceTale
             else if (!isUnlocked)
             {
                 isUnlocked = true;
-                UpdateBlockingState();
+                RefreshBlocking();
                 onUnlocked?.Invoke();
             }
         }
 
-        private void UpdateBlockingState()
+        public void RefreshBlocking()
         {
             if (doorCollider == null)
             {
