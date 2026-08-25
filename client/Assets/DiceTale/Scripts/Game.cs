@@ -10,7 +10,7 @@ namespace DiceTale
         Playing
     }
 
-    public class GameManager : MonoBehaviour
+    public class Game : MonoBehaviour
     {
         public SceneManager SceneManager { get; private set; }
         public CharacterManager CharacterManager { get; private set; }
@@ -43,6 +43,7 @@ namespace DiceTale
             }
 
             var go = new GameObject(typeof(T).Name);
+            go.transform.SetParent(transform, false);
             return go.AddComponent<T>();
         }
 

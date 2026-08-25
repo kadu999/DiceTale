@@ -6,7 +6,7 @@ namespace DiceTale
     {
         private void Awake()
         {
-            gameObject.AddComponent<GameManager>();
+            gameObject.AddComponent<Game>();
         }
     }
 }
