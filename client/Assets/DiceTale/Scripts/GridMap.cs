@@ -5,9 +5,17 @@ using UnityEngine;
 namespace DiceTale
 {
     [System.Serializable]
+    public class GridCellData
+    {
+        public int x;
+        public int y;
+        public int type;
+    }
+
+    [System.Serializable]
     public class GridMapData
     {
-        public List<Vector2Int> obstacles = new List<Vector2Int>();
+        public List<GridCellData> cells = new List<GridCellData>();
     }
 
     public class GridMap : MonoBehaviour
@@ -30,8 +38,7 @@ namespace DiceTale
 
         public int BrushSize => brushSize;
 
-        private HashSet<Vector2Int> obstacleSet = new HashSet<Vector2Int>();
-        private List<Vector2Int> obstacles = new List<Vector2Int>();
+        private Dictionary<Vector2Int, GridCellType> cellTypes = new Dictionary<Vector2Int, GridCellType>();
         private HashSet<Vector2Int> dynamicObstacles = new HashSet<Vector2Int>();
 
         public Vector2Int GridSize => gridSize;
@@ -89,8 +96,7 @@ namespace DiceTale
 
         public void LoadData()
         {
-            obstacleSet.Clear();
-            obstacles.Clear();
+            cellTypes.Clear();
 
             var textAsset = Resources.Load<TextAsset>(this.name.Replace("(Clone)", ""));
             if (textAsset == null)
@@ -99,21 +105,35 @@ namespace DiceTale
             }
 
             var data = JsonUtility.FromJson<GridMapData>(textAsset.text);
-            if (data?.obstacles == null)
+            if (data?.cells == null)
             {
                 return;
             }
 
-            foreach (var obstacle in data.obstacles)
+            foreach (var cell in data.cells)
             {
-                obstacleSet.Add(obstacle);
-                obstacles.Add(obstacle);
+                cellTypes[new Vector2Int(cell.x, cell.y)] = (GridCellType)cell.type;
             }
         }
 
         public void SaveData()
         {
-            var data = new GridMapData { obstacles = new List<Vector2Int>(obstacles) };
+            var data = new GridMapData();
+            foreach (var pair in cellTypes)
+            {
+                if (pair.Value == GridCellType.Empty)
+                {
+                    continue;
+                }
+
+                data.cells.Add(new GridCellData
+                {
+                    x = pair.Key.x,
+                    y = pair.Key.y,
+                    type = (int)pair.Value
+                });
+            }
+
             var json = JsonUtility.ToJson(data, true);
 
 #if UNITY_EDITOR
@@ -136,34 +156,54 @@ namespace DiceTale
                 return false;
             }
 
-            return !obstacleSet.Contains(gridPos) && !dynamicObstacles.Contains(gridPos);
+            if (dynamicObstacles.Contains(gridPos))
+            {
+                return false;
+            }
+
+            if (cellTypes.TryGetValue(gridPos, out var type))
+            {
+                return type != GridCellType.Obstacle;
+            }
+
+            return true;
         }
 
-        public void SetObstacle(Vector2Int gridPos, bool isObstacle)
+        public void SetCellType(Vector2Int gridPos, GridCellType type)
         {
             if (gridPos.x < 0 || gridPos.x >= gridSize.x || gridPos.y < 0 || gridPos.y >= gridSize.y)
             {
                 return;
             }
 
-            if (isObstacle)
+            if (type == GridCellType.Empty)
             {
-                if (!obstacleSet.Contains(gridPos))
-                {
-                    obstacleSet.Add(gridPos);
-                    obstacles.Add(gridPos);
-                }
+                cellTypes.Remove(gridPos);
             }
             else
             {
-                obstacleSet.Remove(gridPos);
-                obstacles.Remove(gridPos);
+                cellTypes[gridPos] = type;
             }
         }
 
-        public IReadOnlyCollection<Vector2Int> GetObstacles()
+        public GridCellType GetCellType(Vector2Int gridPos)
         {
-            return obstacles;
+            if (gridPos.x < 0 || gridPos.x >= gridSize.x || gridPos.y < 0 || gridPos.y >= gridSize.y)
+            {
+                return GridCellType.Empty;
+            }
+
+            if (cellTypes.TryGetValue(gridPos, out var type))
+            {
+                return type;
+            }
+
+            return GridCellType.Empty;
+        }
+
+        public IReadOnlyDictionary<Vector2Int, GridCellType> GetCellTypes()
+        {
+            return cellTypes;
         }
 
         public void AddDynamicObstacle(Vector2Int gridPos)
@@ -295,17 +335,30 @@ namespace DiceTale
                 return;
             }
 
-            var staticColor = new Color(1f, 0f, 0f, 0.5f);
-            var dynamicColor = new Color(1f, 0f, 1f, 0.5f);
-
-            foreach (var obstacle in obstacles)
+            foreach (var pair in cellTypes)
             {
-                DrawCellGizmo(obstacle, staticColor);
+                DrawCellGizmo(pair.Key, GetCellTypeColor(pair.Value));
             }
 
+            var dynamicColor = new Color(1f, 0f, 1f, 0.5f);
             foreach (var obstacle in dynamicObstacles)
             {
                 DrawCellGizmo(obstacle, dynamicColor);
+            }
+        }
+
+        private static Color GetCellTypeColor(GridCellType type)
+        {
+            switch (type)
+            {
+                case GridCellType.Obstacle:
+                    return new Color(1f, 0f, 0f, 0.5f);
+                case GridCellType.Difficult:
+                    return new Color(1f, 0.5f, 0f, 0.5f);
+                case GridCellType.Water:
+                    return new Color(0f, 0.5f, 1f, 0.5f);
+                default:
+                    return Color.clear;
             }
         }
 
