@@ -36,17 +36,18 @@ namespace DiceTale
                 return;
             }
 
+            path.Clear();
+
             if (gridPath.Count == 0)
             {
-                isMoving = false;
-                path.Clear();
-                return;
+                path.Add(targetPosition);
             }
-
-            path.Clear();
-            foreach (var gridPos in gridPath)
+            else
             {
-                path.Add(gridMap.GridToWorld(gridPos));
+                for (int i = 0; i < gridPath.Count; i++)
+                {
+                    path.Add(i == gridPath.Count - 1 ? targetPosition : gridMap.GridToWorld(gridPath[i]));
+                }
             }
 
             currentPathIndex = 0;
