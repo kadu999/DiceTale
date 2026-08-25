@@ -15,7 +15,27 @@ namespace DiceTale.Editor
 
         public override void OnInspectorGUI()
         {
-            base.OnInspectorGUI();
+            serializedObject.Update();
+
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("gridSize"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("autoCellSize"));
+
+            var cellSizeProperty = serializedObject.FindProperty("cellSize");
+            var autoCellSizeProperty = serializedObject.FindProperty("autoCellSize");
+            if (!autoCellSizeProperty.boolValue)
+            {
+                EditorGUILayout.PropertyField(cellSizeProperty);
+            }
+            else
+            {
+                EditorGUI.BeginDisabledGroup(true);
+                EditorGUILayout.PropertyField(cellSizeProperty);
+                EditorGUI.EndDisabledGroup();
+            }
+
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("dataFileName"));
+
+            serializedObject.ApplyModifiedProperties();
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Scene View 操作", EditorStyles.boldLabel);
@@ -34,6 +54,8 @@ namespace DiceTale.Editor
             {
                 return;
             }
+
+            gridMap.UpdateCellSize();
 
             DrawGrid();
             DrawObstacles();

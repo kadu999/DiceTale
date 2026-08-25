@@ -16,6 +16,9 @@ namespace DiceTale
         private Vector2Int gridSize = new Vector2Int(20, 20);
 
         [SerializeField]
+        private bool autoCellSize = true;
+
+        [SerializeField]
         private float cellSize = 1f;
 
         [SerializeField]
@@ -39,7 +42,28 @@ namespace DiceTale
 
         private void Awake()
         {
+            UpdateCellSize();
             LoadData();
+        }
+
+        public void UpdateCellSize()
+        {
+            if (!autoCellSize)
+            {
+                return;
+            }
+
+            var spriteRenderer = GetComponent<SpriteRenderer>();
+            if (spriteRenderer == null || spriteRenderer.sprite == null)
+            {
+                return;
+            }
+
+            var size = spriteRenderer.bounds.size;
+            if (gridSize.x > 0)
+            {
+                cellSize = size.x / gridSize.x;
+            }
         }
 
         private void LoadData()
