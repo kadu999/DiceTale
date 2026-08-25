@@ -13,6 +13,12 @@ namespace DiceTale
 
         private void Update()
         {
+            var game = Object.FindFirstObjectByType<Game>();
+            if (game != null && !game.CanInteract)
+            {
+                return;
+            }
+
             bool pressed = false;
 
             var mouse = Mouse.current;
@@ -64,7 +70,6 @@ namespace DiceTale
                     return;
                 }
 
-                // 点到 Door 或其他物体时，只移动到点击位置，不立即触发
                 MovePlayerTo(worldPosition);
                 return;
             }

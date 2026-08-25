@@ -10,6 +10,9 @@ namespace DiceTale
         [SerializeField]
         private Transform mapRoot;
 
+        [SerializeField]
+        private float interactionLockDuration = 0.5f;
+
         public string CurrentMapName { get; private set; }
         public GameObject CurrentMap { get; private set; }
 
@@ -38,6 +41,9 @@ namespace DiceTale
             {
                 return;
             }
+
+            var game = Object.FindFirstObjectByType<Game>();
+            game?.LockInteraction(interactionLockDuration);
 
             UnloadCurrentMap();
 
@@ -74,6 +80,7 @@ namespace DiceTale
                 if (player != null)
                 {
                     player.transform.position = spawn.Position;
+                    player.GetComponent<PlayerMover>()?.Stop();
                 }
             }
         }

@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 namespace DiceTale
@@ -19,6 +20,7 @@ namespace DiceTale
         public MapManager MapManager { get; private set; }
 
         public GameState State { get; private set; } = GameState.Boot;
+        public bool CanInteract { get; private set; } = true;
 
         private void Awake()
         {
@@ -40,6 +42,19 @@ namespace DiceTale
         private void OnDestroy()
         {
             GameEventBus.Clear();
+        }
+
+        public void LockInteraction(float duration)
+        {
+            CanInteract = false;
+            StopCoroutine(nameof(UnlockInteractionAfter));
+            StartCoroutine(UnlockInteractionAfter(duration));
+        }
+
+        private IEnumerator UnlockInteractionAfter(float duration)
+        {
+            yield return new WaitForSeconds(duration);
+            CanInteract = true;
         }
 
         private T GetOrCreateManager<T>() where T : MonoBehaviour

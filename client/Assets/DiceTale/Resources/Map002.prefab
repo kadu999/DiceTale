@@ -152,7 +152,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.Door
   targetSceneName: Map003
-  targetSpawnId: Map003_
+  targetSpawnId: Map003_001
   conditions: []
   isPortal: 1
   onUnlocked:
