@@ -370,7 +370,7 @@ MonoBehaviour:
   fogColor: {r: 0, g: 0, b: 0, a: 1}
   exploredColor: {r: 0, g: 0, b: 0, a: 0.7}
   updateInterval: 0.1
-  fogSortingOrder: 1
+  fogSortingOrder: 2
 --- !u!1 &4634471694792598124
 GameObject:
   m_ObjectHideFlags: 0
