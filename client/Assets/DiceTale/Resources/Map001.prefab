@@ -168,6 +168,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6586617523669123881}
   - component: {fileID: 6632200961286778942}
+  - component: {fileID: 4228129915317058209}
   m_Layer: 0
   m_Name: Map001
   m_TagString: Untagged
@@ -251,6 +252,21 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!114 &4228129915317058209
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4029669799040524807}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df8f5f2c367be6049ba70a94e238b89b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.GridMap
+  gridSize: {x: 20, y: 20}
+  cellSize: 1
+  obstacles: []
 --- !u!1 &8725336608045207518
 GameObject:
   m_ObjectHideFlags: 0
