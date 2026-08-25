@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -21,12 +22,21 @@ namespace DiceTale
         [SerializeField]
         private UnityEvent onUnlocked;
 
-        private Collider2D doorCollider;
+        [SerializeField]
+        private Collider2D blockingCollider;
+
+        private Collider2D triggerCollider;
         private bool isUnlocked;
+        private List<Vector2Int> registeredObstacles = new List<Vector2Int>();
 
         private void Awake()
         {
-            doorCollider = GetComponent<Collider2D>();
+            triggerCollider = GetComponent<Collider2D>();
+            if (triggerCollider != null)
+            {
+                triggerCollider.isTrigger = true;
+            }
+
             RefreshBlocking();
         }
 
@@ -42,28 +52,7 @@ namespace DiceTale
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            if (!isPortal)
-            {
-                return;
-            }
-
             var player = other.GetComponent<Player>();
-            if (player == null)
-            {
-                return;
-            }
-
-            Interact(player);
-        }
-
-        private void OnCollisionEnter2D(Collision2D collision)
-        {
-            if (isPortal || isUnlocked)
-            {
-                return;
-            }
-
-            var player = collision.collider.GetComponent<Player>();
             if (player == null)
             {
                 return;
@@ -93,12 +82,16 @@ namespace DiceTale
 
         public void RefreshBlocking()
         {
-            if (doorCollider == null)
+            if (triggerCollider != null)
             {
-                return;
+                triggerCollider.isTrigger = true;
             }
 
-            doorCollider.isTrigger = isPortal || isUnlocked;
+            if (blockingCollider != null)
+            {
+                blockingCollider.isTrigger = false;
+                blockingCollider.enabled = !isPortal && !isUnlocked;
+            }
 
             if (isPortal || isUnlocked)
             {
@@ -112,7 +105,7 @@ namespace DiceTale
 
         private void RegisterBlocking()
         {
-            if (isPortal || isUnlocked)
+            if (isPortal || isUnlocked || blockingCollider == null)
             {
                 return;
             }
@@ -123,7 +116,21 @@ namespace DiceTale
                 return;
             }
 
-            gridMap.AddDynamicObstacle(gridMap.WorldToGrid(transform.position));
+            UnregisterBlocking();
+
+            var bounds = blockingCollider.bounds;
+            var min = gridMap.WorldToGrid(bounds.min);
+            var max = gridMap.WorldToGrid(bounds.max);
+
+            for (int x = min.x; x <= max.x; x++)
+            {
+                for (int y = min.y; y <= max.y; y++)
+                {
+                    var gridPos = new Vector2Int(x, y);
+                    gridMap.AddDynamicObstacle(gridPos);
+                    registeredObstacles.Add(gridPos);
+                }
+            }
         }
 
         private void UnregisterBlocking()
@@ -131,10 +138,15 @@ namespace DiceTale
             var gridMap = Object.FindFirstObjectByType<GridMap>();
             if (gridMap == null)
             {
+                registeredObstacles.Clear();
                 return;
             }
 
-            gridMap.RemoveDynamicObstacle(gridMap.WorldToGrid(transform.position));
+            foreach (var gridPos in registeredObstacles)
+            {
+                gridMap.RemoveDynamicObstacle(gridPos);
+            }
+            registeredObstacles.Clear();
         }
 
         private bool CheckConditions(Player player)
