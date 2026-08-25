@@ -35,6 +35,7 @@ namespace DiceTale.Editor
             }
 
             EditorGUILayout.PropertyField(serializedObject.FindProperty("brushSize"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("drawBlockedCells"));
 
             serializedObject.ApplyModifiedProperties();
 

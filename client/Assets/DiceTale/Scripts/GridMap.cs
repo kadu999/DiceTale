@@ -25,6 +25,9 @@ namespace DiceTale
         [Range(1, 5)]
         private int brushSize = 1;
 
+        [SerializeField]
+        private bool drawBlockedCells = true;
+
         public int BrushSize => brushSize;
 
         private HashSet<Vector2Int> obstacleSet = new HashSet<Vector2Int>();
@@ -283,6 +286,40 @@ namespace DiceTale
             path.Reverse();
             path.RemoveAt(0);
             return path;
+        }
+
+        private void OnDrawGizmos()
+        {
+            if (!drawBlockedCells)
+            {
+                return;
+            }
+
+            var staticColor = new Color(1f, 0f, 0f, 0.5f);
+            var dynamicColor = new Color(1f, 0f, 1f, 0.5f);
+
+            foreach (var obstacle in obstacles)
+            {
+                DrawCellGizmo(obstacle, staticColor);
+            }
+
+            foreach (var obstacle in dynamicObstacles)
+            {
+                DrawCellGizmo(obstacle, dynamicColor);
+            }
+        }
+
+        private void DrawCellGizmo(Vector2Int gridPos, Color color)
+        {
+            if (gridPos.x < 0 || gridPos.x >= gridSize.x || gridPos.y < 0 || gridPos.y >= gridSize.y)
+            {
+                return;
+            }
+
+            Gizmos.color = color;
+            var center = GridToWorld(gridPos);
+            var size = new Vector3(cellSize, cellSize, 0.1f);
+            Gizmos.DrawCube(center, size);
         }
     }
 }
