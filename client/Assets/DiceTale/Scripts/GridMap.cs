@@ -21,6 +21,12 @@ namespace DiceTale
         [SerializeField]
         private float cellSize = 1f;
 
+        [SerializeField]
+        [Range(1, 5)]
+        private int brushSize = 1;
+
+        public int BrushSize => brushSize;
+
         private HashSet<Vector2Int> obstacleSet = new HashSet<Vector2Int>();
         private List<Vector2Int> obstacles = new List<Vector2Int>();
 
@@ -116,6 +122,11 @@ namespace DiceTale
 
         public void SetObstacle(Vector2Int gridPos, bool isObstacle)
         {
+            if (gridPos.x < 0 || gridPos.x >= gridSize.x || gridPos.y < 0 || gridPos.y >= gridSize.y)
+            {
+                return;
+            }
+
             if (isObstacle)
             {
                 if (!obstacleSet.Contains(gridPos))

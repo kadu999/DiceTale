@@ -33,16 +33,30 @@ namespace DiceTale.Editor
                 EditorGUI.EndDisabledGroup();
             }
 
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("brushSize"));
+
             serializedObject.ApplyModifiedProperties();
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Scene View 操作", EditorStyles.boldLabel);
             EditorGUILayout.LabelField("左键刷障碍", EditorStyles.label);
             EditorGUILayout.LabelField("右键清除障碍", EditorStyles.label);
+            EditorGUILayout.LabelField("拖动可连续刷", EditorStyles.label);
 
             if (GUILayout.Button("Save Grid Data"))
             {
                 gridMap.SaveData();
+            }
+
+            if (GUILayout.Button("Clear All Obstacles"))
+            {
+                Undo.RecordObject(gridMap, "Clear All Obstacles");
+                foreach (var obstacle in new List<Vector2Int>(gridMap.GetObstacles()))
+                {
+                    gridMap.SetObstacle(obstacle, false);
+                }
+                gridMap.SaveData();
+                EditorUtility.SetDirty(gridMap);
             }
         }
 
@@ -57,6 +71,7 @@ namespace DiceTale.Editor
 
             DrawGrid();
             DrawObstacles();
+            DrawBrushPreview();
             HandleInput();
         }
 
@@ -118,19 +133,72 @@ namespace DiceTale.Editor
             if (e.button == 0)
             {
                 Undo.RecordObject(gridMap, "Paint Obstacle");
-                gridMap.SetObstacle(gridPos, true);
+                PaintBrush(gridPos, true);
                 gridMap.SaveData();
                 e.Use();
             }
             else if (e.button == 1)
             {
                 Undo.RecordObject(gridMap, "Erase Obstacle");
-                gridMap.SetObstacle(gridPos, false);
+                PaintBrush(gridPos, false);
                 gridMap.SaveData();
                 e.Use();
             }
 
             EditorUtility.SetDirty(gridMap);
+        }
+
+        private void PaintBrush(Vector2Int center, bool isObstacle)
+        {
+            var brushSize = gridMap.BrushSize;
+            var half = brushSize / 2;
+            for (int x = -half; x < brushSize - half; x++)
+            {
+                for (int y = -half; y < brushSize - half; y++)
+                {
+                    var pos = new Vector2Int(center.x + x, center.y + y);
+                    gridMap.SetObstacle(pos, isObstacle);
+                }
+            }
+        }
+
+        private void DrawBrushPreview()
+        {
+            var e = Event.current;
+            if (e == null)
+            {
+                return;
+            }
+
+            var ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
+            var gridPos = gridMap.WorldToGrid(ray.origin);
+            var brushSize = gridMap.BrushSize;
+            var half = brushSize / 2;
+
+            Handles.color = new Color(1f, 1f, 0f, 0.3f);
+            for (int x = -half; x < brushSize - half; x++)
+            {
+                for (int y = -half; y < brushSize - half; y++)
+                {
+                    var pos = new Vector2Int(gridPos.x + x, gridPos.y + y);
+                    if (pos.x < 0 || pos.x >= gridMap.GridSize.x || pos.y < 0 || pos.y >= gridMap.GridSize.y)
+                    {
+                        continue;
+                    }
+
+                    var center = gridMap.GridToWorld(pos);
+                    var cellSize = gridMap.CellSize;
+                    var halfCell = cellSize * 0.5f;
+                    var verts = new Vector3[]
+                    {
+                        center + new Vector3(-halfCell, -halfCell, 0),
+                        center + new Vector3(-halfCell, halfCell, 0),
+                        center + new Vector3(halfCell, halfCell, 0),
+                        center + new Vector3(halfCell, -halfCell, 0)
+                    };
+                    Handles.DrawSolidRectangleWithOutline(verts, new Color(1f, 1f, 0f, 0.3f), Color.yellow);
+                }
+            }
         }
     }
 }
