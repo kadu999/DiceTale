@@ -11,16 +11,16 @@ namespace DiceTale
 
         [SerializeField]
         [Range(0f, 1f)]
-        private float fadeStart = 0.2f;
+        private float fadeStart = 0f;
 
         [SerializeField]
         private int maskResolution = 8;
 
         [SerializeField]
-        private Color fogColor = new Color(0.1f, 0.12f, 0.15f, 0.95f);
+        private Color fogColor = new Color(0.85f, 0.88f, 0.9f, 0.9f);
 
         [SerializeField]
-        private Color exploredColor = new Color(0.1f, 0.12f, 0.15f, 0.7f);
+        private Color exploredColor = new Color(0.7f, 0.75f, 0.8f, 0.6f);
 
         [SerializeField]
         private float updateInterval = 0.05f;
