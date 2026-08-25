@@ -15,6 +15,7 @@ namespace DiceTale
         public CharacterManager CharacterManager { get; private set; }
         public ProgressManager ProgressManager { get; private set; }
         public InteractionManager InteractionManager { get; private set; }
+        public MapManager MapManager { get; private set; }
 
         public GameState State { get; private set; } = GameState.Boot;
 
@@ -24,6 +25,7 @@ namespace DiceTale
             CharacterManager = GetOrCreateManager<CharacterManager>();
             ProgressManager = GetOrCreateManager<ProgressManager>();
             InteractionManager = GetOrCreateManager<InteractionManager>();
+            MapManager = GetOrCreateManager<MapManager>();
         }
 
         private void OnDestroy()

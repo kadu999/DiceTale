@@ -26,8 +26,8 @@ namespace DiceTale
 
             if (!string.IsNullOrEmpty(targetSceneName))
             {
-                var sceneManager = Object.FindFirstObjectByType<SceneManager>();
-                sceneManager?.LoadScene(targetSceneName);
+                var mapManager = Object.FindFirstObjectByType<MapManager>();
+                mapManager?.LoadMap(targetSceneName);
             }
         }
     }
