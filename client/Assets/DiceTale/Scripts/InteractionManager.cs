@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace DiceTale
 {
@@ -12,7 +13,21 @@ namespace DiceTale
 
         private void Update()
         {
-            if (Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began))
+            bool pressed = false;
+
+            var mouse = Mouse.current;
+            if (mouse != null && mouse.leftButton.wasPressedThisFrame)
+            {
+                pressed = true;
+            }
+
+            var touchscreen = Touchscreen.current;
+            if (touchscreen != null && touchscreen.primaryTouch.press.wasPressedThisFrame)
+            {
+                pressed = true;
+            }
+
+            if (pressed)
             {
                 TryInteract();
             }
@@ -26,8 +41,15 @@ namespace DiceTale
                 return;
             }
 
-            var ray = GetRay(camera);
-            if (!Physics.Raycast(ray, out var hit, maxDistance))
+            var pointer = Pointer.current;
+            if (pointer == null)
+            {
+                return;
+            }
+
+            var ray = camera.ScreenPointToRay(pointer.position.ReadValue());
+            var hit = Physics2D.Raycast(ray.origin, ray.direction, maxDistance);
+            if (hit.collider == null)
             {
                 return;
             }
@@ -38,18 +60,8 @@ namespace DiceTale
                 return;
             }
 
-            var player = Object.FindFirstObjectByType<Player>();
+            var player = CharacterManager.Instance?.CurrentPlayer;
             interactable.Interact(player);
-        }
-
-        private Ray GetRay(Camera camera)
-        {
-            if (Input.touchCount > 0)
-            {
-                return camera.ScreenPointToRay(Input.GetTouch(0).position);
-            }
-
-            return camera.ScreenPointToRay(Input.mousePosition);
         }
     }
 }

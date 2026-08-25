@@ -27,7 +27,6 @@ namespace DiceTale.Editor
 
             CreateMain();
             CreateMapManager();
-            CreatePlayer();
 
             EditorSceneManager.SaveScene(scene, scenePath);
 
@@ -65,12 +64,6 @@ namespace DiceTale.Editor
             var serializedObject = new SerializedObject(mapManager);
             serializedObject.FindProperty("initialMapName").stringValue = "Map001";
             serializedObject.ApplyModifiedProperties();
-        }
-
-        private static void CreatePlayer()
-        {
-            var go = new GameObject("Player");
-            go.AddComponent<Player>();
         }
     }
 }

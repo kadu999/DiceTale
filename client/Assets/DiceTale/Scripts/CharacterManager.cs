@@ -1,27 +1,85 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DiceTale
 {
     public class CharacterManager : MonoBehaviour
     {
-        public Player Player { get; private set; }
+        private static CharacterManager instance;
 
-        public Player CreatePlayer()
+        public static CharacterManager Instance
         {
-            if (Player != null)
+            get
             {
-                return Player;
-            }
+                if (instance == null)
+                {
+                    var go = new GameObject(nameof(CharacterManager));
+                    instance = go.AddComponent<CharacterManager>();
+                }
 
-            var playerGo = new GameObject(nameof(Player));
-            var player = playerGo.AddComponent<Player>();
-            Player = player;
-            return player;
+                return instance;
+            }
         }
 
-        public void SetPlayer(Player player)
+        public List<Player> Players { get; private set; } = new List<Player>();
+        public Player CurrentPlayer { get; private set; }
+        public int CurrentPlayerIndex { get; private set; }
+
+        private void Awake()
         {
-            Player = player;
+            if (instance != null && instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            instance = this;
+        }
+
+        public void AddPlayer(Player player)
+        {
+            if (player == null || Players.Contains(player))
+            {
+                return;
+            }
+
+            Players.Add(player);
+        }
+
+        public void SetCurrentPlayer(int index)
+        {
+            if (index < 0 || index >= Players.Count)
+            {
+                return;
+            }
+
+            CurrentPlayerIndex = index;
+            CurrentPlayer = Players[index];
+        }
+
+        public void NextPlayer()
+        {
+            if (Players.Count == 0)
+            {
+                return;
+            }
+
+            SetCurrentPlayer((CurrentPlayerIndex + 1) % Players.Count);
+        }
+
+        public void ClearPlayers()
+        {
+            foreach (var player in Players)
+            {
+                if (player != null)
+                {
+                    Destroy(player.gameObject);
+                }
+            }
+
+            Players.Clear();
+            CurrentPlayer = null;
+            CurrentPlayerIndex = 0;
         }
     }
 }

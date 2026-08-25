@@ -6,6 +6,7 @@ namespace DiceTale
     {
         Boot,
         MainMenu,
+        PlayerSelection,
         Playing
     }
 
