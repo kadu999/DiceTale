@@ -100,7 +100,8 @@ namespace DiceTale
 
             var go = new GameObject("FogOfWar");
             go.transform.SetParent(transform, false);
-            go.transform.position = gridMap.GridOrigin;
+            //go.transform.position = gridMap.GridOrigin;
+            go.transform.localPosition = Vector3.zero;
             go.transform.localScale = new Vector3(
                 gridMap.GridSize.x * gridMap.CellSize,
                 gridMap.GridSize.y * gridMap.CellSize,
