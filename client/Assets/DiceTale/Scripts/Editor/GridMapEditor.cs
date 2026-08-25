@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -46,6 +47,11 @@ namespace DiceTale.Editor
             if (GUILayout.Button("Save Grid Data"))
             {
                 gridMap.SaveData();
+            }
+
+            if (GUILayout.Button("Load Grid Data"))
+            {
+                gridMap.LoadData();
             }
 
             if (GUILayout.Button("Clear All Obstacles"))

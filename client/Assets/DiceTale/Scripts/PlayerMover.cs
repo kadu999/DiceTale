@@ -28,7 +28,15 @@ namespace DiceTale
             var endGrid = gridMap.WorldToGrid(targetPosition);
 
             var gridPath = gridMap.FindPath(startGrid, endGrid);
-            if (gridPath == null || gridPath.Count == 0)
+            if (gridPath == null)
+            {
+                Debug.Log($"无法移动到目标位置：{endGrid} 被阻挡或不可达");
+                isMoving = false;
+                path.Clear();
+                return;
+            }
+
+            if (gridPath.Count == 0)
             {
                 isMoving = false;
                 path.Clear();

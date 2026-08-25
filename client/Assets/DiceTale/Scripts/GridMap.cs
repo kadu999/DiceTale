@@ -68,7 +68,7 @@ namespace DiceTale
             }
         }
 
-        private void LoadData()
+        public void LoadData()
         {
             obstacleSet.Clear();
             obstacles.Clear();
@@ -172,47 +172,80 @@ namespace DiceTale
                 return null;
             }
 
-            var queue = new Queue<Vector2Int>();
+            if (start == end)
+            {
+                return new List<Vector2Int>();
+            }
+
+            var openSet = new List<Vector2Int> { start };
             var cameFrom = new Dictionary<Vector2Int, Vector2Int>();
-            queue.Enqueue(start);
-            cameFrom[start] = start;
+            var gScore = new Dictionary<Vector2Int, float> { [start] = 0 };
+            var fScore = new Dictionary<Vector2Int, float> { [start] = Heuristic(start, end) };
 
             int[] dx = { 0, 1, 0, -1 };
             int[] dy = { 1, 0, -1, 0 };
 
-            while (queue.Count > 0)
+            while (openSet.Count > 0)
             {
-                var current = queue.Dequeue();
+                var current = openSet[0];
+                var lowestIndex = 0;
+                for (int i = 1; i < openSet.Count; i++)
+                {
+                    if (fScore[openSet[i]] < fScore[current])
+                    {
+                        current = openSet[i];
+                        lowestIndex = i;
+                    }
+                }
+
                 if (current == end)
                 {
-                    break;
+                    return ReconstructPath(cameFrom, current, start);
                 }
+
+                openSet.RemoveAt(lowestIndex);
 
                 for (int i = 0; i < 4; i++)
                 {
                     var neighbor = new Vector2Int(current.x + dx[i], current.y + dy[i]);
-                    if (IsWalkable(neighbor) && !cameFrom.ContainsKey(neighbor))
+                    if (!IsWalkable(neighbor))
                     {
-                        queue.Enqueue(neighbor);
+                        continue;
+                    }
+
+                    var tentativeG = gScore[current] + 1;
+                    if (!gScore.ContainsKey(neighbor) || tentativeG < gScore[neighbor])
+                    {
                         cameFrom[neighbor] = current;
+                        gScore[neighbor] = tentativeG;
+                        fScore[neighbor] = tentativeG + Heuristic(neighbor, end);
+
+                        if (!openSet.Contains(neighbor))
+                        {
+                            openSet.Add(neighbor);
+                        }
                     }
                 }
             }
 
-            if (!cameFrom.ContainsKey(end))
-            {
-                return null;
-            }
+            return null;
+        }
 
-            var path = new List<Vector2Int>();
-            var step = end;
-            while (step != start)
-            {
-                path.Add(step);
-                step = cameFrom[step];
-            }
+        private static float Heuristic(Vector2Int a, Vector2Int b)
+        {
+            return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
+        }
 
+        private static List<Vector2Int> ReconstructPath(Dictionary<Vector2Int, Vector2Int> cameFrom, Vector2Int current, Vector2Int start)
+        {
+            var path = new List<Vector2Int> { current };
+            while (current != start)
+            {
+                current = cameFrom[current];
+                path.Add(current);
+            }
             path.Reverse();
+            path.RemoveAt(0);
             return path;
         }
     }
