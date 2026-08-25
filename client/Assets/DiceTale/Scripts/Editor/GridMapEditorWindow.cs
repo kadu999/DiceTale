@@ -10,6 +10,7 @@ namespace DiceTale.Editor
 
         private GridMap gridMap;
         private Texture2D referenceTexture;
+        private string referenceImageName = "";
         private GridCellType selectedType = GridCellType.Obstacle;
         private int brushSize = 1;
         private Vector2 scrollPosition;
@@ -26,6 +27,7 @@ namespace DiceTale.Editor
         {
             var window = GetWindow<GridMapEditorWindow>("GridMap Editor");
             window.gridMap = target;
+            window.referenceImageName = target != null ? target.name : "";
             window.LoadReferenceTexture();
             window.Show();
         }
@@ -51,7 +53,9 @@ namespace DiceTale.Editor
 
             gridMap = EditorGUILayout.ObjectField(gridMap, typeof(GridMap), true, GUILayout.Width(200f)) as GridMap;
 
-            if (GUILayout.Button("刷新贴图", EditorStyles.toolbarButton, GUILayout.Width(80f)))
+            referenceImageName = EditorGUILayout.TextField(referenceImageName, GUILayout.Width(120f));
+
+            if (GUILayout.Button("加载图片", EditorStyles.toolbarButton, GUILayout.Width(80f)))
             {
                 LoadReferenceTexture();
             }
@@ -228,21 +232,13 @@ namespace DiceTale.Editor
 
         private void LoadReferenceTexture()
         {
-            if (gridMap == null)
+            if (string.IsNullOrEmpty(referenceImageName))
             {
                 referenceTexture = null;
                 return;
             }
 
-            var spriteRenderer = gridMap.GetComponent<SpriteRenderer>();
-            if (spriteRenderer != null && spriteRenderer.sprite != null)
-            {
-                referenceTexture = spriteRenderer.sprite.texture;
-            }
-            else
-            {
-                referenceTexture = null;
-            }
+            referenceTexture = Resources.Load<Texture2D>(referenceImageName);
         }
 
         private static Color GetCellColor(GridCellType type)
