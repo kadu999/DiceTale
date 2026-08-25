@@ -33,8 +33,6 @@ namespace DiceTale.Editor
                 EditorGUI.EndDisabledGroup();
             }
 
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("dataFileName"));
-
             serializedObject.ApplyModifiedProperties();
 
             EditorGUILayout.Space();

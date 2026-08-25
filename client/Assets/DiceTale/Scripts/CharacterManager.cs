@@ -60,7 +60,7 @@ namespace DiceTale
                 {
                     var rb = playerGo.AddComponent<Rigidbody2D>();
                     rb.gravityScale = 0f;
-                    rb.isKinematic = true;
+                    rb.bodyType = RigidbodyType2D.Kinematic;
                 }
 
                 var player = playerGo.GetComponent<Player>();

@@ -21,15 +21,11 @@ namespace DiceTale
         [SerializeField]
         private float cellSize = 1f;
 
-        [SerializeField]
-        private string dataFileName = "Map001_grid";
-
-        private HashSet<Vector2Int> obstacleSet;
+        private HashSet<Vector2Int> obstacleSet = new HashSet<Vector2Int>();
         private List<Vector2Int> obstacles = new List<Vector2Int>();
 
         public Vector2Int GridSize => gridSize;
         public float CellSize => cellSize;
-        public string DataFileName => dataFileName;
 
         public Vector3 GridOrigin => transform.position - new Vector3(
             gridSize.x * cellSize * 0.5f,
@@ -68,10 +64,10 @@ namespace DiceTale
 
         private void LoadData()
         {
-            obstacleSet = new HashSet<Vector2Int>();
+            obstacleSet.Clear();
             obstacles.Clear();
 
-            var textAsset = Resources.Load<TextAsset>(dataFileName);
+            var textAsset = Resources.Load<TextAsset>(this.name);
             if (textAsset == null)
             {
                 return;
@@ -96,13 +92,13 @@ namespace DiceTale
             var json = JsonUtility.ToJson(data, true);
 
 #if UNITY_EDITOR
-            var directory = Path.Combine(Application.dataPath, "Resources");
+            var directory = Path.Combine(Application.dataPath, "DiceTale/Resources");
             if (!Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
             }
 
-            var path = Path.Combine(directory, $"{dataFileName}.json");
+            var path = Path.Combine(directory, $"{this.name}.json");
             File.WriteAllText(path, json);
             UnityEditor.AssetDatabase.Refresh();
 #endif
