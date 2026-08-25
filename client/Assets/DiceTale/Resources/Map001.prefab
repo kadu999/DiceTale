@@ -248,6 +248,7 @@ GameObject:
   - component: {fileID: 6586617523669123881}
   - component: {fileID: 6632200961286778942}
   - component: {fileID: 4228129915317058209}
+  - component: {fileID: 2615686092876065704}
   m_Layer: 0
   m_Name: Map001
   m_TagString: Untagged
@@ -352,6 +353,24 @@ MonoBehaviour:
   autoCellSize: 0
   cellSize: 0.3
   brushSize: 1
+  drawBlockedCells: 1
+--- !u!114 &2615686092876065704
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4029669799040524807}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db53a2934d06497d88101fd70008bd34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.FogOfWar
+  revealRadius: 3
+  fogColor: {r: 0, g: 0, b: 0, a: 1}
+  exploredColor: {r: 0, g: 0, b: 0, a: 0.7}
+  updateInterval: 0.1
+  fogSortingOrder: 1
 --- !u!1 &4634471694792598124
 GameObject:
   m_ObjectHideFlags: 0

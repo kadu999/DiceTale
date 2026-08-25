@@ -66,11 +66,15 @@ namespace DiceTale
             var sprite = Sprite.Create(
                 fogTexture,
                 new Rect(0, 0, size.x, size.y),
-                new Vector2(0.5f, 0.5f),
+                Vector2.zero,
                 1f / gridMap.CellSize
             );
 
-            fogRenderer = gameObject.AddComponent<SpriteRenderer>();
+            var go = new GameObject("FogOfWar");
+            go.transform.SetParent(transform, false);
+            go.transform.position = gridMap.GridOrigin;
+
+            fogRenderer = go.AddComponent<SpriteRenderer>();
             fogRenderer.sprite = sprite;
             fogRenderer.sortingOrder = fogSortingOrder;
         }
