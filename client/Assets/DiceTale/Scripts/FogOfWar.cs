@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace DiceTale
@@ -6,6 +5,8 @@ namespace DiceTale
     [RequireComponent(typeof(GridMap))]
     public class FogOfWar : MonoBehaviour
     {
+        private const int MaxPlayers = 8;
+
         [SerializeField]
         private int revealRadius = 5;
 
@@ -19,29 +20,35 @@ namespace DiceTale
         private Color fogColor = new Color(0.85f, 0.88f, 0.9f, 0.9f);
 
         [SerializeField]
-        private Color exploredColor = new Color(0.7f, 0.75f, 0.8f, 0.6f);
-
-        [SerializeField]
         private float updateInterval = 0.05f;
 
         [SerializeField]
         private int fogSortingOrder = 1;
 
         [SerializeField]
-        private Shader fogShader;
+        private Shader displayShader;
+
+        [SerializeField]
+        private Shader accumulateShader;
 
         private GridMap gridMap;
-        private Texture2D fogMaskTexture;
         private SpriteRenderer fogRenderer;
-        private Color[] maskPixels;
-        private float[] visibility;
-        private bool[] explored;
+        private Material displayMaterial;
+        private Material accumulateMaterial;
+        private RenderTexture prevMask;
+        private RenderTexture nextMask;
+        private Vector4[] playerPositions = new Vector4[MaxPlayers];
         private float lastUpdateTime;
 
         private void Start()
         {
             gridMap = GetComponent<GridMap>();
             CreateFog();
+        }
+
+        private void OnDestroy()
+        {
+            ReleaseRenderTextures();
         }
 
         private void Update()
@@ -62,27 +69,49 @@ namespace DiceTale
                 gridMap.GridSize.y * maskResolution
             );
 
-            fogMaskTexture = new Texture2D(maskSize.x, maskSize.y, TextureFormat.RGBA32, false);
-            fogMaskTexture.filterMode = FilterMode.Bilinear;
-            fogMaskTexture.wrapMode = TextureWrapMode.Clamp;
+            ReleaseRenderTextures();
 
-            maskPixels = new Color[maskSize.x * maskSize.y];
-            visibility = new float[maskSize.x * maskSize.y];
-            explored = new bool[maskSize.x * maskSize.y];
+            var format = RenderTextureFormat.ARGB32;
+            prevMask = new RenderTexture(maskSize.x, maskSize.y, 0, format);
+            nextMask = new RenderTexture(maskSize.x, maskSize.y, 0, format);
+            prevMask.filterMode = FilterMode.Bilinear;
+            nextMask.filterMode = FilterMode.Bilinear;
+            prevMask.wrapMode = TextureWrapMode.Clamp;
+            nextMask.wrapMode = TextureWrapMode.Clamp;
+            prevMask.Create();
+            nextMask.Create();
 
-            for (int i = 0; i < maskPixels.Length; i++)
+            RenderTexture.active = prevMask;
+            GL.Clear(true, true, Color.black);
+            RenderTexture.active = null;
+
+            var displayShaderInstance = displayShader != null ? displayShader : Shader.Find("DiceTale/FogOfWar");
+            var accumulateShaderInstance = accumulateShader != null ? accumulateShader : Shader.Find("DiceTale/FogOfWarAccumulate");
+
+            displayMaterial = new Material(displayShaderInstance);
+            displayMaterial.SetColor("_FogColor", fogColor);
+
+            accumulateMaterial = new Material(accumulateShaderInstance);
+            accumulateMaterial.SetFloat("_RevealRadius", revealRadius * gridMap.CellSize);
+            accumulateMaterial.SetFloat("_SoftEdgeWidth", softEdgeWidth * gridMap.CellSize);
+            accumulateMaterial.SetFloat("_CellSize", gridMap.CellSize);
+            accumulateMaterial.SetVector("_GridOrigin", gridMap.GridOrigin);
+            accumulateMaterial.SetVector("_GridSize", new Vector4(gridMap.GridSize.x, gridMap.GridSize.y, 0, 0));
+
+            var dummyTexture = new Texture2D(gridMap.GridSize.x, gridMap.GridSize.y, TextureFormat.RGBA32, false);
+            var colors = new Color[gridMap.GridSize.x * gridMap.GridSize.y];
+            for (int i = 0; i < colors.Length; i++)
             {
-                maskPixels[i] = Color.black;
+                colors[i] = Color.white;
             }
-
-            fogMaskTexture.SetPixels(maskPixels);
-            fogMaskTexture.Apply();
+            dummyTexture.SetPixels(colors);
+            dummyTexture.Apply();
 
             var sprite = Sprite.Create(
-                fogMaskTexture,
-                new Rect(0, 0, maskSize.x, maskSize.y),
+                dummyTexture,
+                new Rect(0, 0, gridMap.GridSize.x, gridMap.GridSize.y),
                 Vector2.zero,
-                maskResolution / gridMap.CellSize
+                1f / gridMap.CellSize
             );
 
             var go = new GameObject("FogOfWar");
@@ -92,116 +121,57 @@ namespace DiceTale
             fogRenderer = go.AddComponent<SpriteRenderer>();
             fogRenderer.sprite = sprite;
             fogRenderer.sortingOrder = fogSortingOrder;
+            fogRenderer.material = displayMaterial;
 
-            var material = new Material(fogShader != null ? fogShader : Shader.Find("DiceTale/FogOfWar"));
-            material.SetTexture("_FogMask", fogMaskTexture);
-            material.SetColor("_FogColor", fogColor);
-            material.SetColor("_ExploredColor", exploredColor);
-            fogRenderer.material = material;
+            displayMaterial.SetTexture("_FogMask", nextMask);
         }
 
         private void UpdateFog()
         {
-            var maskSize = new Vector2Int(
-                gridMap.GridSize.x * maskResolution,
-                gridMap.GridSize.y * maskResolution
-            );
-
-            for (int i = 0; i < visibility.Length; i++)
-            {
-                visibility[i] = 0f;
-            }
-
             var characterManager = CharacterManager.Instance;
+            int playerCount = 0;
+
             if (characterManager != null)
             {
                 foreach (var player in characterManager.Players)
                 {
-                    if (player == null)
+                    if (player == null || playerCount >= MaxPlayers)
                     {
                         continue;
                     }
 
-                    RevealAround(player.transform.position, maskSize);
+                    var pos = player.transform.position;
+                    playerPositions[playerCount] = new Vector4(pos.x, pos.y, 0, 0);
+                    playerCount++;
                 }
             }
 
-            for (int i = 0; i < maskPixels.Length; i++)
-            {
-                float v = visibility[i];
-                if (v >= 0.5f)
-                {
-                    explored[i] = true;
-                }
+            accumulateMaterial.SetInt("_PlayerCount", playerCount);
+            accumulateMaterial.SetVectorArray("_PlayerPositions", playerPositions);
 
-                if (explored[i])
-                {
-                    maskPixels[i].r = 1f;
-                    maskPixels[i].g = 1f;
-                    maskPixels[i].b = 1f;
-                }
-                else if (v > 0f)
-                {
-                    maskPixels[i].r = v;
-                    maskPixels[i].g = v;
-                    maskPixels[i].b = v;
-                }
-                else
-                {
-                    maskPixels[i] = Color.black;
-                }
-            }
+            Graphics.Blit(prevMask, nextMask, accumulateMaterial);
 
-            fogMaskTexture.SetPixels(maskPixels);
-            fogMaskTexture.Apply();
+            displayMaterial.SetTexture("_FogMask", nextMask);
+
+            var temp = prevMask;
+            prevMask = nextMask;
+            nextMask = temp;
         }
 
-        private void RevealAround(Vector3 worldPosition, Vector2Int maskSize)
+        private void ReleaseRenderTextures()
         {
-            var gridPos = gridMap.WorldToGrid(worldPosition);
-            var centerX = (gridPos.x + 0.5f) * maskResolution;
-            var centerY = (gridPos.y + 0.5f) * maskResolution;
-            var radiusPixels = revealRadius * maskResolution;
-            var radiusSq = radiusPixels * radiusPixels;
-
-            var minX = Mathf.Max(0, Mathf.FloorToInt(centerX - radiusPixels));
-            var maxX = Mathf.Min(maskSize.x - 1, Mathf.CeilToInt(centerX + radiusPixels));
-            var minY = Mathf.Max(0, Mathf.FloorToInt(centerY - radiusPixels));
-            var maxY = Mathf.Min(maskSize.y - 1, Mathf.CeilToInt(centerY + radiusPixels));
-
-            for (int y = minY; y <= maxY; y++)
+            if (prevMask != null)
             {
-                for (int x = minX; x <= maxX; x++)
-                {
-                    var dx = x - centerX;
-                    var dy = y - centerY;
-                    var distSq = dx * dx + dy * dy;
-                    if (distSq > radiusSq)
-                    {
-                        continue;
-                    }
+                prevMask.Release();
+                Destroy(prevMask);
+                prevMask = null;
+            }
 
-                    var dist = Mathf.Sqrt(distSq);
-                    var softEdgePixels = Mathf.Max(1f, softEdgeWidth * maskResolution);
-                    var innerRadiusPixels = Mathf.Max(0f, radiusPixels - softEdgePixels);
-
-                    float value;
-                    if (dist <= innerRadiusPixels)
-                    {
-                        value = 1f;
-                    }
-                    else
-                    {
-                        var t = (dist - innerRadiusPixels) / softEdgePixels;
-                        value = 1f - Mathf.SmoothStep(0f, 1f, t);
-                    }
-
-                    var index = y * maskSize.x + x;
-                    if (value > visibility[index])
-                    {
-                        visibility[index] = value;
-                    }
-                }
+            if (nextMask != null)
+            {
+                nextMask.Release();
+                Destroy(nextMask);
+                nextMask = null;
             }
         }
     }
