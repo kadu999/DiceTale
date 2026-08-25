@@ -158,6 +158,7 @@ MonoBehaviour:
   onUnlocked:
     m_PersistentCalls:
       m_Calls: []
+  blockingCollider: {fileID: 0}
 --- !u!1 &4029669799040524807
 GameObject:
   m_ObjectHideFlags: 0
@@ -704,6 +705,7 @@ MonoBehaviour:
   onUnlocked:
     m_PersistentCalls:
       m_Calls: []
+  blockingCollider: {fileID: 0}
 --- !u!1 &7423455591533289701
 GameObject:
   m_ObjectHideFlags: 0

@@ -11,7 +11,6 @@ namespace DiceTale.Editor
 
             EditorGUILayout.PropertyField(serializedObject.FindProperty("conditions"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("isPortal"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("blockingCollider"));
 
             var isPortal = serializedObject.FindProperty("isPortal");
             if (isPortal.boolValue)
@@ -21,6 +20,7 @@ namespace DiceTale.Editor
             }
             else
             {
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("blockingCollider"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("onUnlocked"));
             }
 
