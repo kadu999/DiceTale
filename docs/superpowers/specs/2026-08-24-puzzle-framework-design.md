@@ -32,7 +32,7 @@
 - `InteractionManager.cs`：输入交互管理器
 - `Item.cs`：物品行为组件
 - `Door.cs`：门行为组件
-- `PlayerSpawn.cs`：玩家出生点
+- `SpawnPoint.cs`：玩家出生点/传送点
 - `MapManager.cs`：地图管理器
 
 ### 修改文件
@@ -149,21 +149,21 @@ public interface IInteractable
 
 ### `MapManager`
 
-管理地图 prefab 加载和玩家创建。
+管理地图 prefab 加载和玩家定位。
 
 | 成员 | 类型 | 说明 |
 |------|------|------|
 | `InitialMapName` | `string` | 初始地图 prefab 名 |
-| `LoadMap(string mapName, string spawnId)` | `void` | 加载地图 prefab 并移动玩家到出生点 |
+| `LoadMap(string mapName, string spawnId)` | `void` | 加载地图 prefab 并移动现有玩家到 `SpawnPoint` |
 
-### `PlayerSpawn`
+### `SpawnPoint`
 
-玩家出生点，挂在地图 prefab 中。
+位置标记点，挂在地图 prefab 中。只标记位置，不创建玩家。
 
 | 成员 | 类型 | 说明 |
 |------|------|------|
-| `SpawnId` | `string` | 出生点标识 |
-| `Position` | `Vector3` | 出生点位置 |
+| `Id` | `string` | 位置标识 |
+| `Position` | `Vector3` | 位置 |
 
 ### `Character`
 
@@ -189,7 +189,7 @@ Main.Awake()
 ## 地图编辑 workflow
 
 1. 地图 prefab 放在 `Resources` 下，如 `Map001.prefab`
-2. 在地图 prefab 中放置 `PlayerSpawn` 作为玩家出生点
+2. 在地图 prefab 中放置 `SpawnPoint` 作为玩家出生点
 3. 创建可交互对象：
    - 可拾取物品：`Interactable + Item`
    - 可开启的门：`Interactable + Door + ItemCondition`

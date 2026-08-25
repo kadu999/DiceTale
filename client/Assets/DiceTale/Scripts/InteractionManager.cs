@@ -9,7 +9,7 @@ namespace DiceTale
         private Camera playerCamera;
 
         [SerializeField]
-        private float maxDistance = 3f;
+        private float maxDistance = 100f;
 
         private void Update()
         {
@@ -29,11 +29,11 @@ namespace DiceTale
 
             if (pressed)
             {
-                TryInteract();
+                HandleClick();
             }
         }
 
-        public void TryInteract()
+        public void HandleClick()
         {
             var camera = playerCamera != null ? playerCamera : Camera.main;
             if (camera == null)
@@ -47,21 +47,48 @@ namespace DiceTale
                 return;
             }
 
-            var ray = camera.ScreenPointToRay(pointer.position.ReadValue());
+            var screenPosition = pointer.position.ReadValue();
+            var worldPosition = camera.ScreenToWorldPoint(screenPosition);
+            worldPosition.z = 0f;
+
+            var ray = camera.ScreenPointToRay(screenPosition);
             var hit = Physics2D.Raycast(ray.origin, ray.direction, maxDistance);
-            if (hit.collider == null)
+
+            if (hit.collider != null)
             {
+                var item = hit.collider.GetComponentInParent<Item>();
+                if (item != null)
+                {
+                    var player = CharacterManager.Instance?.CurrentPlayer;
+                    item.Interact(player);
+                    return;
+                }
+
+                // 点到 Door 或其他物体时，只移动到点击位置，不立即触发
+                MovePlayerTo(worldPosition);
                 return;
             }
 
-            var interactable = hit.collider.GetComponentInParent<Interactable>();
-            if (interactable == null)
-            {
-                return;
-            }
+            MovePlayerTo(worldPosition);
+        }
 
+        private void MovePlayerTo(Vector3 targetPosition)
+        {
             var player = CharacterManager.Instance?.CurrentPlayer;
-            interactable.Interact(player);
+            if (player == null)
+            {
+                return;
+            }
+
+            var mover = player.GetComponent<PlayerMover>();
+            if (mover != null)
+            {
+                mover.MoveTo(targetPosition);
+            }
+            else
+            {
+                player.transform.position = targetPosition;
+            }
         }
     }
 }

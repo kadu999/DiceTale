@@ -3,7 +3,8 @@ using UnityEngine.Events;
 
 namespace DiceTale
 {
-    public class Door : MonoBehaviour, IInteractable
+    [RequireComponent(typeof(Collider2D))]
+    public class Door : MonoBehaviour
     {
         [SerializeField]
         private string targetSceneName;
@@ -20,6 +21,26 @@ namespace DiceTale
         [SerializeField]
         private UnityEvent onUnlocked;
 
+        private void Awake()
+        {
+            var collider = GetComponent<Collider2D>();
+            if (collider != null)
+            {
+                collider.isTrigger = true;
+            }
+        }
+
+        private void OnTriggerEnter2D(Collider2D other)
+        {
+            var player = other.GetComponent<Player>();
+            if (player == null)
+            {
+                return;
+            }
+
+            Interact(player);
+        }
+
         public void Interact(Player player)
         {
             if (!CheckConditions(player))
@@ -35,12 +56,6 @@ namespace DiceTale
             {
                 onUnlocked?.Invoke();
             }
-        }
-
-        public void OpenDoor()
-        {
-            var player = CharacterManager.Instance?.CurrentPlayer;
-            Interact(player);
         }
 
         private bool CheckConditions(Player player)

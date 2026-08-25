@@ -29,6 +29,14 @@ namespace DiceTale
             MapManager = GetOrCreateManager<MapManager>();
         }
 
+        private void Start()
+        {
+            if (CharacterManager.Players.Count == 0)
+            {
+                CharacterManager.CreatePlayers(1);
+            }
+        }
+
         private void OnDestroy()
         {
             GameEventBus.Clear();

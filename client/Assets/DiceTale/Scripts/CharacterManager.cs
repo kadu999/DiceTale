@@ -36,6 +36,46 @@ namespace DiceTale
             instance = this;
         }
 
+        public void CreatePlayers(int count)
+        {
+            ClearPlayers();
+
+            var playerPrefab = Resources.Load<GameObject>("Player");
+            if (playerPrefab == null)
+            {
+                Debug.LogWarning("Player prefab not found in Resources");
+                return;
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                var playerGo = Instantiate(playerPrefab);
+
+                if (playerGo.GetComponent<Collider2D>() == null)
+                {
+                    playerGo.AddComponent<BoxCollider2D>();
+                }
+
+                if (playerGo.GetComponent<Rigidbody2D>() == null)
+                {
+                    var rb = playerGo.AddComponent<Rigidbody2D>();
+                    rb.gravityScale = 0f;
+                    rb.isKinematic = true;
+                }
+
+                var player = playerGo.GetComponent<Player>();
+                if (player != null)
+                {
+                    Players.Add(player);
+                }
+            }
+
+            if (Players.Count > 0)
+            {
+                SetCurrentPlayer(0);
+            }
+        }
+
         public void AddPlayer(Player player)
         {
             if (player == null || Players.Contains(player))

@@ -20,7 +20,10 @@ namespace DiceTale
                 var rootGo = new GameObject("MapRoot");
                 mapRoot = rootGo.transform;
             }
+        }
 
+        private void Start()
+        {
             LoadMap(initialMapName, "Default");
         }
 
@@ -49,42 +52,7 @@ namespace DiceTale
             CurrentMap.name = mapName;
             CurrentMapName = mapName;
 
-            SpawnPlayers();
             MovePlayersToSpawn(spawnId ?? "Default");
-        }
-
-        private void SpawnPlayers()
-        {
-            var characterManager = CharacterManager.Instance;
-            if (characterManager == null)
-            {
-                return;
-            }
-
-            characterManager.ClearPlayers();
-
-            var playerPrefab = Resources.Load<GameObject>("Player");
-            if (playerPrefab == null)
-            {
-                Debug.LogWarning("Player prefab not found in Resources");
-                return;
-            }
-
-            var spawns = mapRoot.GetComponentsInChildren<PlayerSpawn>();
-            foreach (var spawn in spawns)
-            {
-                var playerGo = Instantiate(playerPrefab, spawn.Position, Quaternion.identity);
-                var player = playerGo.GetComponent<Player>();
-                if (player != null)
-                {
-                    characterManager.AddPlayer(player);
-                }
-            }
-
-            if (characterManager.Players.Count > 0)
-            {
-                characterManager.SetCurrentPlayer(0);
-            }
         }
 
         private void MovePlayersToSpawn(string spawnId)
@@ -110,13 +78,13 @@ namespace DiceTale
             }
         }
 
-        private PlayerSpawn FindSpawn(string spawnId)
+        private SpawnPoint FindSpawn(string spawnId)
         {
-            var spawns = mapRoot.GetComponentsInChildren<PlayerSpawn>();
+            var spawns = mapRoot.GetComponentsInChildren<SpawnPoint>();
 
             foreach (var spawn in spawns)
             {
-                if (spawn.SpawnId == spawnId)
+                if (spawn.Id == spawnId)
                 {
                     return spawn;
                 }

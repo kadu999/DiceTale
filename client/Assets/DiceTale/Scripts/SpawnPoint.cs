@@ -2,12 +2,12 @@ using UnityEngine;
 
 namespace DiceTale
 {
-    public class PlayerSpawn : MonoBehaviour
+    public class SpawnPoint : MonoBehaviour
     {
         [SerializeField]
-        private string spawnId = "Default";
+        private string id = "Default";
 
-        public string SpawnId => spawnId;
+        public string Id => id;
         public Vector3 Position => transform.position;
     }
 }
