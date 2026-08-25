@@ -136,9 +136,9 @@ namespace DiceTale
                 }
                 else if (maskPixels[i].r > 0f)
                 {
-                    maskPixels[i].r = exploredColor.a;
-                    maskPixels[i].g = exploredColor.a;
-                    maskPixels[i].b = exploredColor.a;
+                    maskPixels[i].r = 1f;
+                    maskPixels[i].g = 1f;
+                    maskPixels[i].b = 1f;
                 }
                 else
                 {
