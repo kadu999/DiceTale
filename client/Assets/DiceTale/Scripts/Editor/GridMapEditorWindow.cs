@@ -1,20 +1,28 @@
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
+using DiceTale;
 
 namespace DiceTale.Editor
 {
     public class GridMapEditorWindow : EditorWindow
     {
         private const float CellDisplaySize = 24f;
+        private const string ImageDirectory = "Assets/DiceTale/Res/Textures";
+        private const string DataDirectory = "Assets/DiceTale/Resources";
 
-        private GridMap gridMap;
+        private string mapName = "";
         private Texture2D referenceTexture;
-        private string referenceImageName = "";
+        private Vector2Int gridSize = new Vector2Int(20, 20);
+        private float cellSize = 1f;
+        private bool autoCellSize = true;
+
+        private Dictionary<Vector2Int, GridCellType> cellTypes = new Dictionary<Vector2Int, GridCellType>();
         private GridCellType selectedType = GridCellType.Obstacle;
         private int brushSize = 1;
-        private Vector2 scrollPosition;
         private bool eraseMode;
+        private Vector2 scrollPosition;
         private Rect lastGridRect;
 
         [MenuItem("DiceTale/GridMap Editor")]
@@ -23,25 +31,9 @@ namespace DiceTale.Editor
             GetWindow<GridMapEditorWindow>("GridMap Editor");
         }
 
-        public static void Open(GridMap target)
-        {
-            var window = GetWindow<GridMapEditorWindow>("GridMap Editor");
-            window.gridMap = target;
-            window.referenceImageName = target != null ? target.name : "";
-            window.LoadReferenceTexture();
-            window.Show();
-        }
-
         private void OnGUI()
         {
             DrawToolbar();
-
-            if (gridMap == null)
-            {
-                EditorGUILayout.HelpBox("请在 Hierarchy 中选择一个带有 GridMap 的物体，或点击 Inspector 里的 Open Grid Editor", MessageType.Info);
-                return;
-            }
-
             DrawInfo();
             DrawGrid();
             HandleInput();
@@ -51,9 +43,8 @@ namespace DiceTale.Editor
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
-            gridMap = EditorGUILayout.ObjectField(gridMap, typeof(GridMap), true, GUILayout.Width(200f)) as GridMap;
-
-            referenceImageName = EditorGUILayout.TextField(referenceImageName, GUILayout.Width(120f));
+            EditorGUILayout.LabelField("地图名", GUILayout.Width(45f));
+            mapName = EditorGUILayout.TextField(mapName, GUILayout.Width(120f));
 
             if (GUILayout.Button("加载图片", EditorStyles.toolbarButton, GUILayout.Width(80f)))
             {
@@ -62,12 +53,12 @@ namespace DiceTale.Editor
 
             if (GUILayout.Button("Save", EditorStyles.toolbarButton, GUILayout.Width(60f)))
             {
-                gridMap?.SaveData();
+                SaveData();
             }
 
             if (GUILayout.Button("Load", EditorStyles.toolbarButton, GUILayout.Width(60f)))
             {
-                gridMap?.LoadData();
+                LoadData();
             }
 
             if (GUILayout.Button("Clear", EditorStyles.toolbarButton, GUILayout.Width(60f)))
@@ -80,6 +71,28 @@ namespace DiceTale.Editor
             EditorGUILayout.Space();
 
             EditorGUILayout.BeginHorizontal();
+            gridSize = EditorGUILayout.Vector2IntField("网格大小", gridSize);
+            if (GUILayout.Button("根据图片计算", GUILayout.Width(100f)))
+            {
+                CalculateGridSizeFromImage();
+            }
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            autoCellSize = EditorGUILayout.Toggle("自动格子大小", autoCellSize);
+            if (!autoCellSize)
+            {
+                cellSize = EditorGUILayout.FloatField("格子大小", cellSize);
+            }
+            else if (referenceTexture != null)
+            {
+                EditorGUI.BeginDisabledGroup(true);
+                EditorGUILayout.FloatField("格子大小", cellSize);
+                EditorGUI.EndDisabledGroup();
+            }
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
             selectedType = (GridCellType)EditorGUILayout.EnumPopup("画笔类型", selectedType);
             brushSize = EditorGUILayout.IntSlider("画笔大小", brushSize, 1, 5);
             EditorGUILayout.EndHorizontal();
@@ -89,18 +102,17 @@ namespace DiceTale.Editor
 
         private void DrawInfo()
         {
-            EditorGUILayout.LabelField($"Grid Size: {gridMap.GridSize.x} x {gridMap.GridSize.y}");
-            EditorGUILayout.LabelField($"Cell Size: {gridMap.CellSize:F2}");
+            EditorGUILayout.LabelField($"Grid Size: {gridSize.x} x {gridSize.y}");
+            EditorGUILayout.LabelField($"Cell Size: {cellSize:F2}");
             EditorGUILayout.Space();
         }
 
         private void DrawGrid()
         {
-            var size = gridMap.GridSize;
-            var totalWidth = size.x * CellDisplaySize;
-            var totalHeight = size.y * CellDisplaySize;
+            var totalWidth = gridSize.x * CellDisplaySize;
+            var totalHeight = gridSize.y * CellDisplaySize;
 
-            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Width(position.width), GUILayout.Height(position.height - 120f));
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Width(position.width), GUILayout.Height(position.height - 160f));
 
             lastGridRect = GUILayoutUtility.GetRect(totalWidth, totalHeight);
             DrawBackground(lastGridRect);
@@ -124,7 +136,6 @@ namespace DiceTale.Editor
 
         private void DrawCells(Rect gridRect)
         {
-            var cellTypes = gridMap.GetCellTypes();
             foreach (var pair in cellTypes)
             {
                 var rect = GetCellRect(gridRect, pair.Key);
@@ -134,16 +145,15 @@ namespace DiceTale.Editor
 
         private void DrawGridLines(Rect gridRect)
         {
-            var size = gridMap.GridSize;
             Handles.color = new Color(1f, 1f, 1f, 0.3f);
 
-            for (int x = 0; x <= size.x; x++)
+            for (int x = 0; x <= gridSize.x; x++)
             {
                 var xPos = gridRect.x + x * CellDisplaySize;
                 Handles.DrawLine(new Vector3(xPos, gridRect.y), new Vector3(xPos, gridRect.yMax));
             }
 
-            for (int y = 0; y <= size.y; y++)
+            for (int y = 0; y <= gridSize.y; y++)
             {
                 var yPos = gridRect.y + y * CellDisplaySize;
                 Handles.DrawLine(new Vector3(gridRect.x, yPos), new Vector3(gridRect.xMax, yPos));
@@ -153,7 +163,7 @@ namespace DiceTale.Editor
         private void HandleInput()
         {
             var e = Event.current;
-            if (e == null || gridMap == null)
+            if (e == null)
             {
                 return;
             }
@@ -179,21 +189,19 @@ namespace DiceTale.Editor
             var localX = mousePos.x - gridRect.x;
             var localY = mousePos.y - gridRect.y;
             var x = Mathf.FloorToInt(localX / CellDisplaySize);
-            var y = gridMap.GridSize.y - 1 - Mathf.FloorToInt(localY / CellDisplaySize);
+            var y = gridSize.y - 1 - Mathf.FloorToInt(localY / CellDisplaySize);
             return new Vector2Int(x, y);
         }
 
         private Rect GetCellRect(Rect gridRect, Vector2Int gridPos)
         {
             var x = gridRect.x + gridPos.x * CellDisplaySize;
-            var y = gridRect.y + (gridMap.GridSize.y - 1 - gridPos.y) * CellDisplaySize;
+            var y = gridRect.y + (gridSize.y - 1 - gridPos.y) * CellDisplaySize;
             return new Rect(x, y, CellDisplaySize, CellDisplaySize);
         }
 
         private void Paint(Vector2Int center)
         {
-            Undo.RecordObject(gridMap, "Paint Grid Cells");
-
             var half = brushSize / 2;
             for (int x = -half; x < brushSize - half; x++)
             {
@@ -202,44 +210,131 @@ namespace DiceTale.Editor
                     var pos = new Vector2Int(center.x + x, center.y + y);
                     if (eraseMode)
                     {
-                        gridMap.SetCellType(pos, GridCellType.Empty);
+                        cellTypes.Remove(pos);
                     }
                     else
                     {
-                        gridMap.SetCellType(pos, selectedType);
+                        cellTypes[pos] = selectedType;
                     }
                 }
             }
-
-            EditorUtility.SetDirty(gridMap);
         }
 
         private void ClearAll()
         {
-            if (gridMap == null)
-            {
-                return;
-            }
-
-            Undo.RecordObject(gridMap, "Clear All Grid Cells");
-            var keys = new List<Vector2Int>(gridMap.GetCellTypes().Keys);
-            foreach (var key in keys)
-            {
-                gridMap.SetCellType(key, GridCellType.Empty);
-            }
-            EditorUtility.SetDirty(gridMap);
+            cellTypes.Clear();
         }
 
         private void LoadReferenceTexture()
         {
-            if (string.IsNullOrEmpty(referenceImageName))
+            referenceTexture = null;
+            cellSize = 1f;
+
+            if (string.IsNullOrEmpty(mapName))
             {
-                referenceTexture = null;
                 return;
             }
 
-            var path = $"Assets/DiceTale/Res/Textures/{referenceImageName}.png";
+            var path = Path.Combine(ImageDirectory, $"{mapName}.png");
             referenceTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+
+            if (referenceTexture == null)
+            {
+                Debug.LogWarning($"图片未找到: {path}");
+                return;
+            }
+
+            CalculateGridSizeFromImage();
+            LoadData();
+        }
+
+        private void CalculateGridSizeFromImage()
+        {
+            if (referenceTexture == null)
+            {
+                return;
+            }
+
+            if (cellSize <= 0f)
+            {
+                cellSize = 1f;
+            }
+
+            gridSize = new Vector2Int(
+                Mathf.RoundToInt(referenceTexture.width / cellSize),
+                Mathf.RoundToInt(referenceTexture.height / cellSize)
+            );
+        }
+
+        private void SaveData()
+        {
+            if (string.IsNullOrEmpty(mapName))
+            {
+                Debug.LogWarning("地图名不能为空");
+                return;
+            }
+
+            var data = new GridMapData
+            {
+                gridSizeX = gridSize.x,
+                gridSizeY = gridSize.y
+            };
+
+            foreach (var pair in cellTypes)
+            {
+                if (pair.Value == GridCellType.Empty)
+                {
+                    continue;
+                }
+
+                data.cells.Add(new GridCellData
+                {
+                    x = pair.Key.x,
+                    y = pair.Key.y,
+                    type = (int)pair.Value
+                });
+            }
+
+            var json = JsonUtility.ToJson(data, true);
+            var directory = Path.Combine(Application.dataPath, "DiceTale/Resources");
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            var path = Path.Combine(directory, $"{mapName}.json");
+            File.WriteAllText(path, json);
+            AssetDatabase.Refresh();
+            Debug.Log($"地图数据已保存: {path}");
+        }
+
+        private void LoadData()
+        {
+            cellTypes.Clear();
+
+            if (string.IsNullOrEmpty(mapName))
+            {
+                return;
+            }
+
+            var path = Path.Combine(Application.dataPath, $"DiceTale/Resources/{mapName}.json");
+            if (!File.Exists(path))
+            {
+                return;
+            }
+
+            var json = File.ReadAllText(path);
+            var data = JsonUtility.FromJson<GridMapData>(json);
+            if (data?.cells == null)
+            {
+                return;
+            }
+
+            gridSize = new Vector2Int(data.gridSizeX, data.gridSizeY);
+            foreach (var cell in data.cells)
+            {
+                cellTypes[new Vector2Int(cell.x, cell.y)] = (GridCellType)cell.type;
+            }
         }
 
         private static Color GetCellColor(GridCellType type)
