@@ -32,7 +32,7 @@ namespace DiceTale
         private Shader accumulateShader;
 
         private GridMap gridMap;
-        private SpriteRenderer fogRenderer;
+        private MeshRenderer fogRenderer;
         private Material displayMaterial;
         private Material accumulateMaterial;
         private RenderTexture prevMask;
@@ -98,30 +98,21 @@ namespace DiceTale
             accumulateMaterial.SetVector("_GridOrigin", gridMap.GridOrigin);
             accumulateMaterial.SetVector("_GridSize", new Vector4(gridMap.GridSize.x, gridMap.GridSize.y, 0, 0));
 
-            var dummyTexture = new Texture2D(gridMap.GridSize.x, gridMap.GridSize.y, TextureFormat.RGBA32, false);
-            var colors = new Color[gridMap.GridSize.x * gridMap.GridSize.y];
-            for (int i = 0; i < colors.Length; i++)
-            {
-                colors[i] = Color.white;
-            }
-            dummyTexture.SetPixels(colors);
-            dummyTexture.Apply();
-
-            var sprite = Sprite.Create(
-                dummyTexture,
-                new Rect(0, 0, gridMap.GridSize.x, gridMap.GridSize.y),
-                Vector2.zero,
-                1f / gridMap.CellSize
-            );
-
             var go = new GameObject("FogOfWar");
             go.transform.SetParent(transform, false);
             go.transform.position = gridMap.GridOrigin;
+            go.transform.localScale = new Vector3(
+                gridMap.GridSize.x * gridMap.CellSize,
+                gridMap.GridSize.y * gridMap.CellSize,
+                1f
+            );
 
-            fogRenderer = go.AddComponent<SpriteRenderer>();
-            fogRenderer.sprite = sprite;
-            fogRenderer.sortingOrder = fogSortingOrder;
+            var meshFilter = go.AddComponent<MeshFilter>();
+            meshFilter.mesh = Resources.GetBuiltinResource<Mesh>("Quad.fbx");
+
+            fogRenderer = go.AddComponent<MeshRenderer>();
             fogRenderer.material = displayMaterial;
+            fogRenderer.sortingOrder = fogSortingOrder;
 
             displayMaterial.SetTexture("_FogMask", nextMask);
         }
