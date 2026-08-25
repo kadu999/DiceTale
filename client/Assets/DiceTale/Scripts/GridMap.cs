@@ -28,6 +28,15 @@ namespace DiceTale
         public float CellSize => cellSize;
         public string DataFileName => dataFileName;
 
+        public Vector3 GridOrigin => transform.position - new Vector3(
+            gridSize.x * cellSize * 0.5f,
+            gridSize.y * cellSize * 0.5f,
+            0f
+        );
+
+        public float GridWidth => gridSize.x * cellSize;
+        public float GridHeight => gridSize.y * cellSize;
+
         private void Awake()
         {
             LoadData();
@@ -109,7 +118,7 @@ namespace DiceTale
 
         public Vector2Int WorldToGrid(Vector3 worldPosition)
         {
-            var localPosition = worldPosition - transform.position;
+            var localPosition = worldPosition - GridOrigin;
             return new Vector2Int(
                 Mathf.FloorToInt(localPosition.x / cellSize),
                 Mathf.FloorToInt(localPosition.y / cellSize)
@@ -118,7 +127,7 @@ namespace DiceTale
 
         public Vector3 GridToWorld(Vector2Int gridPos)
         {
-            return transform.position + new Vector3(
+            return GridOrigin + new Vector3(
                 gridPos.x * cellSize + cellSize * 0.5f,
                 gridPos.y * cellSize + cellSize * 0.5f,
                 0f

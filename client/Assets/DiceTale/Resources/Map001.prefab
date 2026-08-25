@@ -264,9 +264,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df8f5f2c367be6049ba70a94e238b89b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.GridMap
-  gridSize: {x: 20, y: 20}
-  cellSize: 1
-  obstacles: []
+  gridSize: {x: 10, y: 10}
+  cellSize: 0.25
+  dataFileName: Map001_grid
 --- !u!1 &8725336608045207518
 GameObject:
   m_ObjectHideFlags: 0

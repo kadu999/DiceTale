@@ -44,7 +44,7 @@ namespace DiceTale.Editor
         {
             var size = gridMap.GridSize;
             var cellSize = gridMap.CellSize;
-            var origin = gridMap.transform.position;
+            var origin = gridMap.GridOrigin;
 
             Handles.color = Color.green;
             for (int x = 0; x <= size.x; x++)
