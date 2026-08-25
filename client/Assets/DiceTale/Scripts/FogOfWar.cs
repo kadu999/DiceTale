@@ -10,8 +10,7 @@ namespace DiceTale
         private int revealRadius = 5;
 
         [SerializeField]
-        [Range(0f, 1f)]
-        private float fadeStart = 0f;
+        private float softEdgeWidth = 0.5f;
 
         [SerializeField]
         private int maskResolution = 8;
@@ -182,8 +181,20 @@ namespace DiceTale
                         continue;
                     }
 
-                    var normalizedDist = Mathf.Sqrt(distSq) / radiusPixels;
-                    var value = 1f - Mathf.SmoothStep(fadeStart, 1f, normalizedDist);
+                    var dist = Mathf.Sqrt(distSq);
+                    var softEdgePixels = Mathf.Max(1f, softEdgeWidth * maskResolution);
+                    var innerRadiusPixels = Mathf.Max(0f, radiusPixels - softEdgePixels);
+
+                    float value;
+                    if (dist <= innerRadiusPixels)
+                    {
+                        value = 1f;
+                    }
+                    else
+                    {
+                        var t = (dist - innerRadiusPixels) / softEdgePixels;
+                        value = 1f - Mathf.SmoothStep(0f, 1f, t);
+                    }
 
                     var index = y * maskSize.x + x;
                     if (value > visibility[index])
