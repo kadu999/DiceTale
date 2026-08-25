@@ -105,7 +105,7 @@ namespace DiceTale
 
         private void RegisterBlocking()
         {
-            if (isPortal || isUnlocked)
+            if (isPortal || isUnlocked || blockingCollider == null)
             {
                 return;
             }
@@ -117,14 +117,6 @@ namespace DiceTale
             }
 
             UnregisterBlocking();
-
-            if (blockingCollider == null)
-            {
-                var gridPos = gridMap.WorldToGrid(transform.position);
-                gridMap.AddDynamicObstacle(gridPos);
-                registeredObstacles.Add(gridPos);
-                return;
-            }
 
             var bounds = blockingCollider.bounds;
             var min = gridMap.WorldToGrid(bounds.min);
