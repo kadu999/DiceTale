@@ -73,7 +73,7 @@ namespace DiceTale
             obstacleSet.Clear();
             obstacles.Clear();
 
-            var textAsset = Resources.Load<TextAsset>(this.name);
+            var textAsset = Resources.Load<TextAsset>(this.name.Replace("(Clone)", ""));
             if (textAsset == null)
             {
                 return;

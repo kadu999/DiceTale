@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: b8486ca8c394b6c46872ca1290fc3d73
+guid: cf4a2e8b59032794889320e3f396c2dd
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,7 +110,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Carriage_chroma_0
+      name: Room001_0
       rect:
         serializedVersion: 2
         x: 0
@@ -125,14 +125,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 0aef66dd14d29f142972b9d98cfaa5db
-      internalID: 678945467
+      spriteID: 9eba5a46e033cfb4ea14cd3eb0e8cfdd
+      internalID: -80878218
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Carriage_chroma_1
+      name: Room001_1
       rect:
         serializedVersion: 2
         x: 640
@@ -147,14 +147,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: e36bd85258f3b554bba1b275c4f28fc8
-      internalID: 1889761280
+      spriteID: cea79bbd820f7164f9554c7765c60754
+      internalID: 1568792393
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Carriage_chroma_2
+      name: Room001_2
       rect:
         serializedVersion: 2
         x: 1280
@@ -169,14 +169,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 0156b75d77ca33b499eced45e40677ee
-      internalID: 1311551668
+      spriteID: d721ed6467bd25a498913961324be333
+      internalID: 194342081
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Carriage_chroma_3
+      name: Room001_3
       rect:
         serializedVersion: 2
         x: 0
@@ -191,14 +191,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: a25f7e72586e4e8418eb29ef92cf1e68
-      internalID: 1942300955
+      spriteID: 17ee86eff9772de40855ebfa492cb089
+      internalID: -354094362
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Carriage_chroma_4
+      name: Room001_4
       rect:
         serializedVersion: 2
         x: 640
@@ -213,14 +213,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 257b3427fae0c314c8142bab1bba63b1
-      internalID: -1235333288
+      spriteID: 0c29d6a04e560fc4f98ec4a6af42f0eb
+      internalID: 394168757
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Carriage_chroma_5
+      name: Room001_5
       rect:
         serializedVersion: 2
         x: 1280
@@ -235,8 +235,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 5f5c3dd5bd8657842a1e1918d00b571f
-      internalID: -124966259
+      spriteID: 3cb9fed2e04bee1459ee43b3bd4f7501
+      internalID: 1657490587
       vertices: []
       indices: 
       edges: []
@@ -245,7 +245,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 3f74d5087ea23b94787cade3caaec001
+    spriteID: ce5367ce1e977444eb05a28b57e0d158
     internalID: 0
     vertices: []
     indices: 
@@ -257,12 +257,12 @@ TextureImporter:
       - key: SpriteEditor.SliceSettings
         value: '{"sliceOnImport":false,"gridCellCount":{"x":3.0,"y":2.0},"gridSpriteSize":{"x":640.0,"y":540.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":2,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      Carriage_chroma_0: 678945467
-      Carriage_chroma_1: 1889761280
-      Carriage_chroma_2: 1311551668
-      Carriage_chroma_3: 1942300955
-      Carriage_chroma_4: -1235333288
-      Carriage_chroma_5: -124966259
+      Room001_0: -80878218
+      Room001_1: 1568792393
+      Room001_2: 194342081
+      Room001_3: -354094362
+      Room001_4: 394168757
+      Room001_5: 1657490587
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
