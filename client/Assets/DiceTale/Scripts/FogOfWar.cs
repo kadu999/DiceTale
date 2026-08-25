@@ -7,16 +7,20 @@ namespace DiceTale
     public class FogOfWar : MonoBehaviour
     {
         [SerializeField]
-        private int revealRadius = 3;
+        private int revealRadius = 5;
 
         [SerializeField]
-        private int maskResolution = 4;
+        [Range(0f, 1f)]
+        private float fadeStart = 0.2f;
 
         [SerializeField]
-        private Color fogColor = Color.black;
+        private int maskResolution = 8;
 
         [SerializeField]
-        private Color exploredColor = new Color(0f, 0f, 0f, 0.7f);
+        private Color fogColor = new Color(0.1f, 0.12f, 0.15f, 0.95f);
+
+        [SerializeField]
+        private Color exploredColor = new Color(0.1f, 0.12f, 0.15f, 0.7f);
 
         [SerializeField]
         private float updateInterval = 0.05f;
@@ -171,8 +175,8 @@ namespace DiceTale
                         continue;
                     }
 
-                    var value = 1f - Mathf.Sqrt(distSq) / radiusPixels;
-                    value = Mathf.SmoothStep(0f, 1f, value);
+                    var normalizedDist = Mathf.Sqrt(distSq) / radiusPixels;
+                    var value = 1f - Mathf.SmoothStep(fadeStart, 1f, normalizedDist);
 
                     var index = y * maskSize.x + x;
                     if (value > visibility[index])
