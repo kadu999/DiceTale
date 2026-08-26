@@ -9,6 +9,14 @@ namespace DiceTale.Editor
         private GridMapEditorRenderer renderer;
         private Vector2 scrollPosition;
 
+        [SerializeField] private string serializedMapName = "";
+        [SerializeField] private Vector2Int serializedGridSize = new Vector2Int(20, 20);
+        [SerializeField] private float serializedCellSize = 1f;
+        [SerializeField] private bool serializedAutoCellSize = true;
+        [SerializeField] private GridCellType serializedSelectedType = GridCellType.Obstacle;
+        [SerializeField] private int serializedBrushSize = 1;
+        [SerializeField] private bool serializedEraseMode;
+
         [MenuItem("DiceTale/GridMap Editor")]
         public static void ShowWindow()
         {
@@ -20,15 +28,33 @@ namespace DiceTale.Editor
             renderer = new GridMapEditorRenderer();
             state = CreateInstance<GridMapEditorState>();
             state.hideFlags = HideFlags.HideAndDontSave;
+
+            state.MapName = serializedMapName;
+            state.GridSize = serializedGridSize;
+            state.CellSize = serializedCellSize;
+            state.AutoCellSize = serializedAutoCellSize;
+            state.SelectedType = serializedSelectedType;
+            state.BrushSize = serializedBrushSize;
+            state.EraseMode = serializedEraseMode;
         }
 
         private void OnDisable()
         {
-            if (state != null)
+            if (state == null)
             {
-                DestroyImmediate(state);
-                state = null;
+                return;
             }
+
+            serializedMapName = state.MapName;
+            serializedGridSize = state.GridSize;
+            serializedCellSize = state.CellSize;
+            serializedAutoCellSize = state.AutoCellSize;
+            serializedSelectedType = state.SelectedType;
+            serializedBrushSize = state.BrushSize;
+            serializedEraseMode = state.EraseMode;
+
+            DestroyImmediate(state);
+            state = null;
         }
 
         private void OnGUI()
