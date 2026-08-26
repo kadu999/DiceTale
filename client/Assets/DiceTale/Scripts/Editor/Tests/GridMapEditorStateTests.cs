@@ -136,5 +136,36 @@ namespace DiceTale.Editor.Tests
 
             Assert.AreEqual(new Vector2Int(2, 4), state.GridSize);
         }
+
+        [Test]
+        public void SaveData_AndRuntimeGridMap_LoadData_Match()
+        {
+            var state = ScriptableObject.CreateInstance<GridMapEditorState>();
+            state.MapName = "TestMap";
+            state.GridSize = new Vector2Int(5, 5);
+            state.BrushSize = 1;
+            state.SelectedType = GridCellType.Difficult;
+            state.Paint(new Vector2Int(1, 1));
+            state.SelectedType = GridCellType.Water;
+            state.Paint(new Vector2Int(2, 2));
+
+            state.SaveData();
+
+            var go = new GameObject("TestMap");
+            var gridMap = go.AddComponent<GridMap>();
+            gridMap.LoadData("TestMap");
+
+            Assert.AreEqual(GridCellType.Difficult, gridMap.GetCellType(new Vector2Int(1, 1)));
+            Assert.AreEqual(GridCellType.Water, gridMap.GetCellType(new Vector2Int(2, 2)));
+            Assert.AreEqual(GridCellType.Empty, gridMap.GetCellType(new Vector2Int(0, 0)));
+
+            Object.DestroyImmediate(go);
+
+            var path = System.IO.Path.Combine(UnityEngine.Application.dataPath, "DiceTale/Resources/TestMap.json");
+            if (System.IO.File.Exists(path))
+            {
+                System.IO.File.Delete(path);
+            }
+        }
     }
 }
