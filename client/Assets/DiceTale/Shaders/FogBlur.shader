@@ -46,6 +46,7 @@ Shader "DiceTale/FogBlur"
             fixed4 frag(v2f i) : SV_Target
             {
                 fixed4 center = tex2D(_MainTex, i.uv);
+                // return fixed4(center.r, center.g, center.b, 0);
 
                 // 已清除的雾格子（alpha=0 但曾是雾、RGB 非 0）：保持透明并保留 RGB 标记，
                 // 使多次模糊链中持续可识别，不被外部雾回填
