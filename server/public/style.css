@@ -42,18 +42,8 @@ header h1 {
 .status.connected { background: #22c55e; }
 .status.disconnected { background: #ef4444; }
 
-.layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  gap: 0.75rem;
+main {
   padding: 0.75rem;
-  align-items: start;
-}
-
-.side {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
 }
 
 .panel {
@@ -61,42 +51,8 @@ header h1 {
   border-radius: 10px;
   padding: 0.75rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.panel h2 {
-  margin: 0 0 0.6rem;
-  font-size: 1rem;
-}
-
-.log-panel {
-  margin: 0 0.75rem 0.75rem;
-}
-
-/* details 折叠面板 */
-details.panel > summary {
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 600;
-  padding: 0.15rem 0;
-  user-select: none;
-  list-style: none;
-}
-
-details.panel > summary::-webkit-details-marker {
-  display: none;
-}
-
-details.panel > summary::before {
-  content: '▸ ';
-  color: #666;
-}
-
-details.panel[open] > summary::before {
-  content: '▾ ';
-}
-
-details.panel > *:not(summary) {
-  margin-top: 0.6rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 /* ---- 地图视图 ---- */
@@ -173,6 +129,32 @@ details.panel > *:not(summary) {
 .door-marker.locked { background: #ef4444; color: #fff; }
 .door-marker.unlocked { background: #22c55e; color: #fff; }
 
+.player-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.6);
+  pointer-events: none;
+}
+
+.player-marker::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid rgba(59, 130, 246, 0.5);
+  animation: player-pulse 1.6s ease-out infinite;
+}
+
+@keyframes player-pulse {
+  0% { transform: scale(0.7); opacity: 1; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
 .legend {
   display: flex;
   flex-wrap: wrap;
@@ -195,79 +177,10 @@ details.panel > *:not(summary) {
 
 .marker-dot.locked { background: #ef4444; }
 .marker-dot.unlocked { background: #22c55e; }
+.marker-dot.player { background: #3b82f6; }
 
-/* ---- 表格与控件 ---- */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.82rem;
-}
-
-th, td {
-  text-align: left;
-  padding: 0.45rem 0.3rem;
-  border-bottom: 1px solid #e5e7eb;
-  vertical-align: middle;
-}
-
-td button {
-  margin: 0.15rem 0.15rem 0.15rem 0;
-  padding: 0.4rem 0.7rem;
-  font-size: 0.85rem;
-}
-
-label {
-  display: block;
-  margin-bottom: 0.5rem;
-}
-
-select {
-  width: 100%;
-  padding: 0.5rem;
-  font-size: 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: #fff;
-}
-
-button {
-  padding: 0.55rem 1rem;
-  font-size: 0.95rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: #fff;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-button:active {
-  background: #e5e7eb;
-}
-
-#btnTeleport {
-  background: #2563eb;
-  color: #fff;
-  border-color: #2563eb;
-}
-
-#log {
-  height: 120px;
-  overflow-y: auto;
-  background: #111;
-  color: #7dd3fc;
-  font-family: ui-monospace, Consolas, monospace;
-  font-size: 0.72rem;
-  padding: 0.5rem;
-  border-radius: 6px;
-  white-space: pre-wrap;
-}
-
-/* ---- 手机 / 平板：单列布局 ---- */
+/* ---- 手机 / 平板 ---- */
 @media (max-width: 900px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
-
   header {
     padding: 0.6rem 0.75rem;
   }
@@ -277,10 +190,6 @@ button:active {
     height: 44px;
     font-size: 20px;
     line-height: 38px;
-  }
-
-  .log-panel {
-    margin: 0 0.75rem 0.75rem;
   }
 
   body {

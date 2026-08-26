@@ -272,11 +272,11 @@ describe('WebSocket server', () => {
     openSockets.push(gm.ws);
     await gm.next(); // initial gm_update
 
-    send(client.ws, { type: 'report_player_position', position: { x: 3.5, y: -2.25 } });
+    send(client.ws, { type: 'report_player_position', position: { x: 0.52, y: 0.31 } });
 
     const update = await gm.next(); // 位置上报触发广播
     expect(update.type).toBe('gm_update');
-    expect(update.state.player.position).toEqual({ x: 3.5, y: -2.25 });
+    expect(update.state.player.position).toEqual({ x: 0.52, y: 0.31 });
 
     gm.ws.close();
     client.ws.close();

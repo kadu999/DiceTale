@@ -19,18 +19,14 @@ function connect() {
 
   ws.onopen = () => {
     setStatus(true);
-    log('已连接服务器');
   };
 
   ws.onclose = () => {
     setStatus(false);
-    log('连接断开，2 秒后重连...');
     setTimeout(connect, 2000);
   };
 
-  ws.onerror = () => {
-    log('连接错误');
-  };
+  ws.onerror = () => {};
 
   ws.onmessage = (ev) => {
     const msg = JSON.parse(ev.data);
@@ -38,7 +34,6 @@ function connect() {
       state = msg.state;
       render();
     }
-    log(`<- ${ev.data}`);
   };
 }
 
@@ -48,21 +43,9 @@ function setStatus(connected) {
   el.textContent = connected ? '已连接' : '未连接';
 }
 
-function log(text) {
-  const el = document.getElementById('log');
-  const line = document.createElement('div');
-  line.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
-  el.appendChild(line);
-  el.scrollTop = el.scrollHeight;
-  while (el.childNodes.length > 200) el.removeChild(el.firstChild);
-}
-
 function send(msg) {
-  log(`-> ${JSON.stringify(msg)}`);
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(msg));
-  } else {
-    log('发送失败：未连接');
   }
 }
 
@@ -70,15 +53,8 @@ function send(msg) {
 
 function render() {
   if (!state) return;
-
-  document.getElementById('currentMap').textContent = state.currentMap || '-';
-  document.getElementById('posX').textContent = state.player?.position?.x ?? '-';
-  document.getElementById('posY').textContent = state.player?.position?.y ?? '-';
-
   renderMapTabs();
   renderMap();
-  renderDoorTable();
-  populateTeleportOptions();
 }
 
 function knownMaps() {
@@ -111,7 +87,7 @@ function renderMapTabs() {
 
 function effectiveMap() {
   if (selectedMap && knownMaps().has(selectedMap)) return selectedMap;
-  return state.currentMap || 'Map001';
+  return state.currentMap || apiMaps[0]?.name || 'Map001';
 }
 
 function renderMap() {
@@ -129,6 +105,8 @@ function renderMap() {
 
   const layer = document.getElementById('doorLayer');
   layer.innerHTML = '';
+
+  // 门标记（客户端上报的位置）
   for (const [id, door] of Object.entries(state.doors || {})) {
     if (door.mapName !== map) continue;
 
@@ -141,95 +119,23 @@ function renderMap() {
     marker.onclick = () => toggleDoor(id, door.unlocked);
     layer.appendChild(marker);
   }
+
+  // 玩家标记（仅显示在玩家当前所在的地图上）
+  if (map === state.currentMap && state.player?.position) {
+    const player = document.createElement('div');
+    player.className = 'player-marker';
+    player.title = `玩家位置`;
+    player.style.left = `${(state.player.position.x ?? 0.5) * 100}%`;
+    player.style.top = `${(state.player.position.y ?? 0.5) * 100}%`;
+    layer.appendChild(player);
+  }
 }
 
 function toggleDoor(doorId, currentlyUnlocked) {
-  if (currentlyUnlocked) {
-    send({ type: 'gm_close_door', doorId });
-  } else {
-    send({ type: 'gm_open_door', doorId });
-  }
+  send({
+    type: currentlyUnlocked ? 'gm_close_door' : 'gm_open_door',
+    doorId,
+  });
 }
-
-// ---------- 门列表 ----------
-
-function renderDoorTable() {
-  const tbody = document.getElementById('doorTable');
-  tbody.innerHTML = '';
-  for (const [id, door] of Object.entries(state.doors || {})) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${id}</td>
-      <td>${door.mapName}</td>
-      <td>${door.isPortal ? '→ ' : ''}${door.targetMap}/${door.targetSpawn}</td>
-      <td>${door.unlocked ? '已开启' : '锁定'}</td>
-      <td></td>
-    `;
-    const cell = tr.lastElementChild;
-    if (door.unlocked) {
-      const closeBtn = document.createElement('button');
-      closeBtn.textContent = '关门';
-      closeBtn.onclick = () => send({ type: 'gm_close_door', doorId: id });
-      cell.appendChild(closeBtn);
-    } else {
-      const openBtn = document.createElement('button');
-      openBtn.textContent = '开门';
-      openBtn.onclick = () => send({ type: 'gm_open_door', doorId: id });
-      cell.appendChild(openBtn);
-    }
-    tbody.appendChild(tr);
-  }
-}
-
-// ---------- 传送 ----------
-
-function populateTeleportOptions() {
-  if (!state) return;
-  const mapSelect = document.getElementById('teleportMap');
-  const spawnSelect = document.getElementById('teleportSpawn');
-
-  mapSelect.innerHTML = '';
-  for (const map of knownMaps()) {
-    const opt = document.createElement('option');
-    opt.value = map;
-    opt.textContent = map;
-    mapSelect.appendChild(opt);
-  }
-  mapSelect.value = state.currentMap || mapSelect.value;
-
-  function updateSpawns() {
-    const selected = mapSelect.value;
-    const spawns = (state.spawnPoints && state.spawnPoints[selected]) || [];
-    spawnSelect.innerHTML = '';
-    if (spawns.length === 0) {
-      const opt = document.createElement('option');
-      opt.value = 'Default';
-      opt.textContent = 'Default';
-      spawnSelect.appendChild(opt);
-    } else {
-      for (const s of spawns) {
-        const opt = document.createElement('option');
-        opt.value = s.id;
-        opt.textContent = s.id;
-        spawnSelect.appendChild(opt);
-      }
-    }
-  }
-
-  mapSelect.onchange = updateSpawns;
-  updateSpawns();
-}
-
-// ---------- 事件绑定 ----------
-
-document.getElementById('btnTeleport').onclick = () => {
-  const map = document.getElementById('teleportMap').value;
-  const spawn = document.getElementById('teleportSpawn').value;
-  send({ type: 'gm_teleport_player', mapName: map, spawnId: spawn });
-};
-
-document.getElementById('btnRefresh').onclick = () => {
-  send({ type: 'gm_refresh' });
-};
 
 connect();

@@ -4,18 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>DiceTale GM 控制台</title>
+  <title>DiceTale 地图</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
-    <h1>DiceTale GM 控制台</h1>
+    <h1>DiceTale 地图</h1>
     <span id="connectionStatus" class="status disconnected">未连接</span>
   </header>
 
-  <main class="layout">
+  <main>
     <section class="panel map-panel">
-      <h2>地图视图</h2>
       <div id="mapTabs" class="map-tabs"></div>
       <div id="mapContainer" class="map-container">
         <img id="mapImage" alt="地图" draggable="false">
@@ -26,40 +25,10 @@
         <span class="legend-item"><i class="marker-dot unlocked"></i>已开启</span>
         <span class="legend-item">⦿ 传送门</span>
         <span class="legend-item">▣ 普通门</span>
+        <span class="legend-item"><i class="marker-dot player"></i>玩家</span>
       </div>
     </section>
-
-    <div class="side">
-      <details class="panel" open>
-        <summary>玩家状态</summary>
-        <p>当前地图：<span id="currentMap">-</span></p>
-        <p>玩家位置：X=<span id="posX">-</span> Y=<span id="posY">-</span></p>
-      </details>
-
-      <details class="panel" open>
-        <summary>门控制</summary>
-        <table>
-          <thead>
-            <tr><th>ID</th><th>地图</th><th>目标</th><th>状态</th><th>操作</th></tr>
-          </thead>
-          <tbody id="doorTable"></tbody>
-        </table>
-      </details>
-
-      <details class="panel">
-        <summary>传送控制</summary>
-        <label>地图：<select id="teleportMap"></select></label>
-        <label>出生点：<select id="teleportSpawn"></select></label>
-        <button id="btnTeleport">传送玩家</button>
-        <button id="btnRefresh">刷新状态</button>
-      </details>
-    </div>
   </main>
-
-  <details class="panel log-panel" open>
-    <summary>消息日志</summary>
-    <div id="log"></div>
-  </details>
 
   <script src="app.js"></script>
 </body>

@@ -183,7 +183,8 @@ namespace DiceTale
             lastReportedPosition = pos;
             connection.Send(new Server.ReportPlayerPositionMessage
             {
-                position = new Server.Position { x = pos.x, y = pos.y }
+                // 归一化图片坐标（与门位置一致，GM 页面可直接叠加到地图图片上）
+                position = GetNormalizedPosition(pos)
             });
         }
 
