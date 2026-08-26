@@ -88,7 +88,12 @@ function renderMapTabs() {
 
 function effectiveMap() {
   if (selectedMap && knownMaps().has(selectedMap)) return selectedMap;
-  return state.currentMap || apiMaps[0]?.name || 'Map001';
+  return state.currentMap || (apiMaps.length > 0 ? apiMaps[0].name : null) || 'Map001';
+}
+
+/** 兼容旧 WebView：取 v 的数值，空值回退 fallback（替代 ?? 语法） */
+function num(v, fallback) {
+  return v === undefined || v === null ? fallback : v;
 }
 
 function renderMap() {
@@ -115,8 +120,8 @@ function renderMap() {
     marker.className = `door-marker ${door.unlocked ? 'unlocked' : 'locked'}`;
     marker.title = `${id}\n${door.isPortal ? '传送门' : '普通门'} → ${door.targetMap} / ${door.targetSpawn}\n${door.unlocked ? '已开启（点击关闭）' : '锁定（点击开启）'}`;
     marker.textContent = door.isPortal ? '⦿' : '▣';
-    marker.style.left = `${(door.position?.x ?? 0.5) * 100}%`;
-    marker.style.top = `${(door.position?.y ?? 0.5) * 100}%`;
+    marker.style.left = `${num(door.position && door.position.x, 0.5) * 100}%`;
+    marker.style.top = `${num(door.position && door.position.y, 0.5) * 100}%`;
     marker.onclick = () => toggleDoor(id, door.unlocked);
     layer.appendChild(marker);
   }
@@ -128,8 +133,8 @@ function renderMap() {
     const marker = document.createElement('div');
     marker.className = 'player-marker';
     marker.title = player.name || playerId;
-    marker.style.left = `${(player.position?.x ?? 0.5) * 100}%`;
-    marker.style.top = `${(player.position?.y ?? 0.5) * 100}%`;
+    marker.style.left = `${num(player.position && player.position.x, 0.5) * 100}%`;
+    marker.style.top = `${num(player.position && player.position.y, 0.5) * 100}%`;
     layer.appendChild(marker);
   }
 }
