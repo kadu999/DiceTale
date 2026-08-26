@@ -266,6 +266,12 @@ main.layout {
     padding: 0.6rem 0.75rem;
   }
 
+  .map-tabs button {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+  }
+
   .door-marker {
     width: 44px;
     height: 44px;
