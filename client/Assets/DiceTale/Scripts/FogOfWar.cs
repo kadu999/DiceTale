@@ -317,7 +317,7 @@ namespace DiceTale
 
         // ---------------------------------------------------------------- 格子操作
 
-        /// <summary>清除某区域的所有雾格子。</summary>
+        /// <summary>清除某区域的所有雾格子（批量写入，只上传一次 GPU）。</summary>
         private void ClearAreaCells(GridCellType type)
         {
             if (!cellsByType.TryGetValue(type, out var indices))
@@ -325,11 +325,13 @@ namespace DiceTale
                 return;
             }
 
+            var cleared = new Color(fogColor.r, fogColor.g, fogColor.b, 0f);
             for (int i = 0; i < indices.Count; i++)
             {
-                ClearCell(indices[i]);
+                fogState.SetPixel(indices[i] % width, indices[i] / width, cleared);
             }
 
+            fogState.Apply(); // 只上传一次
             BlurFog(); // 状态变化后重新羽化一次
         }
 
