@@ -124,11 +124,6 @@ namespace DiceTale
 
             foreach (var pair in cellTypes)
             {
-                if (pair.Value == GridCellType.Empty)
-                {
-                    continue;
-                }
-
                 SetCellMask(data.cells, pair.Key.x, pair.Key.y, gridSize.x, GridCellTypeToMask(pair.Value));
             }
 
