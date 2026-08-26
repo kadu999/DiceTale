@@ -28,6 +28,13 @@ npm install
 npm run dev
 ```
 
+Windows 也可以用一键脚本（`server/` 目录下）：
+
+```bat
+build.bat   :: 安装依赖并编译 TypeScript（产出 dist/）
+start.bat   :: 启动服务器（缺编译产物时自动先 build）
+```
+
 - GM 控制台：<http://localhost:8080/>
 - 客户端 WebSocket：`ws://localhost:8080/client`
 - GM WebSocket：`ws://localhost:8080/gm`
