@@ -96,6 +96,26 @@ function num(v, fallback) {
   return v === undefined || v === null ? fallback : v;
 }
 
+// ---- 物体图标（内联 SVG，白色，兼容旧 WebView）----
+const ICON_DOOR =
+  '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+  '<rect x="4" y="3" width="16" height="18" rx="2"/>' +
+  '<line x1="7" y1="7" x2="7" y2="17"/>' +
+  '<circle cx="14.5" cy="12" r="1.4" fill="#fff" stroke="none"/>' +
+  '</svg>';
+
+const ICON_PORTAL =
+  '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+  '<path d="M4 21V10a8 8 0 0 1 16 0v11"/>' +
+  '<circle cx="12" cy="10" r="3.2" fill="#fff" stroke="none" opacity="0.75"/>' +
+  '</svg>';
+
+const ICON_PLAYER =
+  '<svg viewBox="0 0 24 24" width="16" height="16" fill="#fff">' +
+  '<circle cx="12" cy="7.5" r="3.5"/>' +
+  '<path d="M4.5 21c0-4.1 3.4-7 7.5-7s7.5 2.9 7.5 7"/>' +
+  '</svg>';
+
 function renderMap() {
   // 跟随玩家当前地图：除非用户在 5 秒内手动选择了其他地图
   if (selectedMap && Date.now() - lastManualMapPick > 5000 && state.currentMap !== selectedMap) {
@@ -119,7 +139,7 @@ function renderMap() {
     const marker = document.createElement('button');
     marker.className = `door-marker ${door.unlocked ? 'unlocked' : 'locked'}`;
     marker.title = `${id}\n${door.isPortal ? '传送门' : '普通门'} → ${door.targetMap} / ${door.targetSpawn}\n${door.unlocked ? '已开启（点击关闭）' : '锁定（点击开启）'}`;
-    marker.textContent = door.isPortal ? '⦿' : '▣';
+    marker.innerHTML = door.isPortal ? ICON_PORTAL : ICON_DOOR;
     marker.style.left = `${num(door.position && door.position.x, 0.5) * 100}%`;
     marker.style.top = `${num(door.position && door.position.y, 0.5) * 100}%`;
     marker.onclick = () => toggleDoor(id, door.unlocked);
@@ -133,6 +153,7 @@ function renderMap() {
     const marker = document.createElement('div');
     marker.className = 'player-marker';
     marker.title = player.name || playerId;
+    marker.innerHTML = ICON_PLAYER;
     marker.style.left = `${num(player.position && player.position.x, 0.5) * 100}%`;
     marker.style.top = `${num(player.position && player.position.y, 0.5) * 100}%`;
     layer.appendChild(marker);
