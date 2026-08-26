@@ -88,7 +88,7 @@ namespace DiceTale.Editor
 
             var position = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Width(windowSize.x), GUILayout.Height(Mathf.Max(windowSize.y - GridMapEditorConstants.ToolbarHeight, 50f)));
 
-            gridRect = GUILayoutUtility.GetRect(totalWidth, totalHeight);
+            gridRect = GUILayoutUtility.GetRect(totalWidth, totalHeight, GUILayout.Width(totalWidth), GUILayout.Height(totalHeight));
             DrawBackground(gridRect, state);
             DrawCells(gridRect, state);
             DrawGridLines(gridRect, state);
