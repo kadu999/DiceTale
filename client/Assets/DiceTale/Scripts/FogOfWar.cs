@@ -101,17 +101,19 @@ namespace DiceTale
             fogRenderer.sortingOrder = fogSortingOrder;
         }
 
-        /// <summary>雾等级 -> 不透明度（雾1 最淡，雾5 最浓）。</summary>
+        /// <summary>雾1~雾5 只是区域标记，运行时所有雾效果一致（统一浓淡）。</summary>
         private static float GetFogAlpha(GridCellType type)
         {
             switch (type)
             {
-                case GridCellType.Fog1: return 0.35f;
-                case GridCellType.Fog2: return 0.45f;
-                case GridCellType.Fog3: return 0.55f;
-                case GridCellType.Fog4: return 0.65f;
-                case GridCellType.Fog5: return 0.75f;
-                default: return 0f;
+                case GridCellType.Fog1:
+                case GridCellType.Fog2:
+                case GridCellType.Fog3:
+                case GridCellType.Fog4:
+                case GridCellType.Fog5:
+                    return 0.6f;
+                default:
+                    return 0f;
             }
         }
     }
