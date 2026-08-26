@@ -131,8 +131,8 @@ MonoBehaviour:
   fogColor: {r: 0, g: 0, b: 0, a: 1}
   updateInterval: 0.1
   fogSortingOrder: 2
-  displayShader: {fileID: 0}
-  accumulateShader: {fileID: 0}
+  displayShader: {fileID: 4800000, guid: 7bb4d1a739634f5ba78a8ab2aba40463, type: 3}
+  accumulateShader: {fileID: 4800000, guid: f498c77de0e54982a9cef62792694757, type: 3}
 --- !u!1 &4634471694792598124
 GameObject:
   m_ObjectHideFlags: 0
