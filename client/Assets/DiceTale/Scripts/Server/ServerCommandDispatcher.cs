@@ -63,7 +63,7 @@ namespace DiceTale.Server
         {
             var mapName = JsonParser.GetString(msg, "mapName");
             var spawnId = JsonParser.GetString(msg, "spawnId");
-            var mapManager = Object.FindFirstObjectByType<MapManager>();
+            var mapManager = UnityEngine.Object.FindFirstObjectByType<MapManager>();
             mapManager?.LoadMap(mapName, spawnId);
         }
 
@@ -71,7 +71,7 @@ namespace DiceTale.Server
         {
             var mapName = JsonParser.GetString(msg, "mapName");
             var spawnId = JsonParser.GetString(msg, "spawnId");
-            var mapManager = Object.FindFirstObjectByType<MapManager>();
+            var mapManager = UnityEngine.Object.FindFirstObjectByType<MapManager>();
             mapManager?.LoadMap(mapName, spawnId);
         }
 
@@ -84,7 +84,7 @@ namespace DiceTale.Server
             }
 
             var currentMap = JsonParser.GetString(state, "currentMap");
-            var mapManager = Object.FindFirstObjectByType<MapManager>();
+            var mapManager = UnityEngine.Object.FindFirstObjectByType<MapManager>();
             if (!string.IsNullOrEmpty(currentMap) && mapManager != null)
             {
                 mapManager.LoadMap(currentMap);
@@ -109,7 +109,7 @@ namespace DiceTale.Server
 
         private Door FindDoor(string doorId)
         {
-            foreach (var door in Object.FindObjectsByType<Door>(FindObjectsSortMode.None))
+            foreach (var door in UnityEngine.Object.FindObjectsByType<Door>(FindObjectsSortMode.None))
             {
                 if (door.DoorId == doorId)
                 {
