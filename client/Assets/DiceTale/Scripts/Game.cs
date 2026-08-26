@@ -13,9 +13,7 @@ namespace DiceTale
 
     public class Game : MonoBehaviour
     {
-        public SceneManager SceneManager { get; private set; }
         public CharacterManager CharacterManager { get; private set; }
-        public ProgressManager ProgressManager { get; private set; }
         public InputManager InputManager { get; private set; }
         public MapManager MapManager { get; private set; }
         public BackendManager BackendManager { get; private set; }
@@ -25,9 +23,7 @@ namespace DiceTale
 
         private void Awake()
         {
-            SceneManager = GetOrCreateManager<SceneManager>();
             CharacterManager = GetOrCreateManager<CharacterManager>();
-            ProgressManager = GetOrCreateManager<ProgressManager>();
             InputManager = GetOrCreateManager<InputManager>();
             MapManager = GetOrCreateManager<MapManager>();
             BackendManager = GetOrCreateManager<BackendManager>();
@@ -39,11 +35,6 @@ namespace DiceTale
             {
                 CharacterManager.CreatePlayers(1);
             }
-        }
-
-        private void OnDestroy()
-        {
-            GameEventBus.Clear();
         }
 
         public void LockInteraction(float duration)

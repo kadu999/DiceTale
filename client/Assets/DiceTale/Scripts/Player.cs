@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace DiceTale
 {
-    public class Player : Character
+    public class Player : MonoBehaviour
     {
 
     }

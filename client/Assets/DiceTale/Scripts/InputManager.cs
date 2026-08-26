@@ -51,14 +51,6 @@ namespace DiceTale
 
             if (hit.collider != null)
             {
-                var item = hit.collider.GetComponentInParent<Item>();
-                if (item != null)
-                {
-                    var player = CharacterManager.Instance?.CurrentPlayer;
-                    item.Interact(player);
-                    return;
-                }
-
                 MovePlayerTo(worldPosition);
                 return;
             }
