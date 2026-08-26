@@ -10,3 +10,8 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Server
+server/node_modules/
+server/dist/
+server/data/gamestate.json
