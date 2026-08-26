@@ -47,12 +47,13 @@ Shader "DiceTale/FogBlur"
             {
                 fixed4 center = tex2D(_MainTex, i.uv);
 
-                // 已清除的雾格子（alpha=0 但曾是雾、RGB 非 0）保持透明，不被模糊回填
+                // 已清除的雾格子（alpha=0 但曾是雾、RGB 非 0）：保持透明并保留 RGB 标记，
+                // 使多次模糊链中持续可识别，不被外部雾回填
                 float centerRgb = center.r + center.g + center.b;
                 bool isClearedFog = center.a < 0.5 && centerRgb > 0.1;
                 if (isClearedFog)
                 {
-                    return fixed4(0, 0, 0, 0);
+                    return fixed4(center.r, center.g, center.b, 0);
                 }
 
                 // 地图四边 1 格内不平滑（保持干脆，不向边界外扩散）
