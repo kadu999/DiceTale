@@ -2,168 +2,105 @@ using UnityEngine;
 
 namespace DiceTale
 {
+    /// <summary>
+    /// 迷雾：只在地图网格标记了 Fog1~Fog5 的格子处显示雾（按等级浓淡），
+    /// 未标记的区域保持清晰可见。需要与 GridMap 同物体。
+    /// </summary>
     [RequireComponent(typeof(GridMap))]
     public class FogOfWar : MonoBehaviour
     {
-        private const int MaxPlayers = 8;
-
         [SerializeField]
-        private int revealRadius = 5;
-
-        [SerializeField]
-        private float softEdgeWidth = 2f;
-
-        [SerializeField]
-        private int maskResolution = 8;
-
-        [SerializeField]
-        private Color fogColor = new Color(0.85f, 0.88f, 0.9f, 0.75f);
-
-        [SerializeField]
-        private float updateInterval = 0.05f;
+        private Color fogColor = new Color(0.85f, 0.88f, 0.92f, 1f);
 
         [SerializeField]
         private int fogSortingOrder = 1;
 
-        [SerializeField]
-        private Shader displayShader;
-
-        [SerializeField]
-        private Shader accumulateShader;
-
         private GridMap gridMap;
-        private MeshRenderer fogRenderer;
-        private Material displayMaterial;
-        private Material accumulateMaterial;
-        private RenderTexture prevMask;
-        private RenderTexture nextMask;
-        private Vector4[] playerPositions = new Vector4[MaxPlayers];
-        private float lastUpdateTime;
+        private SpriteRenderer fogRenderer;
 
         private void Start()
         {
             gridMap = GetComponent<GridMap>();
-            CreateFog();
+            BuildStaticFog();
         }
 
         private void OnDestroy()
         {
-            ReleaseRenderTextures();
+            if (fogRenderer != null && fogRenderer.sprite != null)
+            {
+                var tex = fogRenderer.sprite.texture;
+                if (tex != null)
+                {
+                    Destroy(tex);
+                }
+            }
         }
 
-        private void Update()
+        /// <summary>按网格标记生成静态雾：只有 Fog1~Fog5 格子有雾，其余透明。</summary>
+        private void BuildStaticFog()
         {
-            if (Time.time - lastUpdateTime < updateInterval)
+            if (gridMap == null)
             {
                 return;
             }
 
-            lastUpdateTime = Time.time;
-            UpdateFog();
-        }
+            var gridSize = gridMap.GridSize;
+            if (gridSize.x <= 0 || gridSize.y <= 0)
+            {
+                return;
+            }
 
-        private void CreateFog()
-        {
-            var maskSize = new Vector2Int(
-                gridMap.GridSize.x * maskResolution,
-                gridMap.GridSize.y * maskResolution
-            );
+            var texture = new Texture2D(gridSize.x, gridSize.y, TextureFormat.RGBA32, false);
+            texture.filterMode = FilterMode.Point;
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.name = "FogMask_" + name;
 
-            ReleaseRenderTextures();
+            var colors = new Color[gridSize.x * gridSize.y];
+            foreach (var pair in gridMap.GetCellTypes())
+            {
+                var alpha = GetFogAlpha(pair.Value);
+                if (alpha <= 0f)
+                {
+                    continue;
+                }
 
-            var format = RenderTextureFormat.ARGB32;
-            prevMask = new RenderTexture(maskSize.x, maskSize.y, 0, format);
-            nextMask = new RenderTexture(maskSize.x, maskSize.y, 0, format);
-            prevMask.filterMode = FilterMode.Bilinear;
-            nextMask.filterMode = FilterMode.Bilinear;
-            prevMask.wrapMode = TextureWrapMode.Clamp;
-            nextMask.wrapMode = TextureWrapMode.Clamp;
-            prevMask.Create();
-            nextMask.Create();
+                var index = pair.Key.y * gridSize.x + pair.Key.x;
+                colors[index] = new Color(fogColor.r, fogColor.g, fogColor.b, alpha);
+            }
 
-            RenderTexture.active = prevMask;
-            GL.Clear(true, true, Color.black);
-            RenderTexture.active = null;
+            texture.SetPixels(colors);
+            texture.Apply();
 
-            var displayShaderInstance = displayShader != null ? displayShader : Shader.Find("DiceTale/FogOfWar");
-            var accumulateShaderInstance = accumulateShader != null ? accumulateShader : Shader.Find("DiceTale/FogOfWarAccumulate");
-
-            displayMaterial = new Material(displayShaderInstance);
-            displayMaterial.SetColor("_FogColor", fogColor);
-
-            accumulateMaterial = new Material(accumulateShaderInstance);
-            accumulateMaterial.SetFloat("_RevealRadius", revealRadius * gridMap.CellSize);
-            accumulateMaterial.SetFloat("_SoftEdgeWidth", softEdgeWidth * gridMap.CellSize);
-            accumulateMaterial.SetFloat("_CellSize", gridMap.CellSize);
-            accumulateMaterial.SetVector("_GridOrigin", gridMap.GridOrigin);
-            accumulateMaterial.SetVector("_GridSize", new Vector4(gridMap.GridSize.x, gridMap.GridSize.y, 0, 0));
-
-            var go = new GameObject("FogOfWar");
-            go.transform.SetParent(transform, false);
-            //go.transform.position = gridMap.GridOrigin;
-            go.transform.localPosition = Vector3.zero;
-            go.transform.localScale = new Vector3(
-                gridMap.GridSize.x * gridMap.CellSize,
-                gridMap.GridSize.y * gridMap.CellSize,
+            var sprite = Sprite.Create(
+                texture,
+                new Rect(0, 0, gridSize.x, gridSize.y),
+                new Vector2(0.5f, 0.5f),
                 1f
             );
 
-            var meshFilter = go.AddComponent<MeshFilter>();
-            meshFilter.mesh = Resources.GetBuiltinResource<Mesh>("Quad.fbx");
+            var go = new GameObject("FogOverlay");
+            go.transform.SetParent(transform, false);
+            go.transform.localPosition = Vector3.zero;
+            // 纹理每个像素对应一个格子：缩放铺满整个网格
+            go.transform.localScale = new Vector3(gridMap.GridWidth, gridMap.GridHeight, 1f);
 
-            fogRenderer = go.AddComponent<MeshRenderer>();
-            fogRenderer.material = displayMaterial;
+            fogRenderer = go.AddComponent<SpriteRenderer>();
+            fogRenderer.sprite = sprite;
+            fogRenderer.material = new Material(Shader.Find("Sprites/Default"));
             fogRenderer.sortingOrder = fogSortingOrder;
-
-            displayMaterial.SetTexture("_FogMask", nextMask);
         }
 
-        private void UpdateFog()
+        /// <summary>雾等级 -> 不透明度（雾1 最淡，雾5 最浓）。</summary>
+        private static float GetFogAlpha(GridCellType type)
         {
-            var characterManager = CharacterManager.Instance;
-            int playerCount = 0;
-
-            if (characterManager != null)
+            switch (type)
             {
-                foreach (var player in characterManager.Players)
-                {
-                    if (player == null || playerCount >= MaxPlayers)
-                    {
-                        continue;
-                    }
-
-                    var pos = player.transform.position;
-                    playerPositions[playerCount] = new Vector4(pos.x, pos.y, 0, 0);
-                    playerCount++;
-                }
-            }
-
-            accumulateMaterial.SetInt("_PlayerCount", playerCount);
-            accumulateMaterial.SetVectorArray("_PlayerPositions", playerPositions);
-
-            Graphics.Blit(prevMask, nextMask, accumulateMaterial);
-
-            displayMaterial.SetTexture("_FogMask", nextMask);
-
-            var temp = prevMask;
-            prevMask = nextMask;
-            nextMask = temp;
-        }
-
-        private void ReleaseRenderTextures()
-        {
-            if (prevMask != null)
-            {
-                prevMask.Release();
-                Destroy(prevMask);
-                prevMask = null;
-            }
-
-            if (nextMask != null)
-            {
-                nextMask.Release();
-                Destroy(nextMask);
-                nextMask = null;
+                case GridCellType.Fog1: return 0.35f;
+                case GridCellType.Fog2: return 0.45f;
+                case GridCellType.Fog3: return 0.55f;
+                case GridCellType.Fog4: return 0.65f;
+                case GridCellType.Fog5: return 0.75f;
+                default: return 0f;
             }
         }
     }
