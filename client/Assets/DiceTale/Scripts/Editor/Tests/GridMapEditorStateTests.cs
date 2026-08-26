@@ -1,12 +1,33 @@
 using System.Collections.Generic;
+using System.IO;
 using DiceTale;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 
 namespace DiceTale.Editor.Tests
 {
     public class GridMapEditorStateTests
     {
+        private GameObject _cleanupGameObject;
+        private string _cleanupFilePath;
+
+        [TearDown]
+        public void TearDown()
+        {
+            if (_cleanupGameObject != null)
+            {
+                Object.DestroyImmediate(_cleanupGameObject);
+                _cleanupGameObject = null;
+            }
+
+            if (!string.IsNullOrEmpty(_cleanupFilePath) && File.Exists(_cleanupFilePath))
+            {
+                File.Delete(_cleanupFilePath);
+                _cleanupFilePath = null;
+            }
+        }
+
         [Test]
         public void Paint_WithBrushSize1_PaintsSingleCenterCell()
         {
@@ -151,21 +172,46 @@ namespace DiceTale.Editor.Tests
 
             state.SaveData();
 
-            var go = new GameObject("TestMap");
-            var gridMap = go.AddComponent<GridMap>();
+            _cleanupGameObject = new GameObject("TestMap");
+            var gridMap = _cleanupGameObject.AddComponent<GridMap>();
             gridMap.LoadData("TestMap");
+
+            _cleanupFilePath = Path.Combine(Application.dataPath, "DiceTale/Resources/TestMap.json");
 
             Assert.AreEqual(GridCellType.Difficult, gridMap.GetCellType(new Vector2Int(1, 1)));
             Assert.AreEqual(GridCellType.Water, gridMap.GetCellType(new Vector2Int(2, 2)));
             Assert.AreEqual(GridCellType.Empty, gridMap.GetCellType(new Vector2Int(0, 0)));
+        }
 
-            Object.DestroyImmediate(go);
+        [Test]
+        public void Paint_PerformUndo_RevertsDictionary()
+        {
+            var state = ScriptableObject.CreateInstance<GridMapEditorState>();
+            state.GridSize = new Vector2Int(5, 5);
+            state.BrushSize = 1;
+            state.SelectedType = GridCellType.Obstacle;
 
-            var path = System.IO.Path.Combine(UnityEngine.Application.dataPath, "DiceTale/Resources/TestMap.json");
-            if (System.IO.File.Exists(path))
-            {
-                System.IO.File.Delete(path);
-            }
+            state.Paint(new Vector2Int(2, 2));
+            Assert.AreEqual(1, state.CellTypes.Count);
+
+            Undo.PerformUndo();
+            Assert.AreEqual(0, state.CellTypes.Count);
+        }
+
+        [Test]
+        public void LoadData_WithEmptyMapName_LeavesExistingCellsIntact()
+        {
+            var state = ScriptableObject.CreateInstance<GridMapEditorState>();
+            state.GridSize = new Vector2Int(5, 5);
+            state.MapName = "";
+            state.BrushSize = 1;
+            state.SelectedType = GridCellType.Obstacle;
+            state.Paint(new Vector2Int(2, 2));
+
+            state.LoadData();
+
+            Assert.AreEqual(1, state.CellTypes.Count);
+            Assert.IsTrue(state.CellTypes.ContainsKey(new Vector2Int(2, 2)));
         }
     }
 }

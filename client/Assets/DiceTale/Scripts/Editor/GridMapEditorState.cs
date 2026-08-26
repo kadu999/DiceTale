@@ -26,12 +26,20 @@ namespace DiceTale.Editor
         public GridCellType SelectedType { get => selectedType; set => selectedType = value; }
         public int BrushSize { get => brushSize; set => brushSize = Mathf.Clamp(value, GridMapEditorConstants.MinBrushSize, GridMapEditorConstants.MaxBrushSize); }
         public bool EraseMode { get => eraseMode; set => eraseMode = value; }
+        [field: System.NonSerialized]
         public Texture2D ReferenceTexture { get; set; }
         public IReadOnlyDictionary<Vector2Int, GridCellType> CellTypes => cellTypes;
 
         private void OnEnable()
         {
+            Undo.undoRedoPerformed -= RebuildDictionary;
+            Undo.undoRedoPerformed += RebuildDictionary;
             RebuildDictionary();
+        }
+
+        private void OnDisable()
+        {
+            Undo.undoRedoPerformed -= RebuildDictionary;
         }
 
         private void OnValidate()
@@ -39,7 +47,7 @@ namespace DiceTale.Editor
             RebuildDictionary();
         }
 
-        public void RebuildDictionary()
+        private void RebuildDictionary()
         {
             cellTypes.Clear();
             if (serializedCells == null)
@@ -172,19 +180,14 @@ namespace DiceTale.Editor
 
         public void LoadData()
         {
-            Undo.RecordObject(this, "Load Grid");
-            cellTypes.Clear();
-
             if (string.IsNullOrEmpty(mapName))
             {
-                SyncDictionaryToSerializedCells();
                 return;
             }
 
             var path = Path.Combine(Application.dataPath, GridMapEditorConstants.DataDirectoryFull, $"{mapName}.json");
             if (!File.Exists(path))
             {
-                SyncDictionaryToSerializedCells();
                 return;
             }
 
@@ -192,9 +195,11 @@ namespace DiceTale.Editor
             var data = JsonUtility.FromJson<GridMapData>(json);
             if (data?.cells == null)
             {
-                SyncDictionaryToSerializedCells();
                 return;
             }
+
+            Undo.RecordObject(this, "Load Grid");
+            cellTypes.Clear();
 
             GridSize = new Vector2Int(data.gridSizeX, data.gridSizeY);
             foreach (var cell in data.cells)
@@ -212,7 +217,6 @@ namespace DiceTale.Editor
         public void LoadReferenceTexture()
         {
             ReferenceTexture = null;
-            CellSize = 1f;
 
             if (string.IsNullOrEmpty(mapName))
             {
@@ -228,6 +232,11 @@ namespace DiceTale.Editor
                 return;
             }
 
+            if (autoCellSize || cellSize <= 0f)
+            {
+                CellSize = 1f;
+            }
+
             CalculateGridSizeFromImage();
             LoadData();
         }
@@ -239,12 +248,12 @@ namespace DiceTale.Editor
                 return;
             }
 
-            Undo.RecordObject(this, "Calculate Grid Size");
-
             if (cellSize <= 0f)
             {
                 CellSize = 1f;
             }
+
+            Undo.RecordObject(this, "Calculate Grid Size");
 
             GridSize = new Vector2Int(
                 Mathf.RoundToInt(ReferenceTexture.width / cellSize),

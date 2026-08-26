@@ -84,7 +84,7 @@ namespace DiceTale.Editor
             var totalWidth = state.GridSize.x * GridMapEditorConstants.CellDisplaySize;
             var totalHeight = state.GridSize.y * GridMapEditorConstants.CellDisplaySize;
 
-            var position = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Width(windowSize.x), GUILayout.Height(windowSize.y - GridMapEditorConstants.ToolbarHeight));
+            var position = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Width(windowSize.x), GUILayout.Height(Mathf.Max(windowSize.y - GridMapEditorConstants.ToolbarHeight, 50f)));
 
             gridRect = GUILayoutUtility.GetRect(totalWidth, totalHeight);
             DrawBackground(gridRect, state);
