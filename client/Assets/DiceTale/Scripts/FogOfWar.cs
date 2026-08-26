@@ -53,6 +53,13 @@ namespace DiceTale
 
         private void Update()
         {
+            // 右键擦除：每帧检测，保证拖动擦除流畅
+            if (allowRightClickErase)
+            {
+                HandleRightClickErase();
+            }
+
+            // 玩家进入区域揭示：节流即可
             checkTimer -= Time.deltaTime;
             if (checkTimer > 0f)
             {
@@ -60,12 +67,6 @@ namespace DiceTale
             }
 
             checkTimer = checkInterval;
-
-            if (allowRightClickErase)
-            {
-                HandleRightClickErase();
-            }
-
             CheckPlayerFogArea();
         }
 
