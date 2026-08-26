@@ -13,16 +13,16 @@ namespace DiceTale.Editor
             shouldClear = false;
             shouldCalculateGridSize = false;
 
-            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            var hasMapName = !string.IsNullOrEmpty(state.MapName);
 
-            EditorGUILayout.LabelField("地图名", GUILayout.Width(45f));
-            state.MapName = EditorGUILayout.TextField(state.MapName, GUILayout.Width(120f));
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
             if (GUILayout.Button("加载图片", EditorStyles.toolbarButton, GUILayout.Width(80f)))
             {
                 shouldLoadTexture = true;
             }
 
+            EditorGUI.BeginDisabledGroup(!hasMapName);
             if (GUILayout.Button("Save", EditorStyles.toolbarButton, GUILayout.Width(60f)))
             {
                 shouldSave = true;
@@ -32,6 +32,7 @@ namespace DiceTale.Editor
             {
                 shouldLoad = true;
             }
+            EditorGUI.EndDisabledGroup();
 
             if (GUILayout.Button("Clear", EditorStyles.toolbarButton, GUILayout.Width(60f)))
             {
@@ -74,6 +75,7 @@ namespace DiceTale.Editor
 
         public void DrawInfo(GridMapEditorState state)
         {
+            EditorGUILayout.LabelField($"Map: {(string.IsNullOrEmpty(state.MapName) ? "-" : state.MapName)}");
             EditorGUILayout.LabelField($"Grid Size: {state.GridSize.x} x {state.GridSize.y}");
             EditorGUILayout.LabelField($"Cell Size: {state.CellSize:F2}");
             EditorGUILayout.Space();
