@@ -29,6 +29,12 @@ namespace DiceTale
         private bool isUnlocked;
         private List<Vector2Int> registeredObstacles = new List<Vector2Int>();
 
+        /// <summary>供服务器命令分发与对象上报读取的门标识。</summary>
+        public string DoorId => doorId;
+        public string TargetSceneName => targetSceneName;
+        public string TargetSpawnId => targetSpawnId;
+        public bool IsPortal => isPortal;
+
         private void Awake()
         {
             triggerCollider = GetComponent<Collider2D>();
@@ -82,7 +88,18 @@ namespace DiceTale
         {
             if (isPortal)
             {
-                LoadTargetMap();
+                var connection = Server.ServerConnection.Instance;
+                if (connection != null && connection.IsConnected)
+                {
+                    // 传送门：由服务器下发 teleport_player 命令后切换地图，
+                    // 客户端不直接切图，保证服务器是权威状态源。
+                    Debug.Log($"[Door] Portal {doorId} access granted, waiting for server teleport.");
+                }
+                else
+                {
+                    // 服务器不可用时本地回退，保证单机仍可玩
+                    LoadTargetMap();
+                }
             }
             else if (!isUnlocked)
             {
