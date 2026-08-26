@@ -125,40 +125,6 @@ namespace DiceTale.Editor.Tests
         }
 
         [Test]
-        public void CellSize_IsClampedToPositive()
-        {
-            var state = ScriptableObject.CreateInstance<GridMapEditorState>();
-            state.CellSize = 0f;
-            Assert.AreEqual(1f, state.CellSize);
-            state.CellSize = -5f;
-            Assert.AreEqual(1f, state.CellSize);
-        }
-
-        [Test]
-        public void CalculateGridSizeFromImage_ClampsSmallResultToOne()
-        {
-            var state = ScriptableObject.CreateInstance<GridMapEditorState>();
-            state.ReferenceTexture = new Texture2D(1, 1);
-            state.CellSize = 2f;
-
-            state.CalculateGridSizeFromImage();
-
-            Assert.AreEqual(Vector2Int.one, state.GridSize);
-        }
-
-        [Test]
-        public void CalculateGridSizeFromImage_CalculatesFromTextureAndCellSize()
-        {
-            var state = ScriptableObject.CreateInstance<GridMapEditorState>();
-            state.ReferenceTexture = new Texture2D(10, 20);
-            state.CellSize = 5f;
-
-            state.CalculateGridSizeFromImage();
-
-            Assert.AreEqual(new Vector2Int(2, 4), state.GridSize);
-        }
-
-        [Test]
         public void SaveData_AndRuntimeGridMap_LoadData_Match()
         {
             var state = ScriptableObject.CreateInstance<GridMapEditorState>();

@@ -5,13 +5,12 @@ namespace DiceTale.Editor
 {
     public class GridMapEditorRenderer
     {
-        public void DrawToolbar(GridMapEditorState state, out bool shouldLoadTexture, out bool shouldSave, out bool shouldLoad, out bool shouldClear, out bool shouldCalculateGridSize)
+        public void DrawToolbar(GridMapEditorState state, out bool shouldLoadTexture, out bool shouldSave, out bool shouldLoad, out bool shouldClear)
         {
             shouldLoadTexture = false;
             shouldSave = false;
             shouldLoad = false;
             shouldClear = false;
-            shouldCalculateGridSize = false;
 
             var hasMapName = !string.IsNullOrEmpty(state.MapName);
 
@@ -43,17 +42,7 @@ namespace DiceTale.Editor
 
             EditorGUILayout.Space();
 
-            EditorGUILayout.BeginHorizontal();
             state.GridSize = EditorGUILayout.Vector2IntField("网格大小", state.GridSize);
-            if (GUILayout.Button("根据图片计算", GUILayout.Width(100f)))
-            {
-                shouldCalculateGridSize = true;
-            }
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.BeginHorizontal();
-            state.CellSize = EditorGUILayout.FloatField("格子大小", state.CellSize);
-            EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
             state.SelectedType = (GridCellType)EditorGUILayout.EnumPopup("画笔类型", state.SelectedType);
@@ -67,7 +56,6 @@ namespace DiceTale.Editor
         {
             EditorGUILayout.LabelField($"Map: {(string.IsNullOrEmpty(state.MapName) ? "-" : state.MapName)}");
             EditorGUILayout.LabelField($"Grid Size: {state.GridSize.x} x {state.GridSize.y}");
-            EditorGUILayout.LabelField($"Cell Size: {state.CellSize:F2}");
             EditorGUILayout.Space();
         }
 

@@ -11,7 +11,6 @@ namespace DiceTale.Editor
 
         [SerializeField] private string serializedMapName = "";
         [SerializeField] private Vector2Int serializedGridSize = new Vector2Int(20, 20);
-        [SerializeField] private float serializedCellSize = 1f;
         [SerializeField] private GridCellType serializedSelectedType = GridCellType.Obstacle;
         [SerializeField] private int serializedBrushSize = 1;
         [SerializeField] private bool serializedEraseMode;
@@ -30,7 +29,6 @@ namespace DiceTale.Editor
 
             state.MapName = serializedMapName;
             state.GridSize = serializedGridSize;
-            state.CellSize = serializedCellSize;
             state.SelectedType = serializedSelectedType;
             state.BrushSize = serializedBrushSize;
             state.EraseMode = serializedEraseMode;
@@ -45,7 +43,6 @@ namespace DiceTale.Editor
 
             serializedMapName = state.MapName;
             serializedGridSize = state.GridSize;
-            serializedCellSize = state.CellSize;
             serializedSelectedType = state.SelectedType;
             serializedBrushSize = state.BrushSize;
             serializedEraseMode = state.EraseMode;
@@ -61,8 +58,7 @@ namespace DiceTale.Editor
                 out var shouldLoadTexture,
                 out var shouldSave,
                 out var shouldLoad,
-                out var shouldClear,
-                out var shouldCalculateGridSize);
+                out var shouldClear);
             renderer.DrawInfo(state);
             scrollPosition = renderer.DrawGrid(state, scrollPosition, position.size, out var gridRect);
 
@@ -85,10 +81,6 @@ namespace DiceTale.Editor
                 {
                     state.Clear();
                 }
-            }
-            if (shouldCalculateGridSize)
-            {
-                state.CalculateGridSizeFromImage();
             }
 
             HandleInput(gridRect);

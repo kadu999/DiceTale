@@ -10,7 +10,6 @@ namespace DiceTale.Editor
     {
         [SerializeField] private string mapName = "";
         [SerializeField] private Vector2Int gridSize = new Vector2Int(20, 20);
-        [SerializeField] private float cellSize = 1f;
         [SerializeField] private GridCellType selectedType = GridCellType.Obstacle;
         [SerializeField] private int brushSize = 1;
         [SerializeField] private bool eraseMode;
@@ -20,7 +19,6 @@ namespace DiceTale.Editor
 
         public string MapName { get => mapName; set => mapName = value; }
         public Vector2Int GridSize { get => gridSize; set => gridSize = Vector2Int.Max(value, Vector2Int.one); }
-        public float CellSize { get => cellSize; set => cellSize = value > 0f ? value : 1f; }
         public GridCellType SelectedType { get => selectedType; set => selectedType = value; }
         public int BrushSize { get => brushSize; set => brushSize = Mathf.Clamp(value, GridMapEditorConstants.MinBrushSize, GridMapEditorConstants.MaxBrushSize); }
         public bool EraseMode { get => eraseMode; set => eraseMode = value; }
@@ -234,33 +232,7 @@ namespace DiceTale.Editor
             ReferenceTexture = texture;
             MapName = Path.GetFileNameWithoutExtension(filePath);
 
-            if (cellSize <= 0f)
-            {
-                CellSize = 1f;
-            }
-
-            CalculateGridSizeFromImage();
             LoadData();
-        }
-
-        public void CalculateGridSizeFromImage()
-        {
-            if (ReferenceTexture == null)
-            {
-                return;
-            }
-
-            if (cellSize <= 0f)
-            {
-                CellSize = 1f;
-            }
-
-            Undo.RecordObject(this, "Calculate Grid Size");
-
-            GridSize = new Vector2Int(
-                Mathf.RoundToInt(ReferenceTexture.width / cellSize),
-                Mathf.RoundToInt(ReferenceTexture.height / cellSize)
-            );
         }
 
         private bool IsInsideGrid(Vector2Int pos)
