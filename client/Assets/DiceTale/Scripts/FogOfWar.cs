@@ -65,7 +65,6 @@ namespace DiceTale
         {
             HandleRightClickErase();
             TickPlayerReveal();
-            BlurFog();
         }
 
         private void OnDestroy()
@@ -105,6 +104,7 @@ namespace DiceTale
             CreateFogState();
             CreateBlurChain();
             CreateDisplayObject(gridWidth, gridHeight);
+            BlurFog(); // 初始羽化一次
 
             Debug.Log($"[FogOfWar] {name}: fog cells={CountFogCells()}, single layer");
         }
@@ -312,6 +312,7 @@ namespace DiceTale
             }
 
             ClearCell(index);
+            BlurFog(); // 状态变化后重新羽化一次
         }
 
         // ---------------------------------------------------------------- 格子操作
@@ -328,6 +329,8 @@ namespace DiceTale
             {
                 ClearCell(indices[i]);
             }
+
+            BlurFog(); // 状态变化后重新羽化一次
         }
 
         private void ClearCell(int index)
