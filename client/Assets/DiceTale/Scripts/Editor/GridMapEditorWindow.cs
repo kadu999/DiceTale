@@ -60,7 +60,17 @@ namespace DiceTale.Editor
                 out var shouldLoad,
                 out var shouldClear);
             renderer.DrawInfo(state);
-            scrollPosition = renderer.DrawGrid(state, scrollPosition, position.size, out var gridRect);
+
+            var toolbarRect = GUILayoutUtility.GetLastRect();
+            var viewportRect = new Rect(0f, toolbarRect.yMax, position.width, Mathf.Max(position.height - toolbarRect.yMax, 50f));
+
+            var totalWidth = state.GridSize.x * GridMapEditorConstants.CellDisplaySize;
+            var totalHeight = state.GridSize.y * GridMapEditorConstants.CellDisplaySize;
+            var gridRect = new Rect(0f, 0f, totalWidth, totalHeight);
+
+            scrollPosition = GUI.BeginScrollView(viewportRect, scrollPosition, gridRect);
+            renderer.DrawGrid(state, gridRect);
+            GUI.EndScrollView();
 
             if (shouldLoadTexture)
             {
@@ -83,10 +93,10 @@ namespace DiceTale.Editor
                 }
             }
 
-            HandleInput(gridRect);
+            HandleInput(viewportRect, gridRect);
         }
 
-        private void HandleInput(Rect gridRect)
+        private void HandleInput(Rect viewportRect, Rect gridRect)
         {
             var e = Event.current;
             if (e == null)
@@ -99,11 +109,23 @@ namespace DiceTale.Editor
                 return;
             }
 
-            if (!GridMapEditorRenderer.TryGetGridPos(gridRect, e.mousePosition, state.GridSize, out var gridPos))
+            if (!viewportRect.Contains(e.mousePosition))
             {
                 return;
             }
 
+            var localX = e.mousePosition.x + scrollPosition.x;
+            var localY = e.mousePosition.y - viewportRect.y + scrollPosition.y;
+
+            var x = Mathf.FloorToInt(localX / GridMapEditorConstants.CellDisplaySize);
+            var y = state.GridSize.y - 1 - Mathf.FloorToInt(localY / GridMapEditorConstants.CellDisplaySize);
+
+            if (x < 0 || x >= state.GridSize.x || y < 0 || y >= state.GridSize.y)
+            {
+                return;
+            }
+
+            var gridPos = new Vector2Int(x, y);
             if (e.button == 0)
             {
                 if (state.EraseMode)

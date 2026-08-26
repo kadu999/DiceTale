@@ -59,20 +59,11 @@ namespace DiceTale.Editor
             EditorGUILayout.Space();
         }
 
-        public Vector2 DrawGrid(GridMapEditorState state, Vector2 scrollPosition, Vector2 windowSize, out Rect gridRect)
+        public void DrawGrid(GridMapEditorState state, Rect gridRect)
         {
-            var totalWidth = state.GridSize.x * GridMapEditorConstants.CellDisplaySize;
-            var totalHeight = state.GridSize.y * GridMapEditorConstants.CellDisplaySize;
-
-            var position = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Width(windowSize.x), GUILayout.Height(Mathf.Max(windowSize.y - GridMapEditorConstants.ToolbarHeight, 50f)));
-
-            gridRect = GUILayoutUtility.GetRect(totalWidth, totalHeight, GUILayout.Width(totalWidth), GUILayout.Height(totalHeight));
             DrawBackground(gridRect, state);
             DrawCells(gridRect, state);
             DrawGridLines(gridRect, state);
-
-            EditorGUILayout.EndScrollView();
-            return position;
         }
 
         private void DrawBackground(Rect gridRect, GridMapEditorState state)
