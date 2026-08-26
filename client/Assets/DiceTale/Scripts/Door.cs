@@ -4,20 +4,16 @@ using UnityEngine.Events;
 
 namespace DiceTale
 {
+    /// <summary>
+    /// 门：普通门（玩家触碰后开门，可由后台控制开关）。
+    /// 传送门请使用 <see cref="PortalDoor"/>。
+    /// 继承 <see cref="BackendObject"/>，自动注册上报、受后台控制。
+    /// </summary>
     [RequireComponent(typeof(Collider2D))]
     public class Door : BackendObject, IInteractable
     {
         [SerializeField]
-        private string targetSceneName;
-
-        [SerializeField]
-        private string targetSpawnId = "Default";
-
-        [SerializeField]
         private string doorId;
-
-        [SerializeField]
-        private bool isPortal = true;
 
         [SerializeField]
         private UnityEvent onUnlocked;
@@ -31,9 +27,15 @@ namespace DiceTale
 
         /// <summary>供服务器命令分发与对象上报读取的门标识。</summary>
         public string DoorId => doorId;
-        public string TargetSceneName => targetSceneName;
-        public string TargetSpawnId => targetSpawnId;
-        public bool IsPortal => isPortal;
+
+        /// <summary>是否为传送门（PortalDoor 覆写为 true）。</summary>
+        public virtual bool IsPortal => false;
+
+        /// <summary>上报用的传送目标地图（普通门为空）。</summary>
+        protected virtual string ReportTargetMap => "";
+
+        /// <summary>上报用的传送目标出生点（普通门为空）。</summary>
+        protected virtual string ReportTargetSpawn => "";
 
         /// <summary>后台对象 ID：门使用自己的 doorId。</summary>
         public override string ObjectId => doorId;
@@ -43,9 +45,9 @@ namespace DiceTale
             mapObjects.doors.Add(new Server.DoorInfo
             {
                 id = doorId,
-                targetMap = targetSceneName,
-                targetSpawn = targetSpawnId,
-                isPortal = isPortal,
+                targetMap = ReportTargetMap,
+                targetSpawn = ReportTargetSpawn,
+                isPortal = IsPortal,
                 position = NormalizePosition(transform.position)
             });
         }
@@ -101,24 +103,10 @@ namespace DiceTale
             ExecuteInteract();
         }
 
-        private void ExecuteInteract()
+        /// <summary>触碰后的行为（普通门：开门；PortalDoor 覆写为传送）。</summary>
+        protected virtual void ExecuteInteract()
         {
-            if (isPortal)
-            {
-                var connection = Server.ServerConnection.Instance;
-                if (connection != null && connection.IsConnected)
-                {
-                    // 传送门：由服务器下发 teleport_player 命令后切换地图，
-                    // 客户端不直接切图，保证服务器是权威状态源。
-                    Debug.Log($"[Door] Portal {doorId} access granted, waiting for server teleport.");
-                }
-                else
-                {
-                    // 服务器不可用时本地回退，保证单机仍可玩
-                    LoadTargetMap();
-                }
-            }
-            else if (!isUnlocked)
+            if (!isUnlocked)
             {
                 SetUnlocked(true);
             }
@@ -152,10 +140,10 @@ namespace DiceTale
             if (blockingCollider != null)
             {
                 blockingCollider.isTrigger = false;
-                blockingCollider.enabled = !isPortal && !isUnlocked;
+                blockingCollider.enabled = !IsPortal && !isUnlocked;
             }
 
-            if (isPortal || isUnlocked)
+            if (IsPortal || isUnlocked)
             {
                 UnregisterBlocking();
             }
@@ -167,7 +155,7 @@ namespace DiceTale
 
         private void RegisterBlocking()
         {
-            if (isPortal || isUnlocked || blockingCollider == null)
+            if (IsPortal || isUnlocked || blockingCollider == null)
             {
                 return;
             }
@@ -209,15 +197,6 @@ namespace DiceTale
                 gridMap.RemoveDynamicObstacle(gridPos);
             }
             registeredObstacles.Clear();
-        }
-
-        private void LoadTargetMap()
-        {
-            if (!string.IsNullOrEmpty(targetSceneName))
-            {
-                var mapManager = Object.FindFirstObjectByType<MapManager>();
-                mapManager?.LoadMap(targetSceneName, targetSpawnId);
-            }
         }
     }
 }
