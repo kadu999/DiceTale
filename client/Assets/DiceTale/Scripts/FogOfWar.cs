@@ -26,6 +26,10 @@ namespace DiceTale
         [SerializeField]
         private bool allowRightClickErase = true;
 
+        [Tooltip("雾边缘羽化强度（GPU 模糊次数，2=柔和，越大越柔）")]
+        [SerializeField]
+        private int blurPasses = 2;
+
         private static readonly GridCellType[] FogTypes =
         {
             GridCellType.Fog1, GridCellType.Fog2, GridCellType.Fog3,
@@ -39,8 +43,8 @@ namespace DiceTale
         private int width;
         private int height;
 
-        // GPU 羽化结果
-        private RenderTexture blurredRT;
+        // GPU 羽化结果（ping-pong 多次模糊）
+        private RenderTexture[] blurRTs;
         private Material blurMaterial;
         private Material displayMaterial;
 
@@ -70,10 +74,16 @@ namespace DiceTale
                 CheckPlayerFogArea();
             }
 
-            // GPU 羽化：状态纹理 -> 模糊 RT（小纹理，每帧便宜）
-            if (stateTexture != null && blurredRT != null && blurMaterial != null)
+            // GPU 羽化：状态纹理经过多次模糊（ping-pong），边缘更柔和
+            if (stateTexture != null && blurRTs != null && blurRTs.Length > 0 && blurMaterial != null)
             {
-                Graphics.Blit(stateTexture, blurredRT, blurMaterial);
+                Graphics.Blit(stateTexture, blurRTs[0], blurMaterial);
+                for (int i = 1; i < blurRTs.Length; i++)
+                {
+                    Graphics.Blit(blurRTs[i - 1], blurRTs[i], blurMaterial);
+                }
+
+                displayMaterial.mainTexture = blurRTs[blurRTs.Length - 1];
             }
         }
 
@@ -84,10 +94,16 @@ namespace DiceTale
                 Destroy(stateTexture);
             }
 
-            if (blurredRT != null)
+            if (blurRTs != null)
             {
-                blurredRT.Release();
-                Destroy(blurredRT);
+                for (int i = 0; i < blurRTs.Length; i++)
+                {
+                    if (blurRTs[i] != null)
+                    {
+                        blurRTs[i].Release();
+                        Destroy(blurRTs[i]);
+                    }
+                }
             }
         }
 
@@ -157,10 +173,14 @@ namespace DiceTale
                 return;
             }
 
-            // 2. GPU 羽化链：状态纹理 -> 放大 2x 的模糊 RT
-            blurredRT = new RenderTexture(width * 2, height * 2, 0, RenderTextureFormat.ARGB32);
-            blurredRT.filterMode = FilterMode.Bilinear;
-            blurredRT.wrapMode = TextureWrapMode.Clamp;
+            // 2. GPU 羽化链：状态纹理 -> 多次模糊 RT（ping-pong）
+            blurRTs = new RenderTexture[Mathf.Max(1, blurPasses)];
+            for (int i = 0; i < blurRTs.Length; i++)
+            {
+                blurRTs[i] = new RenderTexture(width * 2, height * 2, 0, RenderTextureFormat.ARGB32);
+                blurRTs[i].filterMode = FilterMode.Bilinear;
+                blurRTs[i].wrapMode = TextureWrapMode.Clamp;
+            }
 
             var blurShader = Shader.Find("DiceTale/FogBlur");
             if (blurShader == null)
@@ -174,7 +194,7 @@ namespace DiceTale
 
             // 3. 显示层：quad + 采样模糊 RT
             displayMaterial = new Material(Shader.Find("Sprites/Default"));
-            displayMaterial.mainTexture = blurredRT;
+            displayMaterial.mainTexture = blurRTs[blurRTs.Length - 1];
 
             var go = new GameObject("FogOverlay");
             go.transform.SetParent(transform, false);
