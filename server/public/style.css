@@ -1,0 +1,78 @@
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f5f5f5;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: #222;
+  color: #fff;
+}
+
+.status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+}
+
+.status.connected { background: #22c55e; }
+.status.disconnected { background: #ef4444; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.panel {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.log-panel {
+  margin: 0 1rem 1rem;
+}
+
+#log {
+  height: 120px;
+  overflow-y: auto;
+  background: #111;
+  color: #7dd3fc;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  white-space: pre-wrap;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+th, td {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+button {
+  margin-top: 0.5rem;
+  margin-right: 0.5rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}

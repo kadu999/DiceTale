@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DiceTale GM 控制台</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>DiceTale GM 控制台</h1>
+    <span id="connectionStatus" class="status disconnected">未连接</span>
+  </header>
+
+  <main class="grid">
+    <section class="panel">
+      <h2>玩家状态</h2>
+      <p>当前地图：<span id="currentMap">-</span></p>
+      <p>玩家位置：X=<span id="posX">-</span> Y=<span id="posY">-</span></p>
+    </section>
+
+    <section class="panel">
+      <h2>门控制</h2>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>目标地图</th><th>目标出生点</th><th>状态</th><th>操作</th></tr>
+        </thead>
+        <tbody id="doorTable"></tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>传送控制</h2>
+      <label>地图：<select id="teleportMap"></select></label>
+      <label>出生点：<select id="teleportSpawn"></select></label>
+      <button id="btnTeleport">传送玩家</button>
+      <button id="btnRefresh">刷新状态</button>
+    </section>
+  </main>
+
+  <section class="panel log-panel">
+    <h2>消息日志</h2>
+    <div id="log"></div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
