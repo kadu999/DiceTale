@@ -35,6 +35,13 @@ namespace DiceTale
             {
                 CharacterManager.CreatePlayers(1);
             }
+
+            // 玩家创建完成后定位到出生点（MapManager.Start 的 LoadMap 可能先于玩家创建执行，
+            // 此时玩家尚未生成，出生点定位会跳过）
+            if (MapManager != null)
+            {
+                MapManager.MovePlayersToSpawn(null);
+            }
         }
 
         public void LockInteraction(float duration)

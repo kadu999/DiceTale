@@ -136,7 +136,8 @@ namespace DiceTale
             return go;
         }
 
-        private void MovePlayersToSpawn(string spawnId)
+        /// <summary>把玩家移动到指定出生点（spawnId 为空时用第一个出生点）。</summary>
+        public void MovePlayersToSpawn(string spawnId)
         {
             var characterManager = CharacterManager.Instance;
             if (characterManager == null || characterManager.Players.Count == 0)
