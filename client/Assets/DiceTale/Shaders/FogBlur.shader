@@ -64,14 +64,31 @@ Shader "DiceTale/FogBlur"
                 };
 
                 fixed4 col = 0.0;
+                float total = 0.0;
                 for (int dy = -1; dy <= 1; dy++)
                 {
                     for (int dx = -1; dx <= 1; dx++)
                     {
-                        col += tex2D(_MainTex, i.uv + float2(dx, dy) * texel) * weights[dy + 1][dx + 1];
+                        fixed4 neighbor = tex2D(_MainTex, i.uv + float2(dx, dy) * texel);
+
+                        // 已揭示的雾格子（曾是雾、现已清除，alpha=0 但 RGB 非 0）不参与模糊，
+                        // 避免揭示区域影响相邻雾的边缘
+                        float rgbSum = neighbor.r + neighbor.g + neighbor.b;
+                        bool isRevealedFog = neighbor.a < 0.5 && rgbSum > 0.1;
+                        if (isRevealedFog)
+                        {
+                            continue;
+                        }
+
+                        col += neighbor * weights[dy + 1][dx + 1];
+                        total += weights[dy + 1][dx + 1];
                     }
                 }
-                col /= 16.0;
+
+                if (total > 0.0)
+                {
+                    col /= total;
+                }
                 return col;
             }
             ENDCG
