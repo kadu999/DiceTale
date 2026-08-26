@@ -57,7 +57,7 @@ describe('GameState', () => {
 
   test('getSnapshot returns deep copy', () => {
     state.setMap('Map002');
-    state.setPlayerPosition({ x: 1, y: 2 });
+    state.setPlayerPosition('Player_1', { x: 1, y: 2 }, 'Map002');
     state.registerDoors('Map002', [
       { id: 'D2', targetMap: 'Map003', targetSpawn: 'Default', isPortal: false },
     ]);
@@ -66,14 +66,14 @@ describe('GameState', () => {
 
     const snapshot = state.getSnapshot();
     expect(snapshot.currentMap).toBe('Map002');
-    expect(snapshot.player.position).toEqual({ x: 1, y: 2 });
+    expect(snapshot.players['Player_1'].position).toEqual({ x: 1, y: 2 });
     expect(snapshot.doors['D2'].unlocked).toBe(true);
     expect(snapshot.spawnPoints['Map002']).toEqual([{ id: 'Default' }, { id: 'North' }]);
 
-    snapshot.player.position.x = 999;
+    snapshot.players['Player_1'].position.x = 999;
     snapshot.doors['D2'].unlocked = false;
     snapshot.spawnPoints['Map002'][0].id = 'Hacked';
-    expect(state.player.position.x).toBe(1);
+    expect(state.players['Player_1'].position.x).toBe(1);
     expect(state.doors['D2'].unlocked).toBe(true);
     expect(state.spawnPoints['Map002'][0].id).toBe('Default');
   });

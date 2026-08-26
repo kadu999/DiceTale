@@ -13,14 +13,44 @@ export interface SpawnPointInfo {
   id: string;
 }
 
+export interface PlayerInfo {
+  name: string;
+  position: { x: number; y: number };
+  mapName: string;
+}
+
 export class GameState {
   currentMap = 'Map001';
-  player = { position: { x: 0, y: 0 } };
+  players: Record<string, PlayerInfo> = {};
   doors: Record<string, DoorInfo> = {};
   spawnPoints: Record<string, SpawnPointInfo[]> = {};
 
   setMap(mapName: string, _spawnId?: string) {
     this.currentMap = mapName;
+  }
+
+  /** 注册/更新玩家名单（保留已上报的位置与地图）。 */
+  registerPlayers(players: Array<{ id: string; name: string }>) {
+    for (const player of players) {
+      const existing = this.players[player.id];
+      this.players[player.id] = {
+        name: player.name || player.id,
+        position: existing?.position ?? { x: 0.5, y: 0.5 },
+        mapName: existing?.mapName ?? this.currentMap,
+      };
+    }
+  }
+
+  /** 更新玩家位置（归一化图片坐标 + 所在地图）。 */
+  setPlayerPosition(playerId: string, position: { x: number; y: number }, mapName: string) {
+    const player = this.players[playerId];
+    if (!player) {
+      // 未知玩家：按 id 注册，name 用 id
+      this.players[playerId] = { name: playerId, position, mapName };
+      return;
+    }
+    player.position = position;
+    player.mapName = mapName;
   }
 
   /**
@@ -63,14 +93,10 @@ export class GameState {
     return true;
   }
 
-  setPlayerPosition(position: { x: number; y: number }) {
-    this.player.position = position;
-  }
-
   getSnapshot(): GameStateSnapshot {
     return {
       currentMap: this.currentMap,
-      player: { position: { ...this.player.position } },
+      players: JSON.parse(JSON.stringify(this.players)),
       doors: JSON.parse(JSON.stringify(this.doors)),
       spawnPoints: JSON.parse(JSON.stringify(this.spawnPoints)),
     };

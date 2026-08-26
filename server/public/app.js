@@ -55,6 +55,7 @@ function render() {
   if (!state) return;
   renderMapTabs();
   renderMap();
+  renderPlayerList();
 }
 
 function knownMaps() {
@@ -120,15 +121,44 @@ function renderMap() {
     layer.appendChild(marker);
   }
 
-  // 玩家标记（仅显示在玩家当前所在的地图上）
-  if (map === state.currentMap && state.player?.position) {
-    const player = document.createElement('div');
-    player.className = 'player-marker';
-    player.title = `玩家位置`;
-    player.style.left = `${(state.player.position.x ?? 0.5) * 100}%`;
-    player.style.top = `${(state.player.position.y ?? 0.5) * 100}%`;
-    layer.appendChild(player);
+  // 玩家标记（每个玩家一个，显示在其所在的地图上）
+  for (const [playerId, player] of Object.entries(state.players || {})) {
+    if (player.mapName !== map) continue;
+
+    const marker = document.createElement('div');
+    marker.className = 'player-marker';
+    marker.title = player.name || playerId;
+    marker.style.left = `${(player.position?.x ?? 0.5) * 100}%`;
+    marker.style.top = `${(player.position?.y ?? 0.5) * 100}%`;
+    layer.appendChild(marker);
   }
+}
+
+function renderPlayerList() {
+  const container = document.getElementById('playerList');
+  container.innerHTML = '';
+
+  const players = Object.entries(state.players || {});
+  if (players.length === 0) {
+    container.innerHTML = '<div class="player-row empty">暂无玩家</div>';
+    return;
+  }
+
+  for (const [playerId, player] of players) {
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.innerHTML = `
+      <i class="marker-dot player"></i>
+      <span class="player-name">${player.name || playerId}</span>
+      <span class="player-info">${player.mapName} · ${fmtPos(player.position)}</span>
+    `;
+    container.appendChild(row);
+  }
+}
+
+function fmtPos(pos) {
+  if (!pos) return '-';
+  return `(${pos.x.toFixed(2)}, ${pos.y.toFixed(2)})`;
 }
 
 function toggleDoor(doorId, currentlyUnlocked) {

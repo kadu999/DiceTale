@@ -66,6 +66,7 @@ namespace DiceTale
                 var player = playerGo.GetComponent<Player>();
                 if (player != null)
                 {
+                    player.SetPlayerId($"Player_{i + 1}");
                     Players.Add(player);
                 }
             }

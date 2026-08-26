@@ -23,6 +23,10 @@ export class ClientHandler {
         saveState();
         this.broadcast();
         break;
+      case 'register_players':
+        gameState.registerPlayers(message.players);
+        this.broadcast();
+        break;
       case 'request_door_access':
         this.handleDoorAccess(message.doorId);
         break;
@@ -33,7 +37,7 @@ export class ClientHandler {
         this.broadcast();
         break;
       case 'report_player_position':
-        gameState.setPlayerPosition(message.position);
+        gameState.setPlayerPosition(message.playerId, message.position, message.mapName);
         this.broadcast();
         break;
       default:

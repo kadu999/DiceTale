@@ -17,7 +17,7 @@ describe('persistence', () => {
   test('saveState and loadState roundtrip', (done) => {
     const state = new GameState();
     state.setMap('Map002');
-    state.setPlayerPosition({ x: 3, y: 4 });
+    state.setPlayerPosition('Player_1', { x: 3, y: 4 }, 'Map002');
     state.registerDoors('Map002', [
       { id: 'D1', targetMap: 'Map003', targetSpawn: 'Default', isPortal: true },
     ]);
@@ -30,14 +30,12 @@ describe('persistence', () => {
       const raw = fs.readFileSync(TEST_STATE_FILE, 'utf-8');
       const parsed = JSON.parse(raw);
       expect(parsed.currentMap).toBe('Map002');
-      expect(parsed.player.position).toEqual({ x: 3, y: 4 });
       expect(parsed.doors['D1'].unlocked).toBe(true);
       expect(parsed.spawnPoints['Map002']).toEqual([{ id: 'Default' }, { id: 'North' }]);
 
       const loaded = new GameState();
       loadState(loaded);
       expect(loaded.currentMap).toBe('Map002');
-      expect(loaded.player.position).toEqual({ x: 3, y: 4 });
       expect(loaded.doors['D1'].unlocked).toBe(true);
       expect(loaded.spawnPoints['Map002']).toEqual([{ id: 'Default' }, { id: 'North' }]);
       done();

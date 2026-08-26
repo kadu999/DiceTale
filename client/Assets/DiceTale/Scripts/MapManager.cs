@@ -34,8 +34,9 @@ namespace DiceTale
             var connection = Server.ServerConnection.Instance;
             if (connection != null)
             {
-                // 服务器连接（或重连）成功后补报当前地图对象
+                // 服务器连接（或重连）成功后补报当前地图对象与玩家名单
                 connection.OnConnected += ReportMapObjects;
+                connection.OnConnected += ReportPlayers;
             }
 
             LoadMap(initialMapName, "Default");
@@ -47,6 +48,7 @@ namespace DiceTale
             if (connection != null)
             {
                 connection.OnConnected -= ReportMapObjects;
+                connection.OnConnected -= ReportPlayers;
             }
         }
 
@@ -159,6 +161,39 @@ namespace DiceTale
             ReportPlayerPosition();
         }
 
+        /// <summary>上报当前玩家名单，供 GM 显示玩家列表。</summary>
+        private void ReportPlayers()
+        {
+            var connection = Server.ServerConnection.Instance;
+            if (connection == null || !connection.IsConnected)
+            {
+                return;
+            }
+
+            var characterManager = CharacterManager.Instance;
+            if (characterManager == null || characterManager.Players.Count == 0)
+            {
+                return;
+            }
+
+            var msg = new Server.RegisterPlayersMessage();
+            foreach (var player in characterManager.Players)
+            {
+                if (player == null)
+                {
+                    continue;
+                }
+
+                msg.players.Add(new Server.PlayerInfo
+                {
+                    id = player.PlayerId,
+                    name = player.PlayerId
+                });
+            }
+
+            connection.Send(msg);
+        }
+
         /// <summary>节流上报当前玩家位置，供 GM 后台显示（服务器只记录，不校验）。</summary>
         private void ReportPlayerPosition()
         {
@@ -183,8 +218,10 @@ namespace DiceTale
             lastReportedPosition = pos;
             connection.Send(new Server.ReportPlayerPositionMessage
             {
+                playerId = player.PlayerId,
                 // 归一化图片坐标（与门位置一致，GM 页面可直接叠加到地图图片上）
-                position = GetNormalizedPosition(pos)
+                position = GetNormalizedPosition(pos),
+                mapName = CurrentMapName
             });
         }
 

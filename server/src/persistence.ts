@@ -11,7 +11,6 @@ export function loadState(target = gameState) {
   try {
     const data = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8')) as Partial<GameStateSnapshot>;
     if (data.currentMap) target.currentMap = data.currentMap;
-    if (data.player?.position) target.player.position = data.player.position;
     if (data.doors) {
       for (const [id, door] of Object.entries(data.doors)) {
         target.doors[id] = { ...door };
@@ -20,6 +19,7 @@ export function loadState(target = gameState) {
     if (data.spawnPoints) {
       target.spawnPoints = JSON.parse(JSON.stringify(data.spawnPoints));
     }
+    // players 为运行时数据（客户端连接后重新上报），不持久化恢复。
   } catch (err) {
     console.error('[Persistence] Failed to load state:', err);
   }

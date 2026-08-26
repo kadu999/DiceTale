@@ -13,9 +13,17 @@ export type ClientMessage =
       }>;
       spawnPoints: Array<{ id: string }>;
     }
+  | { type: 'register_players'; players: Array<{ id: string; name: string }> }
   | { type: 'request_door_access'; doorId: string }
   | { type: 'request_teleport'; mapName: string; spawnId: string }
-  | { type: 'report_player_position'; position: { x: number; y: number } };
+  | {
+      type: 'report_player_position';
+      playerId: string;
+      /** 归一化图片坐标 [0,1]，y 向下 */
+      position: { x: number; y: number };
+      /** 玩家当前所在的地图 */
+      mapName: string;
+    };
 
 export type ServerMessage =
   | { type: 'sync_state'; state: GameStateSnapshot }
@@ -40,13 +48,19 @@ export interface DoorStateSnapshot {
   position: { x: number; y: number };
 }
 
+export interface PlayerStateSnapshot {
+  name: string;
+  /** 归一化图片坐标 [0,1]，y 向下 */
+  position: { x: number; y: number };
+  /** 玩家当前所在的地图 */
+  mapName: string;
+}
+
 export interface GameStateSnapshot {
   currentMap: string;
-  player: {
-    position: { x: number; y: number };
-  };
+  players: Record<string, PlayerStateSnapshot>;
   doors: Record<string, DoorStateSnapshot>;
-  /** mapName -> spawn point ids，供 GM 后台传送下拉框使用 */
+  /** mapName -> spawn point ids */
   spawnPoints: Record<string, Array<{ id: string }>>;
 }
 

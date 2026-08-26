@@ -47,10 +47,26 @@ namespace DiceTale.Server
     }
 
     [Serializable]
+    public class RegisterPlayersMessage
+    {
+        public string type = "register_players";
+        public List<PlayerInfo> players = new List<PlayerInfo>();
+    }
+
+    [Serializable]
+    public class PlayerInfo
+    {
+        public string id;
+        public string name;
+    }
+
+    [Serializable]
     public class ReportPlayerPositionMessage
     {
         public string type = "report_player_position";
+        public string playerId;
         public Position position;
+        public string mapName;
     }
 
     [Serializable]

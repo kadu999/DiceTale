@@ -179,6 +179,39 @@ main {
 .marker-dot.unlocked { background: #22c55e; }
 .marker-dot.player { background: #3b82f6; }
 
+/* ---- 玩家列表 ---- */
+.player-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.player-row.empty {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.player-name {
+  font-weight: 600;
+}
+
+.player-info {
+  margin-left: auto;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
 /* ---- 手机 / 平板 ---- */
 @media (max-width: 900px) {
   header {

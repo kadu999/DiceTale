@@ -272,11 +272,45 @@ describe('WebSocket server', () => {
     openSockets.push(gm.ws);
     await gm.next(); // initial gm_update
 
-    send(client.ws, { type: 'report_player_position', position: { x: 0.52, y: 0.31 } });
+    send(client.ws, {
+      type: 'report_player_position',
+      playerId: 'Player_1',
+      position: { x: 0.52, y: 0.31 },
+      mapName: 'Map001',
+    });
 
     const update = await gm.next(); // 位置上报触发广播
     expect(update.type).toBe('gm_update');
-    expect(update.state.player.position).toEqual({ x: 0.52, y: 0.31 });
+    expect(update.state.players['Player_1']).toEqual({
+      name: 'Player_1',
+      position: { x: 0.52, y: 0.31 },
+      mapName: 'Map001',
+    });
+
+    gm.ws.close();
+    client.ws.close();
+  });
+
+  test('register_players lists players in gm snapshot', async () => {
+    const client = await connect('/client');
+    openSockets.push(client.ws);
+    send(client.ws, { type: 'request_join' });
+    await client.next(); // sync_state
+
+    send(client.ws, {
+      type: 'register_players',
+      players: [
+        { id: 'Player_1', name: '小明' },
+        { id: 'Player_2', name: '小红' },
+      ],
+    });
+
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    const update = await gm.next(); // 注册后广播的 gm_update
+
+    expect(Object.keys(update.state.players).sort()).toEqual(['Player_1', 'Player_2']);
+    expect(update.state.players['Player_2'].name).toBe('小红');
 
     gm.ws.close();
     client.ws.close();
