@@ -55,7 +55,7 @@ export class GameState {
 
   /**
    * 注册/更新门信息。以 doorId 为全局键合并：
-   * - unlocked 状态跨地图保留（服务器是权威状态源）；
+   * - unlocked 状态跨地图保留（由后台记录）；
    * - targetMap / targetSpawn / isPortal / position / mapName 以最新上报为准。
    */
   registerDoors(

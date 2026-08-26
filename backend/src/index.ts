@@ -146,10 +146,11 @@ loadState();
 
 if (require.main === module) {
   server.listen(PORT, () => {
-    console.log(`DiceTale server listening on http://localhost:${PORT}`);
+    console.log(`DiceTale backend listening on http://localhost:${PORT}`);
     console.log(`  Client WS: ws://localhost:${PORT}/client`);
     console.log(`  GM WS:     ws://localhost:${PORT}/gm`);
     console.log(`  GM page:   http://localhost:${PORT}/`);
     console.log(`  Maps:      http://localhost:${PORT}/maps/Map001.png`);
+    console.log(`  Maps API:  http://localhost:${PORT}/api/maps`);
   });
 }

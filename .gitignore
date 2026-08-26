@@ -11,7 +11,7 @@ Thumbs.db
 # Logs
 *.log
 
-# Server
-server/node_modules/
-server/dist/
-server/data/gamestate.json
+# Backend (single-client console)
+backend/node_modules/
+backend/dist/
+backend/data/gamestate.json

@@ -1,7 +1,7 @@
 {
-  "name": "dicetale-server",
+  "name": "dicetale-backend",
   "version": "0.1.0",
-  "description": "DiceTale authoritative game server",
+  "description": "DiceTale single-client backend console (not a multi-client server)",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx src/index.ts",

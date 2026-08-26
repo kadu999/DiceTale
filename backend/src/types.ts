@@ -8,7 +8,7 @@ export type ClientMessage =
         targetMap: string;
         targetSpawn: string;
         isPortal: boolean;
-        /** 可选：归一化位置 [0,1]，y 向下；不传则保留服务器目录中的位置 */
+        /** 可选：归一化位置 [0,1]，y 向下；不传则保留后台已记录的位置 */
         position?: { x: number; y: number };
       }>;
       spawnPoints: Array<{ id: string }>;
