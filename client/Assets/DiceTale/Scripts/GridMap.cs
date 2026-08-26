@@ -139,7 +139,7 @@ namespace DiceTale
                 Directory.CreateDirectory(directory);
             }
 
-            var path = Path.Combine(directory, $"{fileName ?? this.name}.bin");
+            var path = Path.Combine(directory, $"{fileName ?? this.name}.bytes");
             using (var writer = new BinaryWriter(File.Open(path, FileMode.Create)))
             {
                 writer.Write(data.gridSizeX);

@@ -171,7 +171,7 @@ namespace DiceTale.Editor
                 Directory.CreateDirectory(directory);
             }
 
-            var path = Path.Combine(directory, $"{mapName}.bin");
+            var path = Path.Combine(directory, $"{mapName}.bytes");
             using (var writer = new BinaryWriter(File.Open(path, FileMode.Create)))
             {
                 writer.Write(data.gridSizeX);
@@ -192,7 +192,7 @@ namespace DiceTale.Editor
                 return;
             }
 
-            var path = Path.Combine(Application.dataPath, GridMapEditorConstants.DataDirectoryFull, $"{mapName}.bin");
+            var path = Path.Combine(Application.dataPath, GridMapEditorConstants.DataDirectoryFull, $"{mapName}.bytes");
             if (!File.Exists(path))
             {
                 return;
