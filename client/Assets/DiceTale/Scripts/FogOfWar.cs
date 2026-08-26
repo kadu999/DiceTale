@@ -211,7 +211,8 @@ namespace DiceTale
 
         private void CreateDisplayObject(float gridWidth, float gridHeight)
         {
-            displayMaterial = new Material(Shader.Find("Sprites/Default"));
+            //displayMaterial = new Material(Shader.Find("Sprites/Default"));
+            displayMaterial = new Material(Shader.Find("Unlit/Transparent"));
 
             var go = new GameObject("FogOverlay");
             go.transform.SetParent(transform, false);
