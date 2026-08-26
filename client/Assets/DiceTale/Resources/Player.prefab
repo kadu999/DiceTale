@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 8515844535315748600}
   - component: {fileID: 124212714056936369}
   - component: {fileID: 5997600896787544582}
-  - component: {fileID: 9203246920319652377}
   - component: {fileID: 3876241800738876313}
   - component: {fileID: 2015517731039516873}
   m_Layer: 0
@@ -107,19 +106,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5504deb13fee6c41a745d1c88c48cac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.Player
---- !u!114 &9203246920319652377
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4438434259499130340}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 70e51bd92c384274aa47a4fb57bf9856, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.PlayerMover
-  moveSpeed: 5
 --- !u!58 &3876241800738876313
 CircleCollider2D:
   m_ObjectHideFlags: 0
