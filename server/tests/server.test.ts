@@ -286,9 +286,8 @@ describe('WebSocket server', () => {
     const res = await httpGet('/api/maps');
     expect(res.status).toBe(200);
     const names = res.body.maps.map((m: any) => m.name);
-    expect(names).toContain('Map001');
-    expect(names).toContain('Map002');
-    expect(names).toContain('Map003');
+    expect(names).toEqual(['Map001', 'Map002', 'Map003']);
+    expect(names).not.toContain('Room001');
     const map001 = res.body.maps.find((m: any) => m.name === 'Map001');
     expect(map001.image).toBe('/maps/Map001.png');
   });

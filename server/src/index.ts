@@ -48,7 +48,7 @@ function listMaps(): Array<{ name: string; image: string }> {
   return fs
     .readdirSync(texturesDir)
     .filter((f) => /\.png$/i.test(f))
-    .filter((f) => !/^(ACT|FX)/i.test(f) && !/^Carriage/i.test(f) && !/__v\d/i.test(f))
+    .filter((f) => !/^(ACT|FX|Room)/i.test(f) && !/^Carriage/i.test(f) && !/__v\d/i.test(f))
     .sort()
     .map((f) => ({ name: f.replace(/\.png$/i, ''), image: `/maps/${f}` }));
 }
