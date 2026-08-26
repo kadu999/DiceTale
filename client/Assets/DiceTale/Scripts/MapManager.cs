@@ -117,23 +117,42 @@ namespace DiceTale
 
         private GameObject CreateMapGameObject(string mapName, Sprite sprite)
         {
-            var go = new GameObject(mapName);
-            go.transform.SetParent(mapRoot, false);
+            // 优先使用 Resources 里的地图预设（含出生点、门、装饰等设计内容）
+            var prefab = Resources.Load<GameObject>(mapName);
+            if (prefab != null)
+            {
+                var go = Instantiate(prefab, mapRoot);
+                go.name = mapName;
 
-            var spriteRenderer = go.AddComponent<SpriteRenderer>();
-            spriteRenderer.sprite = sprite;
+                // 用 .bytes 网格数据覆盖预设的 GridMap（保持服务器/客户端一致的障碍数据）
+                var gridMap = go.GetComponent<GridMap>();
+                if (gridMap != null)
+                {
+                    gridMap.LoadData(mapName);
+                    gridMap.UpdateCellSize();
+                }
 
-            var gridMap = go.AddComponent<GridMap>();
-            gridMap.LoadData(mapName);
-            gridMap.UpdateCellSize();
+                return go;
+            }
+
+            // 回退：动态生成（无预设时）
+            var dynamicGo = new GameObject(mapName);
+            dynamicGo.transform.SetParent(mapRoot, false);
+
+            var dynamicRenderer = dynamicGo.AddComponent<SpriteRenderer>();
+            dynamicRenderer.sprite = sprite;
+
+            var dynamicGrid = dynamicGo.AddComponent<GridMap>();
+            dynamicGrid.LoadData(mapName);
+            dynamicGrid.UpdateCellSize();
 
             var spawnGo = new GameObject("Spawn_Default");
-            spawnGo.transform.SetParent(go.transform, false);
-            spawnGo.transform.position = gridMap.GridOrigin + new Vector3(gridMap.CellSize * 0.5f, gridMap.CellSize * 0.5f, 0f);
+            spawnGo.transform.SetParent(dynamicGo.transform, false);
+            spawnGo.transform.position = dynamicGrid.GridOrigin + new Vector3(dynamicGrid.CellSize * 0.5f, dynamicGrid.CellSize * 0.5f, 0f);
             var spawnPoint = spawnGo.AddComponent<SpawnPoint>();
             spawnPoint.SetId("Default");
 
-            return go;
+            return dynamicGo;
         }
 
         /// <summary>把玩家移动到指定出生点（spawnId 为空时用第一个出生点）。</summary>
