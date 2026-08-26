@@ -21,6 +21,10 @@ namespace DiceTale
         [SerializeField]
         private float checkInterval = 0.2f;
 
+        [Tooltip("雾边缘羽化强度（0=不羽化，格子方块明显）")]
+        [SerializeField]
+        private int edgeSmoothPasses = 2;
+
         private GridMap gridMap;
         private readonly Dictionary<GridCellType, SpriteRenderer> fogAreas = new Dictionary<GridCellType, SpriteRenderer>();
         private readonly HashSet<GridCellType> revealedAreas = new HashSet<GridCellType>();
@@ -110,8 +114,11 @@ namespace DiceTale
                     colors[indices[i]] = new Color(fogColor.r, fogColor.g, fogColor.b, 1f);
                 }
 
+                // 边缘羽化：对 alpha 做均值模糊，让雾边缘柔和过渡
+                SmoothFogAlpha(colors, gridSize.x, gridSize.y, edgeSmoothPasses);
+
                 var texture = new Texture2D(gridSize.x, gridSize.y, TextureFormat.RGBA32, false);
-                texture.filterMode = FilterMode.Point;
+                texture.filterMode = FilterMode.Bilinear;
                 texture.wrapMode = TextureWrapMode.Clamp;
                 texture.name = $"FogArea_{fogType}";
                 texture.SetPixels(colors);
@@ -169,6 +176,56 @@ namespace DiceTale
             {
                 renderer.enabled = false; // 雾散开，区域被揭示
                 Debug.Log($"[FogOfWar] area {type} revealed (fog cleared) by player at {gridPos}");
+            }
+        }
+
+        /// <summary>对雾纹理的 alpha 通道做多次 3x3 均值模糊，让边缘柔和（羽化）。</summary>
+        private static void SmoothFogAlpha(Color[] colors, int width, int height, int passes)
+        {
+            if (passes <= 0)
+            {
+                return;
+            }
+
+            var alphaMap = new float[width * height];
+            for (int i = 0; i < colors.Length; i++)
+            {
+                alphaMap[i] = colors[i].a;
+            }
+
+            for (int pass = 0; pass < passes; pass++)
+            {
+                var next = new float[width * height];
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        float sum = 0f;
+                        int count = 0;
+                        for (int dy = -1; dy <= 1; dy++)
+                        {
+                            for (int dx = -1; dx <= 1; dx++)
+                            {
+                                int nx = x + dx;
+                                int ny = y + dy;
+                                if (nx >= 0 && nx < width && ny >= 0 && ny < height)
+                                {
+                                    sum += alphaMap[ny * width + nx];
+                                    count++;
+                                }
+                            }
+                        }
+
+                        next[y * width + x] = sum / count;
+                    }
+                }
+
+                alphaMap = next;
+            }
+
+            for (int i = 0; i < colors.Length; i++)
+            {
+                colors[i] = new Color(colors[i].r, colors[i].g, colors[i].b, alphaMap[i]);
             }
         }
 
