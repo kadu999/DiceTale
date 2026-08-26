@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace DiceTale
 {
@@ -73,20 +72,18 @@ namespace DiceTale
         /// <summary>按住鼠标右键，逐格擦除鼠标所指的雾。</summary>
         private void HandleRightClickErase()
         {
-            var mouse = Mouse.current;
-            var camera = Camera.main;
-            if (mouse == null || camera == null || gridMap == null || fogColors == null)
+            if (gridMap == null || fogColors == null)
             {
                 return;
             }
 
-            if (!mouse.rightButton.isPressed)
+            var input = Object.FindFirstObjectByType<InputManager>();
+            if (input == null || !input.IsRightMouseHeld)
             {
                 return;
             }
 
-            var world = camera.ScreenToWorldPoint(mouse.position.ReadValue());
-            var gridPos = gridMap.WorldToGrid(world);
+            var gridPos = gridMap.WorldToGrid(input.GetMouseWorldPosition());
 
             // 只擦除雾格子
             if (!IsFogType(gridMap.GetCellType(gridPos)))

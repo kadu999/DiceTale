@@ -28,6 +28,36 @@ namespace DiceTale
             HandleClick();
         }
 
+        /// <summary>鼠标右键是否按住（供其他系统查询，统一走 InputManager）。</summary>
+        public bool IsRightMouseHeld
+        {
+            get
+            {
+                var mouse = Mouse.current;
+                return mouse != null && mouse.rightButton.isPressed;
+            }
+        }
+
+        /// <summary>鼠标当前世界坐标（z=0，供其他系统查询）。</summary>
+        public Vector3 GetMouseWorldPosition()
+        {
+            var camera = playerCamera != null ? playerCamera : Camera.main;
+            if (camera == null)
+            {
+                return Vector3.zero;
+            }
+
+            var mouse = Mouse.current;
+            if (mouse == null)
+            {
+                return Vector3.zero;
+            }
+
+            var world = camera.ScreenToWorldPoint(mouse.position.ReadValue());
+            world.z = 0f;
+            return world;
+        }
+
         public void HandleClick()
         {
             var camera = playerCamera != null ? playerCamera : Camera.main;
