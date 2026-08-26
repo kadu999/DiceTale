@@ -92,7 +92,8 @@ namespace DiceTale
                     {
                         if (cellGrid[x, y] == fogType)
                         {
-                            colors[y * gridSize.x + x] = new Color(fogColor.r, fogColor.g, fogColor.b, 0.6f);
+                            // 雾不透明
+                            colors[y * gridSize.x + x] = new Color(fogColor.r, fogColor.g, fogColor.b, 1f);
                             cellCount++;
                         }
                     }
