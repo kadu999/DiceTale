@@ -8,5 +8,6 @@ namespace DiceTale.Editor
         public const string DataDirectoryFull = "DiceTale/Resources";
         public const int MinBrushSize = 1;
         public const int MaxBrushSize = 5;
+        public const float ToolbarHeight = 160f;
     }
 }

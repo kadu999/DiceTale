@@ -5,14 +5,13 @@ namespace DiceTale.Editor
 {
     public class GridMapEditorRenderer
     {
-        private const float ToolbarHeight = 160f;
-
-        public void DrawToolbar(GridMapEditorState state, out bool shouldLoadTexture, out bool shouldSave, out bool shouldLoad, out bool shouldClear)
+        public void DrawToolbar(GridMapEditorState state, out bool shouldLoadTexture, out bool shouldSave, out bool shouldLoad, out bool shouldClear, out bool shouldCalculateGridSize)
         {
             shouldLoadTexture = false;
             shouldSave = false;
             shouldLoad = false;
             shouldClear = false;
+            shouldCalculateGridSize = false;
 
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
@@ -47,7 +46,7 @@ namespace DiceTale.Editor
             state.GridSize = EditorGUILayout.Vector2IntField("网格大小", state.GridSize);
             if (GUILayout.Button("根据图片计算", GUILayout.Width(100f)))
             {
-                state.CalculateGridSizeFromImage();
+                shouldCalculateGridSize = true;
             }
             EditorGUILayout.EndHorizontal();
 
@@ -85,7 +84,7 @@ namespace DiceTale.Editor
             var totalWidth = state.GridSize.x * GridMapEditorConstants.CellDisplaySize;
             var totalHeight = state.GridSize.y * GridMapEditorConstants.CellDisplaySize;
 
-            var position = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Width(windowSize.x), GUILayout.Height(windowSize.y - ToolbarHeight));
+            var position = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Width(windowSize.x), GUILayout.Height(windowSize.y - GridMapEditorConstants.ToolbarHeight));
 
             gridRect = GUILayoutUtility.GetRect(totalWidth, totalHeight);
             DrawBackground(gridRect, state);
