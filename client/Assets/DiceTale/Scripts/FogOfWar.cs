@@ -20,9 +20,9 @@ namespace DiceTale
         [SerializeField]
         private float checkInterval = 0.2f;
 
-        [Tooltip("雾边缘羽化强度（0=不羽化，边缘干脆）")]
+        [Tooltip("雾边缘羽化强度（0=不羽化）")]
         [SerializeField]
-        private int edgeSmoothPasses = 0;
+        private int edgeSmoothPasses = 2;
 
         private GridMap gridMap;
         private SpriteRenderer fogRenderer;
@@ -180,6 +180,13 @@ namespace DiceTale
                 {
                     for (int x = 0; x < width; x++)
                     {
+                        // 地图四边的格子不平滑（保持干脆，不向边界外扩散）
+                        if (x == 0 || x == width - 1 || y == 0 || y == height - 1)
+                        {
+                            next[y * width + x] = alphaMap[y * width + x];
+                            continue;
+                        }
+
                         float sum = 0f;
                         int count = 0;
                         for (int dy = -1; dy <= 1; dy++)
