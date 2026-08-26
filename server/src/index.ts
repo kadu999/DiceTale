@@ -35,6 +35,33 @@ function serveFile(res: http.ServerResponse, filePath: string) {
   fs.createReadStream(filePath).pipe(res);
 }
 
+function sendJson(res: http.ServerResponse, status: number, body: unknown) {
+  res.writeHead(status, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(body));
+}
+
+/** 扫描客户端图片目录，列出可观看的地图（只读，供 GM 浏览所有地图）。过滤美术素材包遗留。 */
+function listMaps(): Array<{ name: string; image: string }> {
+  const texturesDir = path.join(CLIENT_ASSETS_DIR, 'Res', 'Textures');
+  if (!fs.existsSync(texturesDir)) return [];
+
+  return fs
+    .readdirSync(texturesDir)
+    .filter((f) => /\.png$/i.test(f))
+    .filter((f) => !/^(ACT|FX)/i.test(f) && !/^Carriage/i.test(f) && !/__v\d/i.test(f))
+    .sort()
+    .map((f) => ({ name: f.replace(/\.png$/i, ''), image: `/maps/${f}` }));
+}
+
+/** 只读 API：GET /api/maps -> 所有可观看的地图图片列表 */
+function handleApi(req: http.IncomingMessage, res: http.ServerResponse): boolean {
+  if (req.url === '/api/maps' && req.method === 'GET') {
+    sendJson(res, 200, { maps: listMaps() });
+    return true;
+  }
+  return false;
+}
+
 /** /maps/Map001.png -> 客户端 Res/Textures；/maps/Map001.bytes -> 客户端 Resources */
 function serveMapAsset(req: http.IncomingMessage, res: http.ServerResponse): boolean {
   const match = /^\/maps\/([A-Za-z0-9_.-]+)$/.exec(req.url || '');
@@ -55,6 +82,10 @@ function serveMapAsset(req: http.IncomingMessage, res: http.ServerResponse): boo
 }
 
 function serveStatic(req: http.IncomingMessage, res: http.ServerResponse) {
+  if (handleApi(req, res)) {
+    return;
+  }
+
   if (serveMapAsset(req, res)) {
     return;
   }

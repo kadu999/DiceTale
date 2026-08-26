@@ -40,6 +40,24 @@ function send(ws: WebSocket, message: unknown) {
   ws.send(JSON.stringify(message));
 }
 
+function httpGet(path: string): Promise<{ status: number; body: any }> {
+  return new Promise((resolve, reject) => {
+    http
+      .get({ host: 'localhost', port, path }, (res) => {
+        let data = '';
+        res.on('data', (c) => (data += c));
+        res.on('end', () => {
+          try {
+            resolve({ status: res.statusCode!, body: JSON.parse(data) });
+          } catch {
+            resolve({ status: res.statusCode!, body: data });
+          }
+        });
+      })
+      .on('error', reject);
+  });
+}
+
 let httpServer: http.Server;
 let port: number;
 const openSockets: WebSocket[] = [];
@@ -262,5 +280,16 @@ describe('WebSocket server', () => {
 
     gm.ws.close();
     client.ws.close();
+  });
+
+  test('GET /api/maps lists all viewable maps', async () => {
+    const res = await httpGet('/api/maps');
+    expect(res.status).toBe(200);
+    const names = res.body.maps.map((m: any) => m.name);
+    expect(names).toContain('Map001');
+    expect(names).toContain('Map002');
+    expect(names).toContain('Map003');
+    const map001 = res.body.maps.find((m: any) => m.name === 'Map001');
+    expect(map001.image).toBe('/maps/Map001.png');
   });
 });

@@ -3,6 +3,16 @@ let ws;
 let state = null;
 let selectedMap = null;
 let lastManualMapPick = 0;
+let apiMaps = []; // GET /api/maps 返回的所有可观看地图 [{name, image}]
+
+// 加载时获取服务器可提供的地图列表（浏览所有地图）
+fetch('/api/maps')
+  .then((res) => res.json())
+  .then((data) => {
+    apiMaps = data.maps || [];
+    if (state) render();
+  })
+  .catch(() => {});
 
 function connect() {
   ws = new WebSocket(wsUrl);
@@ -72,7 +82,10 @@ function render() {
 }
 
 function knownMaps() {
-  const maps = new Set(Object.keys(state.spawnPoints || {}));
+  const maps = new Set(apiMaps.map((m) => m.name));
+  for (const map of Object.keys(state.spawnPoints || {})) {
+    maps.add(map);
+  }
   if (state.currentMap) maps.add(state.currentMap);
   return maps;
 }

@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <title>DiceTale GM 控制台</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -29,36 +30,36 @@
     </section>
 
     <div class="side">
-      <section class="panel">
-        <h2>玩家状态</h2>
+      <details class="panel" open>
+        <summary>玩家状态</summary>
         <p>当前地图：<span id="currentMap">-</span></p>
         <p>玩家位置：X=<span id="posX">-</span> Y=<span id="posY">-</span></p>
-      </section>
+      </details>
 
-      <section class="panel">
-        <h2>门控制</h2>
+      <details class="panel" open>
+        <summary>门控制</summary>
         <table>
           <thead>
             <tr><th>ID</th><th>地图</th><th>目标</th><th>状态</th><th>操作</th></tr>
           </thead>
           <tbody id="doorTable"></tbody>
         </table>
-      </section>
+      </details>
 
-      <section class="panel">
-        <h2>传送控制</h2>
+      <details class="panel">
+        <summary>传送控制</summary>
         <label>地图：<select id="teleportMap"></select></label>
         <label>出生点：<select id="teleportSpawn"></select></label>
         <button id="btnTeleport">传送玩家</button>
         <button id="btnRefresh">刷新状态</button>
-      </section>
+      </details>
     </div>
   </main>
 
-  <section class="panel log-panel">
-    <h2>消息日志</h2>
+  <details class="panel log-panel" open>
+    <summary>消息日志</summary>
     <div id="log"></div>
-  </section>
+  </details>
 
   <script src="app.js"></script>
 </body>
