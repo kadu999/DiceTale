@@ -12,7 +12,6 @@ namespace DiceTale.Editor
         [SerializeField] private string serializedMapName = "";
         [SerializeField] private Vector2Int serializedGridSize = new Vector2Int(20, 20);
         [SerializeField] private float serializedCellSize = 1f;
-        [SerializeField] private bool serializedAutoCellSize = true;
         [SerializeField] private GridCellType serializedSelectedType = GridCellType.Obstacle;
         [SerializeField] private int serializedBrushSize = 1;
         [SerializeField] private bool serializedEraseMode;
@@ -32,7 +31,6 @@ namespace DiceTale.Editor
             state.MapName = serializedMapName;
             state.GridSize = serializedGridSize;
             state.CellSize = serializedCellSize;
-            state.AutoCellSize = serializedAutoCellSize;
             state.SelectedType = serializedSelectedType;
             state.BrushSize = serializedBrushSize;
             state.EraseMode = serializedEraseMode;
@@ -48,7 +46,6 @@ namespace DiceTale.Editor
             serializedMapName = state.MapName;
             serializedGridSize = state.GridSize;
             serializedCellSize = state.CellSize;
-            serializedAutoCellSize = state.AutoCellSize;
             serializedSelectedType = state.SelectedType;
             serializedBrushSize = state.BrushSize;
             serializedEraseMode = state.EraseMode;

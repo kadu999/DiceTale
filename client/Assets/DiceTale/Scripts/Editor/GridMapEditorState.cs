@@ -11,7 +11,6 @@ namespace DiceTale.Editor
         [SerializeField] private string mapName = "";
         [SerializeField] private Vector2Int gridSize = new Vector2Int(20, 20);
         [SerializeField] private float cellSize = 1f;
-        [SerializeField] private bool autoCellSize = true;
         [SerializeField] private GridCellType selectedType = GridCellType.Obstacle;
         [SerializeField] private int brushSize = 1;
         [SerializeField] private bool eraseMode;
@@ -22,7 +21,6 @@ namespace DiceTale.Editor
         public string MapName { get => mapName; set => mapName = value; }
         public Vector2Int GridSize { get => gridSize; set => gridSize = Vector2Int.Max(value, Vector2Int.one); }
         public float CellSize { get => cellSize; set => cellSize = value > 0f ? value : 1f; }
-        public bool AutoCellSize { get => autoCellSize; set => autoCellSize = value; }
         public GridCellType SelectedType { get => selectedType; set => selectedType = value; }
         public int BrushSize { get => brushSize; set => brushSize = Mathf.Clamp(value, GridMapEditorConstants.MinBrushSize, GridMapEditorConstants.MaxBrushSize); }
         public bool EraseMode { get => eraseMode; set => eraseMode = value; }
@@ -236,7 +234,7 @@ namespace DiceTale.Editor
             ReferenceTexture = texture;
             MapName = Path.GetFileNameWithoutExtension(filePath);
 
-            if (autoCellSize || cellSize <= 0f)
+            if (cellSize <= 0f)
             {
                 CellSize = 1f;
             }

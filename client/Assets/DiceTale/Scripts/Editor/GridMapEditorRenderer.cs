@@ -52,17 +52,7 @@ namespace DiceTale.Editor
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            state.AutoCellSize = EditorGUILayout.Toggle("自动格子大小", state.AutoCellSize);
-            if (!state.AutoCellSize)
-            {
-                state.CellSize = EditorGUILayout.FloatField("格子大小", state.CellSize);
-            }
-            else if (state.ReferenceTexture != null)
-            {
-                EditorGUI.BeginDisabledGroup(true);
-                EditorGUILayout.FloatField("格子大小", state.CellSize);
-                EditorGUI.EndDisabledGroup();
-            }
+            state.CellSize = EditorGUILayout.FloatField("格子大小", state.CellSize);
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
