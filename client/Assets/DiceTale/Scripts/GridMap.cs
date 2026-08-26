@@ -370,10 +370,13 @@ namespace DiceTale
                 for (int y = 0; y < gridSize.y; y++)
                 {
                     var type = cellGrid[x, y];
-                    if (type != GridCellType.Empty)
+                    // 雾格子由 FogOfWar 按区域控制显示，Gizmos 不画雾，避免 Scene 视图误判
+                    if (type == GridCellType.Empty || IsFogType(type))
                     {
-                        DrawCellGizmo(new Vector2Int(x, y), GetCellTypeColor(type));
+                        continue;
                     }
+
+                    DrawCellGizmo(new Vector2Int(x, y), GetCellTypeColor(type));
                 }
             }
 
@@ -406,6 +409,21 @@ namespace DiceTale
                     return new Color(0.95f, 0.3f, 0.3f, 0.6f);
                 default:
                     return Color.clear;
+            }
+        }
+
+        private static bool IsFogType(GridCellType type)
+        {
+            switch (type)
+            {
+                case GridCellType.Fog1:
+                case GridCellType.Fog2:
+                case GridCellType.Fog3:
+                case GridCellType.Fog4:
+                case GridCellType.Fog5:
+                    return true;
+                default:
+                    return false;
             }
         }
 
