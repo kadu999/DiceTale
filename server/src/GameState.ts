@@ -1,10 +1,13 @@
 import { GameStateSnapshot } from './types';
+import { mapCatalog } from './mapCatalog';
 
 export interface DoorInfo {
   unlocked: boolean;
   targetMap: string;
   targetSpawn: string;
   isPortal: boolean;
+  mapName: string;
+  position: { x: number; y: number };
 }
 
 export interface SpawnPointInfo {
@@ -17,6 +20,28 @@ export class GameState {
   doors: Record<string, DoorInfo> = {};
   spawnPoints: Record<string, SpawnPointInfo[]> = {};
 
+  /**
+   * 启动时用服务器地图目录播种门与出生点。
+   * 保留已持久化的 unlocked 状态；客户端 register_map_objects 仍可覆盖元数据。
+   */
+  seedFromCatalog() {
+    for (const map of mapCatalog) {
+      this.spawnPoints[map.name] = map.spawns.map((id) => ({ id }));
+
+      for (const door of map.doors) {
+        const existing = this.doors[door.id];
+        this.doors[door.id] = {
+          unlocked: existing?.unlocked ?? false,
+          targetMap: door.targetMap,
+          targetSpawn: door.targetSpawn,
+          isPortal: door.isPortal,
+          mapName: map.name,
+          position: { ...door.position },
+        };
+      }
+    }
+  }
+
   setMap(mapName: string, _spawnId?: string) {
     this.currentMap = mapName;
   }
@@ -24,9 +49,19 @@ export class GameState {
   /**
    * 注册/更新门信息。以 doorId 为全局键合并：
    * - unlocked 状态跨地图保留（服务器是权威状态源）；
-   * - targetMap / targetSpawn / isPortal 以客户端上报为准。
+   * - targetMap / targetSpawn / isPortal / position / mapName 以最新上报为准。
    */
-  registerDoors(mapName: string, doors: Array<Omit<DoorInfo, 'unlocked'> & { id: string }>) {
+  registerDoors(
+    mapName: string,
+    doors: Array<
+      Partial<DoorInfo> & {
+        id: string;
+        targetMap: string;
+        targetSpawn: string;
+        isPortal: boolean;
+      }
+    >
+  ) {
     for (const door of doors) {
       const existing = this.doors[door.id];
       this.doors[door.id] = {
@@ -34,6 +69,8 @@ export class GameState {
         targetMap: door.targetMap,
         targetSpawn: door.targetSpawn,
         isPortal: door.isPortal,
+        mapName: door.mapName ?? existing?.mapName ?? mapName,
+        position: door.position ?? existing?.position ?? { x: 0.5, y: 0.5 },
       };
     }
   }

@@ -75,6 +75,31 @@ describe('WebSocket server', () => {
     expect(msg.state.spawnPoints).toBeDefined();
   });
 
+  test('catalog doors are seeded with positions in sync_state', async () => {
+    const client = await connect('/client');
+    openSockets.push(client.ws);
+    send(client.ws, { type: 'request_join' });
+
+    const msg = await client.next();
+    expect(msg.type).toBe('sync_state');
+
+    const door = msg.state.doors['Map001_Door_1'];
+    expect(door).toBeDefined();
+    expect(door.mapName).toBe('Map001');
+    expect(door.position.x).toBeCloseTo(0.801, 2);
+    expect(door.position.y).toBeCloseTo(0.477, 2);
+    expect(door.isPortal).toBe(true);
+    expect(door.targetMap).toBe('Map002');
+
+    const bridge = msg.state.doors['Map001_Door_2'];
+    expect(bridge).toBeDefined();
+    expect(bridge.isPortal).toBe(false);
+    expect(bridge.position.y).toBeCloseTo(0.589, 2);
+
+    expect(msg.state.spawnPoints['Map001']).toEqual([{ id: 'Map001_001' }]);
+    expect(msg.state.spawnPoints['Map003']).toEqual([{ id: 'Map003_001' }]);
+  });
+
   test('portal door access triggers teleport_player', async () => {
     const client = await connect('/client');
     openSockets.push(client.ws);
@@ -160,6 +185,31 @@ describe('WebSocket server', () => {
     expect(msg.type).toBe('set_door_state');
     expect(msg.doorId).toBe('TestDoorC');
     expect(msg.unlocked).toBe(true);
+  });
+
+  test('gm_close_door pushes set_door_state unlocked=false', async () => {
+    const client = await connect('/client');
+    openSockets.push(client.ws);
+    send(client.ws, { type: 'request_join' });
+    await client.next(); // sync_state
+
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    await gm.next(); // initial gm_update
+
+    send(gm.ws, { type: 'gm_open_door', doorId: 'Map001_Door_1' });
+    const opened = await client.next();
+    expect(opened.type).toBe('set_door_state');
+    expect(opened.unlocked).toBe(true);
+
+    send(gm.ws, { type: 'gm_close_door', doorId: 'Map001_Door_1' });
+    const closed = await client.next();
+    expect(closed.type).toBe('set_door_state');
+    expect(closed.doorId).toBe('Map001_Door_1');
+    expect(closed.unlocked).toBe(false);
+
+    gm.ws.close();
+    client.ws.close();
   });
 
   test('gm_teleport_player pushes teleport_player to connected client', async () => {

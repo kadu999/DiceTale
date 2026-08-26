@@ -14,7 +14,10 @@ export class GmHandler {
   handle(message: GmMessage) {
     switch (message.type) {
       case 'gm_open_door':
-        this.openDoor(message.doorId);
+        this.setDoor(message.doorId, true);
+        break;
+      case 'gm_close_door':
+        this.setDoor(message.doorId, false);
         break;
       case 'gm_teleport_player':
         this.teleportPlayer(message.mapName, message.spawnId);
@@ -27,15 +30,15 @@ export class GmHandler {
     }
   }
 
-  private openDoor(doorId: string) {
-    if (!gameState.setDoorUnlocked(doorId, true)) {
+  private setDoor(doorId: string, unlocked: boolean) {
+    if (!gameState.setDoorUnlocked(doorId, unlocked)) {
       console.warn('[GmHandler] Door not found:', doorId);
       return;
     }
 
     const clientSocket = this.getClientSocket();
     if (clientSocket) {
-      commands.setDoorState(clientSocket, doorId, true);
+      commands.setDoorState(clientSocket, doorId, unlocked);
     }
 
     saveState();

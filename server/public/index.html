@@ -12,30 +12,47 @@
     <span id="connectionStatus" class="status disconnected">未连接</span>
   </header>
 
-  <main class="grid">
-    <section class="panel">
-      <h2>玩家状态</h2>
-      <p>当前地图：<span id="currentMap">-</span></p>
-      <p>玩家位置：X=<span id="posX">-</span> Y=<span id="posY">-</span></p>
+  <main class="layout">
+    <section class="panel map-panel">
+      <h2>地图视图</h2>
+      <div id="mapTabs" class="map-tabs"></div>
+      <div id="mapContainer" class="map-container">
+        <img id="mapImage" alt="地图" draggable="false">
+        <div id="doorLayer" class="door-layer"></div>
+      </div>
+      <div class="legend">
+        <span class="legend-item"><i class="marker-dot locked"></i>锁定</span>
+        <span class="legend-item"><i class="marker-dot unlocked"></i>已开启</span>
+        <span class="legend-item">⦿ 传送门</span>
+        <span class="legend-item">▣ 普通门</span>
+      </div>
     </section>
 
-    <section class="panel">
-      <h2>门控制</h2>
-      <table>
-        <thead>
-          <tr><th>ID</th><th>目标地图</th><th>目标出生点</th><th>状态</th><th>操作</th></tr>
-        </thead>
-        <tbody id="doorTable"></tbody>
-      </table>
-    </section>
+    <div class="side">
+      <section class="panel">
+        <h2>玩家状态</h2>
+        <p>当前地图：<span id="currentMap">-</span></p>
+        <p>玩家位置：X=<span id="posX">-</span> Y=<span id="posY">-</span></p>
+      </section>
 
-    <section class="panel">
-      <h2>传送控制</h2>
-      <label>地图：<select id="teleportMap"></select></label>
-      <label>出生点：<select id="teleportSpawn"></select></label>
-      <button id="btnTeleport">传送玩家</button>
-      <button id="btnRefresh">刷新状态</button>
-    </section>
+      <section class="panel">
+        <h2>门控制</h2>
+        <table>
+          <thead>
+            <tr><th>ID</th><th>地图</th><th>目标</th><th>状态</th><th>操作</th></tr>
+          </thead>
+          <tbody id="doorTable"></tbody>
+        </table>
+      </section>
+
+      <section class="panel">
+        <h2>传送控制</h2>
+        <label>地图：<select id="teleportMap"></select></label>
+        <label>出生点：<select id="teleportSpawn"></select></label>
+        <button id="btnTeleport">传送玩家</button>
+        <button id="btnRefresh">刷新状态</button>
+      </section>
+    </div>
   </main>
 
   <section class="panel log-panel">

@@ -1,6 +1,8 @@
 const wsUrl = `ws://${location.host}/gm`;
 let ws;
 let state = null;
+let selectedMap = null;
+let lastManualMapPick = 0;
 
 function connect() {
   ws = new WebSocket(wsUrl);
@@ -39,12 +41,22 @@ function setStatus(connected) {
 function log(text) {
   const el = document.getElementById('log');
   const line = document.createElement('div');
-  const time = new Date().toLocaleTimeString();
-  line.textContent = `[${time}] ${text}`;
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
   el.appendChild(line);
   el.scrollTop = el.scrollHeight;
   while (el.childNodes.length > 200) el.removeChild(el.firstChild);
 }
+
+function send(msg) {
+  log(`-> ${JSON.stringify(msg)}`);
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(msg));
+  } else {
+    log('发送失败：未连接');
+  }
+}
+
+// ---------- 渲染 ----------
 
 function render() {
   if (!state) return;
@@ -53,49 +65,128 @@ function render() {
   document.getElementById('posX').textContent = state.player?.position?.x ?? '-';
   document.getElementById('posY').textContent = state.player?.position?.y ?? '-';
 
+  renderMapTabs();
+  renderMap();
+  renderDoorTable();
+  populateTeleportOptions();
+}
+
+function knownMaps() {
+  const maps = new Set(Object.keys(state.spawnPoints || {}));
+  if (state.currentMap) maps.add(state.currentMap);
+  return maps;
+}
+
+// ---------- 地图视图 ----------
+
+function renderMapTabs() {
+  const tabs = document.getElementById('mapTabs');
+  tabs.innerHTML = '';
+  for (const map of knownMaps()) {
+    const btn = document.createElement('button');
+    btn.textContent = map;
+    btn.className = map === effectiveMap() ? 'active' : '';
+    btn.onclick = () => {
+      selectedMap = map;
+      lastManualMapPick = Date.now();
+      renderMapTabs();
+      renderMap();
+    };
+    tabs.appendChild(btn);
+  }
+}
+
+function effectiveMap() {
+  if (selectedMap && knownMaps().has(selectedMap)) return selectedMap;
+  return state.currentMap || 'Map001';
+}
+
+function renderMap() {
+  // 跟随玩家当前地图：除非用户在 5 秒内手动选择了其他地图
+  if (selectedMap && Date.now() - lastManualMapPick > 5000 && state.currentMap !== selectedMap) {
+    selectedMap = state.currentMap;
+  }
+  if (!selectedMap) selectedMap = state.currentMap;
+
+  const map = effectiveMap();
+  const image = document.getElementById('mapImage');
+  if (image.src !== `/maps/${map}.png`) {
+    image.src = `/maps/${map}.png`;
+  }
+
+  const layer = document.getElementById('doorLayer');
+  layer.innerHTML = '';
+  for (const [id, door] of Object.entries(state.doors || {})) {
+    if (door.mapName !== map) continue;
+
+    const marker = document.createElement('button');
+    marker.className = `door-marker ${door.unlocked ? 'unlocked' : 'locked'}`;
+    marker.title = `${id}\n${door.isPortal ? '传送门' : '普通门'} → ${door.targetMap} / ${door.targetSpawn}\n${door.unlocked ? '已开启（点击关闭）' : '锁定（点击开启）'}`;
+    marker.textContent = door.isPortal ? '⦿' : '▣';
+    marker.style.left = `${(door.position?.x ?? 0.5) * 100}%`;
+    marker.style.top = `${(door.position?.y ?? 0.5) * 100}%`;
+    marker.onclick = () => toggleDoor(id, door.unlocked);
+    layer.appendChild(marker);
+  }
+}
+
+function toggleDoor(doorId, currentlyUnlocked) {
+  if (currentlyUnlocked) {
+    send({ type: 'gm_close_door', doorId });
+  } else {
+    send({ type: 'gm_open_door', doorId });
+  }
+}
+
+// ---------- 门列表 ----------
+
+function renderDoorTable() {
   const tbody = document.getElementById('doorTable');
   tbody.innerHTML = '';
   for (const [id, door] of Object.entries(state.doors || {})) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${id}</td>
-      <td>${door.targetMap}</td>
-      <td>${door.targetSpawn}</td>
+      <td>${door.mapName}</td>
+      <td>${door.isPortal ? '→ ' : ''}${door.targetMap}/${door.targetSpawn}</td>
       <td>${door.unlocked ? '已开启' : '锁定'}</td>
-      <td><button ${door.unlocked ? 'disabled' : ''}>开门</button></td>
+      <td></td>
     `;
-    const btn = tr.querySelector('button');
-    btn.onclick = () => send({ type: 'gm_open_door', doorId: id });
+    const cell = tr.lastElementChild;
+    if (door.unlocked) {
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '关门';
+      closeBtn.onclick = () => send({ type: 'gm_close_door', doorId: id });
+      cell.appendChild(closeBtn);
+    } else {
+      const openBtn = document.createElement('button');
+      openBtn.textContent = '开门';
+      openBtn.onclick = () => send({ type: 'gm_open_door', doorId: id });
+      cell.appendChild(openBtn);
+    }
     tbody.appendChild(tr);
   }
-
-  populateTeleportOptions();
 }
+
+// ---------- 传送 ----------
 
 function populateTeleportOptions() {
   if (!state) return;
   const mapSelect = document.getElementById('teleportMap');
   const spawnSelect = document.getElementById('teleportSpawn');
 
-  const knownMaps = new Set([state.currentMap]);
-  for (const door of Object.values(state.doors || {})) {
-    knownMaps.add(door.targetMap);
-  }
-  for (const map of Object.keys(state.spawnPoints || {})) {
-    knownMaps.add(map);
-  }
-
   mapSelect.innerHTML = '';
-  for (const map of knownMaps) {
+  for (const map of knownMaps()) {
     const opt = document.createElement('option');
     opt.value = map;
     opt.textContent = map;
     mapSelect.appendChild(opt);
   }
+  mapSelect.value = state.currentMap || mapSelect.value;
 
   function updateSpawns() {
-    const selectedMap = mapSelect.value;
-    const spawns = (state.spawnPoints && state.spawnPoints[selectedMap]) || [];
+    const selected = mapSelect.value;
+    const spawns = (state.spawnPoints && state.spawnPoints[selected]) || [];
     spawnSelect.innerHTML = '';
     if (spawns.length === 0) {
       const opt = document.createElement('option');
@@ -116,14 +207,7 @@ function populateTeleportOptions() {
   updateSpawns();
 }
 
-function send(msg) {
-  log(`-> ${JSON.stringify(msg)}`);
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(msg));
-  } else {
-    log('发送失败：未连接');
-  }
-}
+// ---------- 事件绑定 ----------
 
 document.getElementById('btnTeleport').onclick = () => {
   const map = document.getElementById('teleportMap').value;
