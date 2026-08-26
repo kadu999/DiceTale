@@ -1,10 +1,12 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DiceTale
 {
     /// <summary>
-    /// 迷雾：只在地图网格标记了 Fog1~Fog5 的格子处显示雾（按等级浓淡），
-    /// 未标记的区域保持清晰可见。需要与 GridMap 同物体。
+    /// 迷雾区域：Fog1~Fog5 各代表一个雾区域。
+    /// 玩家进入某个雾区域后，该区域的雾才开启（显示），未到达的区域保持隐藏。
+    /// 需要与 GridMap 同物体。
     /// </summary>
     [RequireComponent(typeof(GridMap))]
     public class FogOfWar : MonoBehaviour
@@ -15,29 +17,52 @@ namespace DiceTale
         [SerializeField]
         private int fogSortingOrder = 1;
 
+        [SerializeField]
+        private float checkInterval = 0.2f;
+
+        private static readonly GridCellType[] FogTypes =
+        {
+            GridCellType.Fog1, GridCellType.Fog2, GridCellType.Fog3,
+            GridCellType.Fog4, GridCellType.Fog5,
+        };
+
         private GridMap gridMap;
-        private SpriteRenderer fogRenderer;
+        private readonly Dictionary<GridCellType, SpriteRenderer> fogAreas = new Dictionary<GridCellType, SpriteRenderer>();
+        private readonly HashSet<GridCellType> revealedAreas = new HashSet<GridCellType>();
+        private float checkTimer;
 
         private void Start()
         {
             gridMap = GetComponent<GridMap>();
-            BuildStaticFog();
+            BuildFogAreas();
+        }
+
+        private void Update()
+        {
+            checkTimer -= Time.deltaTime;
+            if (checkTimer > 0f)
+            {
+                return;
+            }
+
+            checkTimer = checkInterval;
+            CheckPlayerFogArea();
         }
 
         private void OnDestroy()
         {
-            if (fogRenderer != null && fogRenderer.sprite != null)
+            foreach (var renderer in fogAreas.Values)
             {
-                var tex = fogRenderer.sprite.texture;
-                if (tex != null)
+                if (renderer != null && renderer.sprite != null && renderer.sprite.texture != null)
                 {
-                    Destroy(tex);
+                    Destroy(renderer.sprite.texture);
                 }
             }
+            fogAreas.Clear();
         }
 
-        /// <summary>按网格标记生成静态雾：只有 Fog1~Fog5 格子有雾，其余透明。</summary>
-        private void BuildStaticFog()
+        /// <summary>为每个雾等级生成一个区域层（初始隐藏），雾只出现在标记格子上。</summary>
+        private void BuildFogAreas()
         {
             if (gridMap == null)
             {
@@ -46,78 +71,101 @@ namespace DiceTale
             }
 
             var gridSize = gridMap.GridSize;
-            if (gridSize.x <= 0 || gridSize.y <= 0)
-            {
-                Debug.LogWarning("[FogOfWar] Invalid grid size on " + name + ": " + gridSize);
-                return;
-            }
-
-            var fogCells = 0;
-            var colors = new Color[gridSize.x * gridSize.y];
             var cellGrid = gridMap.CellGrid;
-            if (cellGrid == null)
+            if (gridSize.x <= 0 || gridSize.y <= 0 || cellGrid == null)
             {
-                Debug.LogWarning("[FogOfWar] Grid data not loaded on " + name);
+                Debug.LogWarning("[FogOfWar] Grid data not ready on " + name);
                 return;
             }
 
-            for (int x = 0; x < gridSize.x; x++)
-            {
-                for (int y = 0; y < gridSize.y; y++)
-                {
-                    var alpha = GetFogAlpha(cellGrid[x, y]);
-                    if (alpha <= 0f)
-                    {
-                        continue;
-                    }
-
-                    fogCells++;
-                    colors[y * gridSize.x + x] = new Color(fogColor.r, fogColor.g, fogColor.b, alpha);
-                }
-            }
-
-            Debug.Log($"[FogOfWar] {name}: grid={gridSize.x}x{gridSize.y}, fog cells={fogCells}, gridW={gridMap.GridWidth}, gridH={gridMap.GridHeight}");
-
-            if (fogCells == 0)
-            {
-                return;
-            }
-
-            var texture = new Texture2D(gridSize.x, gridSize.y, TextureFormat.RGBA32, false);
-            texture.filterMode = FilterMode.Point;
-            texture.wrapMode = TextureWrapMode.Clamp;
-            texture.name = "FogMask_" + name;
-
-            texture.SetPixels(colors);
-            texture.Apply();
-
-            // 每个像素对应一个格子：用 ppu 让 sprite 世界尺寸 = 网格尺寸，无需再缩放
             var gridWidth = gridMap.GridWidth;
-            var gridHeight = gridMap.GridHeight;
             var pixelsPerUnit = gridWidth > 0f ? gridSize.x / gridWidth : 1f;
 
-            var sprite = Sprite.Create(
-                texture,
-                new Rect(0, 0, gridSize.x, gridSize.y),
-                new Vector2(0.5f, 0.5f),
-                pixelsPerUnit
-            );
+            foreach (var fogType in FogTypes)
+            {
+                var colors = new Color[gridSize.x * gridSize.y];
+                var cellCount = 0;
 
-            var go = new GameObject("FogOverlay");
-            go.transform.SetParent(transform, false);
-            go.transform.localPosition = Vector3.zero;
-            go.transform.localScale = Vector3.one;
+                for (int x = 0; x < gridSize.x; x++)
+                {
+                    for (int y = 0; y < gridSize.y; y++)
+                    {
+                        if (cellGrid[x, y] == fogType)
+                        {
+                            colors[y * gridSize.x + x] = new Color(fogColor.r, fogColor.g, fogColor.b, 0.6f);
+                            cellCount++;
+                        }
+                    }
+                }
 
-            fogRenderer = go.AddComponent<SpriteRenderer>();
-            fogRenderer.sprite = sprite;
-            fogRenderer.material = new Material(Shader.Find("Sprites/Default"));
-            fogRenderer.sortingOrder = fogSortingOrder;
+                if (cellCount == 0)
+                {
+                    continue;
+                }
 
-            Debug.Log($"[FogOfWar] overlay created: sprite={gridSize.x}x{gridSize.y}px ppu={pixelsPerUnit:F2} world={gridWidth:F1}x{gridHeight:F1}");
+                var texture = new Texture2D(gridSize.x, gridSize.y, TextureFormat.RGBA32, false);
+                texture.filterMode = FilterMode.Point;
+                texture.wrapMode = TextureWrapMode.Clamp;
+                texture.name = $"FogArea_{fogType}";
+                texture.SetPixels(colors);
+                texture.Apply();
+
+                var sprite = Sprite.Create(
+                    texture,
+                    new Rect(0, 0, gridSize.x, gridSize.y),
+                    new Vector2(0.5f, 0.5f),
+                    pixelsPerUnit
+                );
+
+                var go = new GameObject("FogArea_" + fogType);
+                go.transform.SetParent(transform, false);
+                go.transform.localPosition = Vector3.zero;
+                go.transform.localScale = Vector3.one;
+
+                var renderer = go.AddComponent<SpriteRenderer>();
+                renderer.sprite = sprite;
+                renderer.material = new Material(Shader.Find("Sprites/Default"));
+                renderer.sortingOrder = fogSortingOrder;
+                renderer.enabled = false; // 未开启的区域不显示
+
+                fogAreas[fogType] = renderer;
+                Debug.Log($"[FogOfWar] area {fogType}: {cellCount} cells, created (hidden)");
+            }
+
+            Debug.Log($"[FogOfWar] {name}: {fogAreas.Count} fog area(s) built");
         }
 
-        /// <summary>雾1~雾5 只是区域标记，运行时所有雾效果一致（统一浓淡）。</summary>
-        private static float GetFogAlpha(GridCellType type)
+        /// <summary>检查玩家所在格子：进入某个雾区域则开启该区域（保持开启）。</summary>
+        private void CheckPlayerFogArea()
+        {
+            if (gridMap == null)
+            {
+                return;
+            }
+
+            var player = CharacterManager.Instance != null ? CharacterManager.Instance.CurrentPlayer : null;
+            if (player == null)
+            {
+                return;
+            }
+
+            var gridPos = gridMap.WorldToGrid(player.transform.position);
+            var type = gridMap.GetCellType(gridPos);
+
+            if (!IsFogType(type) || revealedAreas.Contains(type))
+            {
+                return;
+            }
+
+            revealedAreas.Add(type);
+            if (fogAreas.TryGetValue(type, out var renderer) && renderer != null)
+            {
+                renderer.enabled = true;
+                Debug.Log($"[FogOfWar] area {type} revealed by player at {gridPos}");
+            }
+        }
+
+        private static bool IsFogType(GridCellType type)
         {
             switch (type)
             {
@@ -126,9 +174,9 @@ namespace DiceTale
                 case GridCellType.Fog3:
                 case GridCellType.Fog4:
                 case GridCellType.Fog5:
-                    return 0.6f;
+                    return true;
                 default:
-                    return 0f;
+                    return false;
             }
         }
     }
