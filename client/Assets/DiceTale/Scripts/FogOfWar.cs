@@ -5,8 +5,8 @@ namespace DiceTale
 {
     /// <summary>
     /// 迷雾区域（探索揭示，GPU 渲染）：
-    /// 所有雾标记（Fog1~Fog5）合成一块整体雾，边缘羽化在 GPU 上通过模糊 shader 完成；
-    /// 揭示按区域分开——玩家进入某个区域，只挖掉该区域的雾，其他区域保持遮挡。
+    /// 所有雾标记（Fog1~Fog5）合成一块整体雾，边缘羽化在 GPU 上通过模糊 shader 完成（静态雾底）；
+    /// 揭示按区域分开——玩家进入某个区域，通过遮罩把该区域整块切除（雾干净消失，不影响其他区域）。
     /// 支持按住鼠标右键逐格擦除（输入经 InputManager）。
     /// 需要与 GridMap 同物体。
     /// </summary>
@@ -38,15 +38,18 @@ namespace DiceTale
 
         private GridMap gridMap;
 
-        // 雾状态（CPU 维护的格子级纹理，alpha：1=雾存在 0=已揭示）
-        private Texture2D stateTexture;
+        // 静态雾底（格子级）：雾格子 alpha=1，仅用于 GPU 羽化，不随揭示变化
+        private Texture2D baseTexture;
         private int width;
         private int height;
 
-        // GPU 羽化结果（ping-pong 多次模糊）
+        // 揭示遮罩（格子级）：alpha 1=未揭示，0=已揭示/擦除
+        private Texture2D maskTexture;
+
+        // GPU 羽化链
         private RenderTexture[] blurRTs;
         private Material blurMaterial;
-        private Material displayMaterial;
+        private Material combineMaterial;
 
         private readonly Dictionary<GridCellType, List<int>> cellsByType = new Dictionary<GridCellType, List<int>>();
         private readonly HashSet<GridCellType> revealedAreas = new HashSet<GridCellType>();
@@ -74,24 +77,29 @@ namespace DiceTale
                 CheckPlayerFogArea();
             }
 
-            // GPU 羽化：状态纹理经过多次模糊（ping-pong），边缘更柔和
-            if (stateTexture != null && blurRTs != null && blurRTs.Length > 0 && blurMaterial != null)
+            // GPU 羽化静态雾底（每帧从 base 重算，无累积）
+            if (baseTexture != null && blurRTs != null && blurRTs.Length > 0 && blurMaterial != null)
             {
-                Graphics.Blit(stateTexture, blurRTs[0], blurMaterial);
+                Graphics.Blit(baseTexture, blurRTs[0], blurMaterial);
                 for (int i = 1; i < blurRTs.Length; i++)
                 {
                     Graphics.Blit(blurRTs[i - 1], blurRTs[i], blurMaterial);
                 }
 
-                displayMaterial.mainTexture = blurRTs[blurRTs.Length - 1];
+                combineMaterial.mainTexture = blurRTs[blurRTs.Length - 1];
             }
         }
 
         private void OnDestroy()
         {
-            if (stateTexture != null)
+            if (baseTexture != null)
             {
-                Destroy(stateTexture);
+                Destroy(baseTexture);
+            }
+
+            if (maskTexture != null)
+            {
+                Destroy(maskTexture);
             }
 
             if (blurRTs != null)
@@ -107,7 +115,7 @@ namespace DiceTale
             }
         }
 
-        /// <summary>生成整体雾状态 + GPU 模糊链 + 显示层。</summary>
+        /// <summary>生成静态雾底 + 揭示遮罩 + GPU 羽化链 + 合成显示层。</summary>
         private void BuildFog()
         {
             if (gridMap == null)
@@ -129,13 +137,13 @@ namespace DiceTale
             var gridWidth = gridMap.GridWidth;
             var gridHeight = gridMap.GridHeight;
 
-            // 1. 雾状态纹理（格子级）：雾格子 alpha=1，其余透明
-            stateTexture = new Texture2D(width, height, TextureFormat.RGBA32, false);
-            stateTexture.filterMode = FilterMode.Point;
-            stateTexture.wrapMode = TextureWrapMode.Clamp;
-            stateTexture.name = "FogState";
+            // 1. 静态雾底：所有雾格子 alpha=1
+            baseTexture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            baseTexture.filterMode = FilterMode.Point;
+            baseTexture.wrapMode = TextureWrapMode.Clamp;
+            baseTexture.name = "FogBase";
 
-            var colors = new Color[width * height];
+            var baseColors = new Color[width * height];
             var fogCells = 0;
             cellsByType.Clear();
 
@@ -150,7 +158,7 @@ namespace DiceTale
                     }
 
                     var index = y * width + x;
-                    colors[index] = new Color(fogColor.r, fogColor.g, fogColor.b, 1f);
+                    baseColors[index] = new Color(fogColor.r, fogColor.g, fogColor.b, 1f);
                     fogCells++;
 
                     if (!cellsByType.TryGetValue(type, out var list))
@@ -163,8 +171,23 @@ namespace DiceTale
                 }
             }
 
-            stateTexture.SetPixels(colors);
-            stateTexture.Apply();
+            baseTexture.SetPixels(baseColors);
+            baseTexture.Apply();
+
+            // 2. 揭示遮罩：初始全未揭示（alpha=1）
+            maskTexture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            maskTexture.filterMode = FilterMode.Point;
+            maskTexture.wrapMode = TextureWrapMode.Clamp;
+            maskTexture.name = "RevealMask";
+
+            var maskColors = new Color[width * height];
+            for (int i = 0; i < maskColors.Length; i++)
+            {
+                maskColors[i] = new Color(1f, 1f, 1f, 1f);
+            }
+
+            maskTexture.SetPixels(maskColors);
+            maskTexture.Apply();
 
             Debug.Log($"[FogOfWar] {name}: fog cells={fogCells}, grid={width}x{height}");
 
@@ -173,7 +196,7 @@ namespace DiceTale
                 return;
             }
 
-            // 2. GPU 羽化链：状态纹理 -> 多次模糊 RT（ping-pong）
+            // 3. GPU 羽化链（静态雾底）
             blurRTs = new RenderTexture[Mathf.Max(1, blurPasses)];
             for (int i = 0; i < blurRTs.Length; i++)
             {
@@ -192,9 +215,16 @@ namespace DiceTale
             blurMaterial = new Material(blurShader);
             blurMaterial.SetVector("_GridSize", new Vector4(width, height, 0f, 0f));
 
-            // 3. 显示层：quad + 采样模糊 RT
-            displayMaterial = new Material(Shader.Find("Sprites/Default"));
-            displayMaterial.mainTexture = blurRTs[blurRTs.Length - 1];
+            // 4. 合成显示：羽化雾底 x 揭示遮罩
+            var combineShader = Shader.Find("DiceTale/FogCombine");
+            if (combineShader == null)
+            {
+                Debug.LogError("[FogOfWar] Shader 'DiceTale/FogCombine' not found!");
+                return;
+            }
+
+            combineMaterial = new Material(combineShader);
+            combineMaterial.SetTexture("_MaskTex", maskTexture);
 
             var go = new GameObject("FogOverlay");
             go.transform.SetParent(transform, false);
@@ -205,16 +235,16 @@ namespace DiceTale
             meshFilter.mesh = Resources.GetBuiltinResource<Mesh>("Quad.fbx");
 
             var meshRenderer = go.AddComponent<MeshRenderer>();
-            meshRenderer.material = displayMaterial;
+            meshRenderer.material = combineMaterial;
             meshRenderer.sortingOrder = fogSortingOrder;
 
-            Debug.Log("[FogOfWar] fog overlay created (GPU blur)");
+            Debug.Log("[FogOfWar] fog overlay created (base + mask, GPU)");
         }
 
-        /// <summary>检查玩家所在格子：进入某个雾区域则只挖掉该区域的雾。</summary>
+        /// <summary>检查玩家所在格子：进入某个雾区域则遮罩整块切除该区域。</summary>
         private void CheckPlayerFogArea()
         {
-            if (gridMap == null || stateTexture == null)
+            if (gridMap == null || maskTexture == null)
             {
                 return;
             }
@@ -239,10 +269,10 @@ namespace DiceTale
             {
                 for (int i = 0; i < indices.Count; i++)
                 {
-                    ClearStatePixel(indices[i]);
+                    ClearMaskPixel(indices[i]);
                 }
 
-                stateTexture.Apply();
+                maskTexture.Apply();
                 Debug.Log($"[FogOfWar] area {type} revealed (cleared) by player at {gridPos}, remaining areas intact");
             }
         }
@@ -250,7 +280,7 @@ namespace DiceTale
         /// <summary>按住鼠标右键，逐格擦除鼠标所指的雾（输入统一走 InputManager）。</summary>
         private void HandleRightClickErase()
         {
-            if (gridMap == null || stateTexture == null)
+            if (gridMap == null || maskTexture == null)
             {
                 return;
             }
@@ -274,15 +304,15 @@ namespace DiceTale
                 return;
             }
 
-            ClearStatePixel(index);
-            stateTexture.Apply();
+            ClearMaskPixel(index);
+            maskTexture.Apply();
         }
 
-        private void ClearStatePixel(int index)
+        private void ClearMaskPixel(int index)
         {
             var x = index % width;
             var y = index / width;
-            stateTexture.SetPixel(x, y, new Color(fogColor.r, fogColor.g, fogColor.b, 0f));
+            maskTexture.SetPixel(x, y, new Color(1f, 1f, 1f, 0f));
         }
 
         private static bool IsFogType(GridCellType type)
