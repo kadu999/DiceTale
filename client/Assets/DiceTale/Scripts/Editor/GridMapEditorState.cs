@@ -15,6 +15,7 @@ namespace DiceTale.Editor
         [SerializeField] private GridCellType selectedType = GridCellType.Obstacle;
         [SerializeField] private int brushSize = 1;
         [SerializeField] private bool eraseMode;
+        [SerializeField] private List<GridCellData> serializedCells = new List<GridCellData>();
 
         private Dictionary<Vector2Int, GridCellType> cellTypes = new Dictionary<Vector2Int, GridCellType>();
 
@@ -27,6 +28,59 @@ namespace DiceTale.Editor
         public bool EraseMode { get => eraseMode; set => eraseMode = value; }
         public Texture2D ReferenceTexture { get; set; }
         public IReadOnlyDictionary<Vector2Int, GridCellType> CellTypes => cellTypes;
+
+        private void OnEnable()
+        {
+            RebuildDictionary();
+        }
+
+        private void OnValidate()
+        {
+            RebuildDictionary();
+        }
+
+        public void RebuildDictionary()
+        {
+            cellTypes.Clear();
+            if (serializedCells == null)
+            {
+                return;
+            }
+
+            foreach (var cell in serializedCells)
+            {
+                if (cell == null)
+                {
+                    continue;
+                }
+
+                var pos = new Vector2Int(cell.x, cell.y);
+                var type = (GridCellType)cell.type;
+                if (type != GridCellType.Empty && IsInsideGrid(pos))
+                {
+                    cellTypes[pos] = type;
+                }
+            }
+        }
+
+        private void SyncDictionaryToSerializedCells()
+        {
+            if (serializedCells == null)
+            {
+                serializedCells = new List<GridCellData>();
+            }
+
+            serializedCells.Clear();
+            foreach (var pair in cellTypes)
+            {
+                serializedCells.Add(new GridCellData
+                {
+                    x = pair.Key.x,
+                    y = pair.Key.y,
+                    type = (int)pair.Value
+                });
+            }
+        }
 
         public void Paint(Vector2Int center)
         {
@@ -63,12 +117,15 @@ namespace DiceTale.Editor
                     }
                 }
             }
+
+            SyncDictionaryToSerializedCells();
         }
 
         public void Clear()
         {
             Undo.RecordObject(this, "Clear Grid");
             cellTypes.Clear();
+            SyncDictionaryToSerializedCells();
         }
 
         public void SaveData()
@@ -115,16 +172,19 @@ namespace DiceTale.Editor
 
         public void LoadData()
         {
+            Undo.RecordObject(this, "Load Grid");
             cellTypes.Clear();
 
             if (string.IsNullOrEmpty(mapName))
             {
+                SyncDictionaryToSerializedCells();
                 return;
             }
 
-            var path = Path.Combine(Application.dataPath, $"{GridMapEditorConstants.DataDirectoryFull}/{mapName}.json");
+            var path = Path.Combine(Application.dataPath, GridMapEditorConstants.DataDirectoryFull, $"{mapName}.json");
             if (!File.Exists(path))
             {
+                SyncDictionaryToSerializedCells();
                 return;
             }
 
@@ -132,10 +192,11 @@ namespace DiceTale.Editor
             var data = JsonUtility.FromJson<GridMapData>(json);
             if (data?.cells == null)
             {
+                SyncDictionaryToSerializedCells();
                 return;
             }
 
-            gridSize = Vector2Int.Max(new Vector2Int(data.gridSizeX, data.gridSizeY), Vector2Int.one);
+            GridSize = new Vector2Int(data.gridSizeX, data.gridSizeY);
             foreach (var cell in data.cells)
             {
                 var pos = new Vector2Int(cell.x, cell.y);
@@ -144,6 +205,8 @@ namespace DiceTale.Editor
                     cellTypes[pos] = (GridCellType)cell.type;
                 }
             }
+
+            SyncDictionaryToSerializedCells();
         }
 
         public void LoadReferenceTexture()
@@ -176,12 +239,14 @@ namespace DiceTale.Editor
                 return;
             }
 
+            Undo.RecordObject(this, "Calculate Grid Size");
+
             if (cellSize <= 0f)
             {
                 CellSize = 1f;
             }
 
-            gridSize = new Vector2Int(
+            GridSize = new Vector2Int(
                 Mathf.RoundToInt(ReferenceTexture.width / cellSize),
                 Mathf.RoundToInt(ReferenceTexture.height / cellSize)
             );
