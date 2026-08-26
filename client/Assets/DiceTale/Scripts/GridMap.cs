@@ -23,7 +23,7 @@ namespace DiceTale
         [SerializeField]
         private bool drawBlockedCells = true;
 
-        private Dictionary<Vector2Int, GridCellType> cellTypes = new Dictionary<Vector2Int, GridCellType>();
+        private GridCellType[,] cellGrid;
         private HashSet<Vector2Int> dynamicObstacles = new HashSet<Vector2Int>();
 
         public Vector2Int GridSize => gridSize;
@@ -76,8 +76,6 @@ namespace DiceTale
 
         public void LoadData(string fileName = null)
         {
-            cellTypes.Clear();
-
             var name = fileName ?? this.name.Replace("(Clone)", "");
             var textAsset = Resources.Load<TextAsset>(name);
             if (textAsset == null)
@@ -98,16 +96,13 @@ namespace DiceTale
                 }
 
                 gridSize = new Vector2Int(data.gridSizeX, data.gridSizeY);
+                cellGrid = new GridCellType[gridSize.x, gridSize.y];
 
                 for (int y = 0; y < gridSize.y; y++)
                 {
                     for (int x = 0; x < gridSize.x; x++)
                     {
-                        var type = MaskToGridCellType(GetCellMask(data.cells, x, y, gridSize.x));
-                        if (type != GridCellType.Empty)
-                        {
-                            cellTypes[new Vector2Int(x, y)] = type;
-                        }
+                        cellGrid[x, y] = MaskToGridCellType(GetCellMask(data.cells, x, y, gridSize.x));
                     }
                 }
             }
@@ -122,9 +117,12 @@ namespace DiceTale
                 cells = new int[gridSize.x * gridSize.y]
             };
 
-            foreach (var pair in cellTypes)
+            for (int x = 0; x < gridSize.x; x++)
             {
-                SetCellMask(data.cells, pair.Key.x, pair.Key.y, gridSize.x, GridCellTypeToMask(pair.Value));
+                for (int y = 0; y < gridSize.y; y++)
+                {
+                    SetCellMask(data.cells, x, y, gridSize.x, GridCellTypeToMask(cellGrid[x, y]));
+                }
             }
 
 #if UNITY_EDITOR
@@ -202,50 +200,36 @@ namespace DiceTale
                 return false;
             }
 
-            if (cellTypes.TryGetValue(gridPos, out var type))
-            {
-                return type != GridCellType.Obstacle;
-            }
-
-            return true;
+            return GetCellType(gridPos) != GridCellType.Obstacle;
         }
 
         public void SetCellType(Vector2Int gridPos, GridCellType type)
         {
-            if (gridPos.x < 0 || gridPos.x >= gridSize.x || gridPos.y < 0 || gridPos.y >= gridSize.y)
+            if (!IsInside(gridPos))
             {
                 return;
             }
 
-            if (type == GridCellType.Empty)
-            {
-                cellTypes.Remove(gridPos);
-            }
-            else
-            {
-                cellTypes[gridPos] = type;
-            }
+            cellGrid[gridPos.x, gridPos.y] = type;
         }
 
         public GridCellType GetCellType(Vector2Int gridPos)
         {
-            if (gridPos.x < 0 || gridPos.x >= gridSize.x || gridPos.y < 0 || gridPos.y >= gridSize.y)
+            if (!IsInside(gridPos))
             {
                 return GridCellType.Empty;
             }
 
-            if (cellTypes.TryGetValue(gridPos, out var type))
-            {
-                return type;
-            }
-
-            return GridCellType.Empty;
+            return cellGrid[gridPos.x, gridPos.y];
         }
 
-        public IReadOnlyDictionary<Vector2Int, GridCellType> GetCellTypes()
+        private bool IsInside(Vector2Int gridPos)
         {
-            return cellTypes;
+            return gridPos.x >= 0 && gridPos.x < gridSize.x && gridPos.y >= 0 && gridPos.y < gridSize.y;
         }
+
+        /// <summary>格子二维数组（[x, y]，值为格子类型）。</summary>
+        public GridCellType[,] CellGrid => cellGrid;
 
         public void AddDynamicObstacle(Vector2Int gridPos)
         {
@@ -376,9 +360,21 @@ namespace DiceTale
                 return;
             }
 
-            foreach (var pair in cellTypes)
+            if (cellGrid == null)
             {
-                DrawCellGizmo(pair.Key, GetCellTypeColor(pair.Value));
+                return;
+            }
+
+            for (int x = 0; x < gridSize.x; x++)
+            {
+                for (int y = 0; y < gridSize.y; y++)
+                {
+                    var type = cellGrid[x, y];
+                    if (type != GridCellType.Empty)
+                    {
+                        DrawCellGizmo(new Vector2Int(x, y), GetCellTypeColor(type));
+                    }
+                }
             }
 
             var dynamicColor = new Color(1f, 0f, 1f, 0.5f);

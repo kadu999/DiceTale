@@ -54,17 +54,26 @@ namespace DiceTale
 
             var fogCells = 0;
             var colors = new Color[gridSize.x * gridSize.y];
-            foreach (var pair in gridMap.GetCellTypes())
+            var cellGrid = gridMap.CellGrid;
+            if (cellGrid == null)
             {
-                var alpha = GetFogAlpha(pair.Value);
-                if (alpha <= 0f)
-                {
-                    continue;
-                }
+                Debug.LogWarning("[FogOfWar] Grid data not loaded on " + name);
+                return;
+            }
 
-                fogCells++;
-                var index = pair.Key.y * gridSize.x + pair.Key.x;
-                colors[index] = new Color(fogColor.r, fogColor.g, fogColor.b, alpha);
+            for (int x = 0; x < gridSize.x; x++)
+            {
+                for (int y = 0; y < gridSize.y; y++)
+                {
+                    var alpha = GetFogAlpha(cellGrid[x, y]);
+                    if (alpha <= 0f)
+                    {
+                        continue;
+                    }
+
+                    fogCells++;
+                    colors[y * gridSize.x + x] = new Color(fogColor.r, fogColor.g, fogColor.b, alpha);
+                }
             }
 
             Debug.Log($"[FogOfWar] {name}: grid={gridSize.x}x{gridSize.y}, fog cells={fogCells}, gridW={gridMap.GridWidth}, gridH={gridMap.GridHeight}");
