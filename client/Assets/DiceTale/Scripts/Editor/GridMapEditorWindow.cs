@@ -71,7 +71,8 @@ namespace DiceTale.Editor
 
             if (shouldLoadTexture)
             {
-                state.LoadReferenceTexture();
+                var filePath = EditorUtility.OpenFilePanel("选择参考图", "Assets", "png,jpg,jpeg,bmp");
+                state.LoadReferenceTexture(filePath);
             }
             if (shouldSave)
             {

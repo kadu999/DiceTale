@@ -214,23 +214,27 @@ namespace DiceTale.Editor
             SyncDictionaryToSerializedCells();
         }
 
-        public void LoadReferenceTexture()
+        public void LoadReferenceTexture(string filePath)
         {
             ReferenceTexture = null;
 
-            if (string.IsNullOrEmpty(mapName))
+            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
             {
+                Debug.LogWarning($"图片路径无效: {filePath}");
                 return;
             }
 
-            var path = Path.Combine(GridMapEditorConstants.ImageDirectory, $"{mapName}.png").Replace('\\', '/');
-            ReferenceTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-
-            if (ReferenceTexture == null)
+            var bytes = File.ReadAllBytes(filePath);
+            var texture = new Texture2D(2, 2);
+            if (!texture.LoadImage(bytes))
             {
-                Debug.LogWarning($"图片未找到: {path}");
+                Debug.LogWarning($"无法解析图片: {filePath}");
+                Object.DestroyImmediate(texture);
                 return;
             }
+
+            ReferenceTexture = texture;
+            MapName = Path.GetFileNameWithoutExtension(filePath);
 
             if (autoCellSize || cellSize <= 0f)
             {
