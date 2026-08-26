@@ -223,7 +223,7 @@ namespace DiceTale.Editor
                 return;
             }
 
-            var path = Path.Combine(GridMapEditorConstants.ImageDirectory, $"{mapName}.png");
+            var path = Path.Combine(GridMapEditorConstants.ImageDirectory, $"{mapName}.png").Replace('\\', '/');
             ReferenceTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
 
             if (ReferenceTexture == null)
