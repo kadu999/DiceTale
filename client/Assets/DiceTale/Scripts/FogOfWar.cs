@@ -41,20 +41,18 @@ namespace DiceTale
         {
             if (gridMap == null)
             {
+                Debug.LogWarning("[FogOfWar] GridMap missing on " + name);
                 return;
             }
 
             var gridSize = gridMap.GridSize;
             if (gridSize.x <= 0 || gridSize.y <= 0)
             {
+                Debug.LogWarning("[FogOfWar] Invalid grid size on " + name + ": " + gridSize);
                 return;
             }
 
-            var texture = new Texture2D(gridSize.x, gridSize.y, TextureFormat.RGBA32, false);
-            texture.filterMode = FilterMode.Point;
-            texture.wrapMode = TextureWrapMode.Clamp;
-            texture.name = "FogMask_" + name;
-
+            var fogCells = 0;
             var colors = new Color[gridSize.x * gridSize.y];
             foreach (var pair in gridMap.GetCellTypes())
             {
@@ -64,9 +62,22 @@ namespace DiceTale
                     continue;
                 }
 
+                fogCells++;
                 var index = pair.Key.y * gridSize.x + pair.Key.x;
                 colors[index] = new Color(fogColor.r, fogColor.g, fogColor.b, alpha);
             }
+
+            Debug.Log($"[FogOfWar] {name}: grid={gridSize.x}x{gridSize.y}, fog cells={fogCells}, gridW={gridMap.GridWidth}, gridH={gridMap.GridHeight}");
+
+            if (fogCells == 0)
+            {
+                return;
+            }
+
+            var texture = new Texture2D(gridSize.x, gridSize.y, TextureFormat.RGBA32, false);
+            texture.filterMode = FilterMode.Point;
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.name = "FogMask_" + name;
 
             texture.SetPixels(colors);
             texture.Apply();
