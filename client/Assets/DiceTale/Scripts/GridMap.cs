@@ -76,6 +76,8 @@ namespace DiceTale
 
         public void LoadData(string fileName = null)
         {
+            cellTypes.Clear();
+
             var name = fileName ?? this.name.Replace("(Clone)", "");
             var textAsset = Resources.Load<TextAsset>(name);
             if (textAsset == null)
@@ -83,31 +85,12 @@ namespace DiceTale
                 return;
             }
 
-            LoadBytes(textAsset.bytes);
-        }
-
-        /// <summary>从字节数组加载网格数据（与服务器 /maps/{name}.bytes 二进制格式一致）。</summary>
-        public void LoadBytes(byte[] bytes)
-        {
-            cellTypes.Clear();
-            if (bytes == null || bytes.Length < 8)
-            {
-                return;
-            }
-
-            using (var reader = new BinaryReader(new MemoryStream(bytes)))
+            using (var reader = new BinaryReader(new MemoryStream(textAsset.bytes)))
             {
                 var data = new GridMapData();
                 data.gridSizeX = reader.ReadInt32();
                 data.gridSizeY = reader.ReadInt32();
                 var count = data.gridSizeX * data.gridSizeY;
-
-                // 防止坏数据越界
-                if (data.gridSizeX <= 0 || data.gridSizeY <= 0 || count <= 0 || bytes.Length < 8 + count * 4)
-                {
-                    return;
-                }
-
                 data.cells = new int[count];
                 for (int i = 0; i < count; i++)
                 {
