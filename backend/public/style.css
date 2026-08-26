@@ -284,9 +284,18 @@ main.layout {
     padding: 0.4rem 0.75rem;
   }
 
-  /* 地图按视口高度撑满，宽度自适应（contain 居中），比 16:9 全宽更大 */
+  /* 地图面板内容居中，地图容器宽度由 JS 按 16:9 等比设置，避免黑边 */
+  .map-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* 地图按视口高度撑满，宽度 = 高度 * 16/9（JS 计算），比 16:9 全宽更大且无黑边 */
   .map-container {
     aspect-ratio: auto;
+    width: auto;
+    max-width: 100%;
     height: calc(100vh - 150px);
     height: calc(100dvh - 150px); /* 支持 dvh 的浏览器覆盖 vh */
     min-height: 220px;

@@ -194,4 +194,25 @@ function toggleDoor(doorId, currentlyUnlocked) {
   });
 }
 
+// ---- 横屏时地图按 16:9 等比（高度决定宽度），避免 contain 两侧黑边 ----
+function fitMapContainer() {
+  var container = document.getElementById('mapContainer');
+  if (!container) return;
+
+  var isLandscape = window.matchMedia('(orientation: landscape)').matches;
+  if (isLandscape) {
+    var h = container.clientHeight;
+    var maxW = container.parentElement.clientWidth;
+    container.style.width = Math.min(Math.round(h * 16 / 9), maxW) + 'px';
+  } else {
+    container.style.width = '';
+  }
+}
+
+window.addEventListener('resize', fitMapContainer);
+window.addEventListener('orientationchange', function () {
+  setTimeout(fitMapContainer, 300);
+});
+setTimeout(fitMapContainer, 300);
+
 connect();
