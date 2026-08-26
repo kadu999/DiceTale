@@ -5,7 +5,7 @@ using UnityEngine.Events;
 namespace DiceTale
 {
     [RequireComponent(typeof(Collider2D))]
-    public class Door : MonoBehaviour, IInteractable
+    public class Door : BackendObject, IInteractable
     {
         [SerializeField]
         private string targetSceneName;
@@ -35,6 +35,21 @@ namespace DiceTale
         public string TargetSpawnId => targetSpawnId;
         public bool IsPortal => isPortal;
 
+        /// <summary>后台对象 ID：门使用自己的 doorId。</summary>
+        public override string ObjectId => doorId;
+
+        public override void AppendToReport(Server.RegisterMapObjectsMessage mapObjects, Server.RegisterPlayersMessage players)
+        {
+            mapObjects.doors.Add(new Server.DoorInfo
+            {
+                id = doorId,
+                targetMap = targetSceneName,
+                targetSpawn = targetSpawnId,
+                isPortal = isPortal,
+                position = NormalizePosition(transform.position)
+            });
+        }
+
         private void Awake()
         {
             triggerCollider = GetComponent<Collider2D>();
@@ -46,13 +61,15 @@ namespace DiceTale
             RefreshBlocking();
         }
 
-        private void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
             RegisterBlocking();
         }
 
-        private void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
             UnregisterBlocking();
         }
 
