@@ -18,19 +18,10 @@ namespace DiceTale
         private Vector2Int gridSize = new Vector2Int(20, 20);
 
         [SerializeField]
-        private bool autoCellSize = true;
-
-        [SerializeField]
         private float cellSize = 1f;
 
         [SerializeField]
-        [Range(1, 5)]
-        private int brushSize = 1;
-
-        [SerializeField]
         private bool drawBlockedCells = true;
-
-        public int BrushSize => brushSize;
 
         private Dictionary<Vector2Int, GridCellType> cellTypes = new Dictionary<Vector2Int, GridCellType>();
         private HashSet<Vector2Int> dynamicObstacles = new HashSet<Vector2Int>();
@@ -69,10 +60,6 @@ namespace DiceTale
 
         public void UpdateCellSize()
         {
-            if (!autoCellSize)
-            {
-                return;
-            }
 
             var spriteRenderer = GetComponent<SpriteRenderer>();
             if (spriteRenderer == null || spriteRenderer.sprite == null)
