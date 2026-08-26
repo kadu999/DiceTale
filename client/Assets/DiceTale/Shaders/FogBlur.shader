@@ -57,10 +57,12 @@ Shader "DiceTale/FogBlur"
                     return fixed4(center.r, center.g, center.b, 0);
                 }
 
-                // 地图四边 1 格内不平滑（保持干脆，不向边界外扩散）
-                float2 cell = float2(1.0 / max(_GridSize.x, 1.0), 1.0 / max(_GridSize.y, 1.0));
-                bool nearEdge = i.uv.x < cell.x * 1.5 || i.uv.x > 1.0 - cell.x * 1.5
-                             || i.uv.y < cell.y * 1.5 || i.uv.y > 1.0 - cell.y * 1.5;
+                // 地图边界 2 格内不平滑（保持干脆，不向边界外扩散）
+                // 用格子索引判断（UV 空间与 RT 分辨率无关，多 pass 链上行为一致）：
+                // 保护边界 2 格（最外圈通常无雾，雾在第 2 圈；1 格内会保护不到雾）
+                int2 cellIdx = int2(floor(i.uv * _GridSize));
+                bool nearEdge = cellIdx.x <= 1 || cellIdx.y <= 1
+                             || cellIdx.x >= _GridSize.x - 2 || cellIdx.y >= _GridSize.y - 2;
                 if (nearEdge)
                 {
                     return center;
