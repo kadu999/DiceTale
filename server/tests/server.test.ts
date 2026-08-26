@@ -1,7 +1,50 @@
 import WebSocket from 'ws';
 import http from 'http';
+import fs from 'fs';
 import { AddressInfo } from 'net';
 import { server } from '../src/index';
+import { gridFilePath } from '../src/gridData';
+
+function httpGet(path: string): Promise<{ status: number; body: any }> {
+  return new Promise((resolve, reject) => {
+    http
+      .get({ host: 'localhost', port, path }, (res) => {
+        let data = '';
+        res.on('data', (c) => (data += c));
+        res.on('end', () => {
+          try {
+            resolve({ status: res.statusCode!, body: JSON.parse(data) });
+          } catch {
+            resolve({ status: res.statusCode!, body: data });
+          }
+        });
+      })
+      .on('error', reject);
+  });
+}
+
+function httpPut(path: string, body: unknown): Promise<{ status: number; body: any }> {
+  return new Promise((resolve, reject) => {
+    const payload = JSON.stringify(body);
+    const req = http.request(
+      { host: 'localhost', port, path, method: 'PUT', headers: { 'Content-Type': 'application/json' } },
+      (res) => {
+        let data = '';
+        res.on('data', (c) => (data += c));
+        res.on('end', () => {
+          try {
+            resolve({ status: res.statusCode!, body: JSON.parse(data) });
+          } catch {
+            resolve({ status: res.statusCode!, body: data });
+          }
+        });
+      }
+    );
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
+}
 
 interface SocketHandle {
   ws: WebSocket;
@@ -227,5 +270,48 @@ describe('WebSocket server', () => {
     expect(msg.type).toBe('teleport_player');
     expect(msg.mapName).toBe('Map003');
     expect(msg.spawnId).toBe('Default');
+  });
+
+  test('GET /api/maps/Map001/grid returns seeded 64x36 grid', async () => {
+    const res = await httpGet('/api/maps/Map001/grid');
+    expect(res.status).toBe(200);
+    expect(res.body.gridSizeX).toBe(64);
+    expect(res.body.gridSizeY).toBe(36);
+    expect(res.body.cells).toHaveLength(64 * 36);
+  });
+
+  test('GET /api/maps lists catalog with grid sizes', async () => {
+    const res = await httpGet('/api/maps');
+    expect(res.status).toBe(200);
+    const names = res.body.maps.map((m: any) => m.name);
+    expect(names).toContain('Map001');
+    expect(names).toContain('Map002');
+    expect(names).toContain('Map003');
+    const map001 = res.body.maps.find((m: any) => m.name === 'Map001');
+    expect(map001.gridSizeX).toBe(64);
+    expect(map001.doors.length).toBe(2);
+  });
+
+  test('PUT /api/maps/{name}/grid saves and GET returns it', async () => {
+    const name = 'TestGridMap';
+    const grid = { gridSizeX: 3, gridSizeY: 2, cells: [1, 0, 0, 0, 4, 1] };
+
+    try {
+      const put = await httpPut(`/api/maps/${name}/grid`, grid);
+      expect(put.status).toBe(200);
+      expect(put.body.ok).toBe(true);
+
+      const get = await httpGet(`/api/maps/${name}/grid`);
+      expect(get.status).toBe(200);
+      expect(get.body).toEqual(grid);
+    } finally {
+      const file = gridFilePath(name);
+      if (fs.existsSync(file)) fs.unlinkSync(file);
+    }
+  });
+
+  test('PUT /api/maps/{name}/grid rejects invalid data', async () => {
+    const put = await httpPut('/api/maps/TestGridMap/grid', { gridSizeX: 0, gridSizeY: 0, cells: [] });
+    expect(put.status).toBe(400);
   });
 });

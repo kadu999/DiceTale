@@ -1,5 +1,7 @@
+using System.Collections;
 using System.IO;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace DiceTale
 {
@@ -17,8 +19,17 @@ namespace DiceTale
         [SerializeField]
         private string imageDirectory = "Assets/DiceTale/Res/Textures";
 
+        [Tooltip("地图资源服务器地址（HTTP）")]
+        [SerializeField]
+        private string mapServerUrl = "http://localhost:8080";
+
+        [SerializeField]
+        private float downloadTimeout = 5f;
+
         public string CurrentMapName { get; private set; }
         public GameObject CurrentMap { get; private set; }
+
+        private string loadingMap;
 
         private void Awake()
         {
@@ -57,7 +68,7 @@ namespace DiceTale
                 return;
             }
 
-            if (CurrentMapName == mapName)
+            if (CurrentMapName == mapName || loadingMap == mapName)
             {
                 return;
             }
@@ -65,20 +76,81 @@ namespace DiceTale
             var game = Object.FindFirstObjectByType<Game>();
             game?.LockInteraction(interactionLockDuration);
 
+            loadingMap = mapName;
             UnloadCurrentMap();
 
-            var sprite = LoadMapSprite(mapName);
-            if (sprite == null)
+            StartCoroutine(LoadMapCoroutine(mapName, spawnId ?? "Default"));
+        }
+
+        /// <summary>从服务器下载地图（图片 + 网格），失败时回退本地资源。</summary>
+        private IEnumerator LoadMapCoroutine(string mapName, string spawnId)
+        {
+            // 1. 本地兜底精灵（编辑器 AssetDatabase / 构建 Resources）
+            var sprite = LoadMapSpriteLocal(mapName);
+
+            // 2. 尝试从服务器下载地图图片
+            using (var request = UnityWebRequestTexture.GetTexture($"{mapServerUrl}/maps/{mapName}.png"))
             {
-                Debug.LogWarning($"Map image not found: {mapName}");
-                return;
+                request.timeout = Mathf.CeilToInt(downloadTimeout);
+                yield return request.SendWebRequest();
+
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    var texture = DownloadHandlerTexture.GetContent(request);
+                    if (texture != null)
+                    {
+                        sprite = Sprite.Create(
+                            texture,
+                            new Rect(0, 0, texture.width, texture.height),
+                            new Vector2(0.5f, 0.5f),
+                            100f
+                        );
+                    }
+                }
+                else
+                {
+                    Debug.Log($"[MapManager] Server map image unavailable ({mapName}): {request.error}, using local fallback.");
+                }
             }
 
-            CurrentMap = CreateMapGameObject(mapName, sprite);
+            if (sprite == null)
+            {
+                Debug.LogWarning($"Map image not available: {mapName}");
+                loadingMap = null;
+                yield break;
+            }
+
+            // 3. 尝试从服务器下载网格数据
+            byte[] gridBytes = null;
+            using (var request = UnityWebRequest.Get($"{mapServerUrl}/maps/{mapName}.bytes"))
+            {
+                request.timeout = Mathf.CeilToInt(downloadTimeout);
+                yield return request.SendWebRequest();
+
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    gridBytes = request.downloadHandler.data;
+                }
+                else
+                {
+                    Debug.Log($"[MapManager] Server map data unavailable ({mapName}): {request.error}, using local fallback.");
+                }
+            }
+
+            if (gridBytes == null)
+            {
+                var textAsset = Resources.Load<TextAsset>(mapName);
+                if (textAsset != null)
+                {
+                    gridBytes = textAsset.bytes;
+                }
+            }
+
+            CurrentMap = CreateMapGameObject(mapName, sprite, gridBytes);
             CurrentMapName = mapName;
+            loadingMap = null;
 
-            MovePlayersToSpawn(spawnId ?? "Default");
-
+            MovePlayersToSpawn(spawnId);
             ReportMapObjects();
         }
 
@@ -115,7 +187,7 @@ namespace DiceTale
             Debug.Log($"[MapManager] Reported {msg.doors.Count} doors, {msg.spawnPoints.Count} spawn points for {CurrentMapName}");
         }
 
-        private Sprite LoadMapSprite(string mapName)
+        private Sprite LoadMapSpriteLocal(string mapName)
         {
 #if UNITY_EDITOR
             var path = Path.Combine(imageDirectory, $"{mapName}.png");
@@ -125,7 +197,7 @@ namespace DiceTale
 #endif
         }
 
-        private GameObject CreateMapGameObject(string mapName, Sprite sprite)
+        private GameObject CreateMapGameObject(string mapName, Sprite sprite, byte[] gridBytes)
         {
             var go = new GameObject(mapName);
             go.transform.SetParent(mapRoot, false);
@@ -134,7 +206,10 @@ namespace DiceTale
             spriteRenderer.sprite = sprite;
 
             var gridMap = go.AddComponent<GridMap>();
-            gridMap.LoadData(mapName);
+            if (gridBytes != null)
+            {
+                gridMap.LoadBytes(gridBytes);
+            }
             gridMap.UpdateCellSize();
 
             var spawnGo = new GameObject("Spawn_Default");

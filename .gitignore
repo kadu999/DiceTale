@@ -15,3 +15,4 @@ Thumbs.db
 server/node_modules/
 server/dist/
 server/data/gamestate.json
+server/data/maps/

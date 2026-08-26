@@ -16,8 +16,20 @@
     <section class="panel map-panel">
       <h2>地图视图</h2>
       <div id="mapTabs" class="map-tabs"></div>
+      <div class="map-toolbar">
+        <button id="btnViewMode" class="active">查看</button>
+        <button id="btnEditMode">编辑网格</button>
+        <span class="toolbar-sep"></span>
+        <button id="btnBrushObstacle" class="active" disabled>障碍</button>
+        <button id="btnBrushErase" disabled>擦除</button>
+        <span class="toolbar-sep"></span>
+        <button id="btnSaveGrid" class="primary" disabled>保存网格</button>
+        <button id="btnCancelEdit" disabled>取消</button>
+        <span id="editHint" class="edit-hint"></span>
+      </div>
       <div id="mapContainer" class="map-container">
         <img id="mapImage" alt="地图" draggable="false">
+        <canvas id="gridCanvas" class="grid-canvas" hidden></canvas>
         <div id="doorLayer" class="door-layer"></div>
       </div>
       <div class="legend">
@@ -25,6 +37,7 @@
         <span class="legend-item"><i class="marker-dot unlocked"></i>已开启</span>
         <span class="legend-item">⦿ 传送门</span>
         <span class="legend-item">▣ 普通门</span>
+        <span class="legend-item"><i class="cell-swatch obstacle"></i>障碍</span>
       </div>
     </section>
 

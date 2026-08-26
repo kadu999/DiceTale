@@ -4,6 +4,14 @@ let state = null;
 let selectedMap = null;
 let lastManualMapPick = 0;
 
+// ---- 网格编辑状态 ----
+let editMode = false;
+let editBrush = 1; // 1=障碍 0=擦除
+let editingCells = null; // 当前编辑中的格子副本 {gridSizeX, gridSizeY, cells}
+let painting = false;
+
+// ---------- WebSocket ----------
+
 function connect() {
   ws = new WebSocket(wsUrl);
 
@@ -69,6 +77,7 @@ function render() {
   renderMap();
   renderDoorTable();
   populateTeleportOptions();
+  updateToolbar();
 }
 
 function knownMaps() {
@@ -87,10 +96,12 @@ function renderMapTabs() {
     btn.textContent = map;
     btn.className = map === effectiveMap() ? 'active' : '';
     btn.onclick = () => {
+      if (editMode && !confirm(`切换到 ${map}？未保存的网格修改将丢失。`)) return;
       selectedMap = map;
       lastManualMapPick = Date.now();
       renderMapTabs();
       renderMap();
+      updateToolbar();
     };
     tabs.appendChild(btn);
   }
@@ -114,6 +125,11 @@ function renderMap() {
     image.src = `/maps/${map}.png`;
   }
 
+  if (editMode) {
+    drawGridCanvas();
+    return;
+  }
+
   const layer = document.getElementById('doorLayer');
   layer.innerHTML = '';
   for (const [id, door] of Object.entries(state.doors || {})) {
@@ -135,6 +151,134 @@ function toggleDoor(doorId, currentlyUnlocked) {
     send({ type: 'gm_close_door', doorId });
   } else {
     send({ type: 'gm_open_door', doorId });
+  }
+}
+
+// ---------- 网格编辑 ----------
+
+async function enterEditMode() {
+  const map = effectiveMap();
+  let grid = await loadGrid(map);
+  if (!grid) {
+    // 该地图还没有网格数据，创建默认 64x36 空网格（对应 1920x1080 图片，30px/格）
+    if (!confirm(`${map} 还没有网格数据。创建默认 64x36 空网格开始编辑？`)) return;
+    grid = { gridSizeX: 64, gridSizeY: 36, cells: new Array(64 * 36).fill(0) };
+  }
+  editMode = true;
+  editingCells = { gridSizeX: grid.gridSizeX, gridSizeY: grid.gridSizeY, cells: [...grid.cells] };
+  document.getElementById('doorLayer').style.display = 'none';
+  updateToolbar();
+  renderMap();
+}
+
+function exitEditMode() {
+  editMode = false;
+  editingCells = null;
+  painting = false;
+  document.getElementById('gridCanvas').hidden = true;
+  document.getElementById('doorLayer').style.display = '';
+  updateToolbar();
+  renderMap();
+}
+
+function updateToolbar() {
+  document.getElementById('btnViewMode').classList.toggle('active', !editMode);
+  document.getElementById('btnEditMode').classList.toggle('active', editMode);
+  const editing = editMode;
+  document.getElementById('btnBrushObstacle').disabled = !editing;
+  document.getElementById('btnBrushErase').disabled = !editing;
+  document.getElementById('btnSaveGrid').disabled = !editing;
+  document.getElementById('btnCancelEdit').disabled = !editing;
+  document.getElementById('btnBrushObstacle').classList.toggle('active', editing && editBrush === 1);
+  document.getElementById('btnBrushErase').classList.toggle('active', editing && editBrush === 0);
+  document.getElementById('editHint').textContent = editMode
+    ? `编辑 ${effectiveMap()}：拖拽绘制${editBrush === 1 ? '障碍' : '擦除'}，完成后点「保存网格」`
+    : '';
+}
+
+async function loadGrid(map) {
+  try {
+    const res = await fetch(`/api/maps/${map}/grid`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+function drawGridCanvas() {
+  const canvas = document.getElementById('gridCanvas');
+  const container = document.getElementById('mapContainer');
+  canvas.hidden = false;
+  canvas.width = container.clientWidth;
+  canvas.height = container.clientHeight;
+
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (!editingCells) return;
+
+  const { gridSizeX, gridSizeY, cells } = editingCells;
+  const cellW = canvas.width / gridSizeX;
+  const cellH = canvas.height / gridSizeY;
+
+  // 填充障碍格
+  ctx.fillStyle = 'rgba(220, 38, 38, 0.55)';
+  for (let y = 0; y < gridSizeY; y++) {
+    for (let x = 0; x < gridSizeX; x++) {
+      const mask = cells[y * gridSizeX + x];
+      if (mask === 1) {
+        ctx.fillRect(x * cellW, y * cellH, cellW + 0.5, cellH + 0.5);
+      }
+    }
+  }
+
+  // 网格线
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = 0; x <= gridSizeX; x++) {
+    ctx.moveTo(x * cellW, 0);
+    ctx.lineTo(x * cellW, canvas.height);
+  }
+  for (let y = 0; y <= gridSizeY; y++) {
+    ctx.moveTo(0, y * cellH);
+    ctx.lineTo(canvas.width, y * cellH);
+  }
+  ctx.stroke();
+}
+
+function eventToCell(e) {
+  const canvas = document.getElementById('gridCanvas');
+  const rect = canvas.getBoundingClientRect();
+  if (!editingCells) return null;
+  const x = Math.floor(((e.clientX - rect.left) / rect.width) * editingCells.gridSizeX);
+  const y = Math.floor(((e.clientY - rect.top) / rect.height) * editingCells.gridSizeY);
+  if (x < 0 || x >= editingCells.gridSizeX || y < 0 || y >= editingCells.gridSizeY) return null;
+  return { x, y };
+}
+
+function paintCell(e) {
+  const cell = eventToCell(e);
+  if (!cell || !editingCells) return;
+  const index = cell.y * editingCells.gridSizeX + cell.x;
+  editingCells.cells[index] = editBrush; // 1=障碍 0=擦除
+  drawGridCanvas();
+}
+
+async function saveGridToServer() {
+  if (!editingCells) return;
+  const map = effectiveMap();
+  const res = await fetch(`/api/maps/${map}/grid`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(editingCells),
+  });
+  if (res.ok) {
+    log(`网格已保存：${map} (${editingCells.gridSizeX}x${editingCells.gridSizeY})`);
+    exitEditMode();
+  } else {
+    log(`保存失败：${res.status} ${await res.text()}`);
   }
 }
 
@@ -218,5 +362,54 @@ document.getElementById('btnTeleport').onclick = () => {
 document.getElementById('btnRefresh').onclick = () => {
   send({ type: 'gm_refresh' });
 };
+
+document.getElementById('btnEditMode').onclick = () => {
+  if (!editMode) enterEditMode();
+};
+
+document.getElementById('btnViewMode').onclick = () => {
+  if (editMode && !confirm('退出编辑？未保存的网格修改将丢失。')) return;
+  exitEditMode();
+};
+
+document.getElementById('btnBrushObstacle').onclick = () => {
+  editBrush = 1;
+  updateToolbar();
+};
+
+document.getElementById('btnBrushErase').onclick = () => {
+  editBrush = 0;
+  updateToolbar();
+};
+
+document.getElementById('btnSaveGrid').onclick = () => {
+  saveGridToServer();
+};
+
+document.getElementById('btnCancelEdit').onclick = () => {
+  exitEditMode();
+};
+
+// canvas 绘制事件
+const gridCanvas = document.getElementById('gridCanvas');
+gridCanvas.addEventListener('pointerdown', (e) => {
+  if (!editMode) return;
+  painting = true;
+  gridCanvas.setPointerCapture(e.pointerId);
+  paintCell(e);
+});
+gridCanvas.addEventListener('pointermove', (e) => {
+  if (editMode && painting) paintCell(e);
+});
+gridCanvas.addEventListener('pointerup', () => {
+  painting = false;
+});
+gridCanvas.addEventListener('pointercancel', () => {
+  painting = false;
+});
+
+window.addEventListener('resize', () => {
+  if (editMode) drawGridCanvas();
+});
 
 connect();
