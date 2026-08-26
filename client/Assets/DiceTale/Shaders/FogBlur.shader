@@ -45,13 +45,23 @@ Shader "DiceTale/FogBlur"
 
             fixed4 frag(v2f i) : SV_Target
             {
+                fixed4 center = tex2D(_MainTex, i.uv);
+
+                // 已清除的雾格子（alpha=0 但曾是雾、RGB 非 0）保持透明，不被模糊回填
+                float centerRgb = center.r + center.g + center.b;
+                bool isClearedFog = center.a < 0.5 && centerRgb > 0.1;
+                if (isClearedFog)
+                {
+                    return fixed4(0, 0, 0, 0);
+                }
+
                 // 地图四边 1 格内不平滑（保持干脆，不向边界外扩散）
                 float2 cell = float2(1.0 / max(_GridSize.x, 1.0), 1.0 / max(_GridSize.y, 1.0));
                 bool nearEdge = i.uv.x < cell.x * 1.5 || i.uv.x > 1.0 - cell.x * 1.5
                              || i.uv.y < cell.y * 1.5 || i.uv.y > 1.0 - cell.y * 1.5;
                 if (nearEdge)
                 {
-                    return tex2D(_MainTex, i.uv);
+                    return center;
                 }
 
                 // 3x3 高斯模糊（GPU 羽化雾边缘）
