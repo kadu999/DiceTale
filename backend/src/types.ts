@@ -14,6 +14,8 @@ export type ClientMessage =
         states?: string[];
         /** 归一化位置 [0,1]，y 向下（用于在地图上定位目标） */
         position?: { x: number; y: number } | null;
+        /** 物品列表（字符串） */
+        items?: string[];
       }>;
     }
   | { type: 'register_players'; players: Array<{ id: string; name: string }> }
@@ -27,18 +29,23 @@ export type ClientMessage =
       mapName: string;
     }
   /** 客户端 BackendObject 状态变化后的回执，保持 GM 页面同步 */
-  | { type: 'report_object_state'; objectId: string; state: string };
+  | { type: 'report_object_state'; objectId: string; state: string }
+  /** 对象物品列表（字符串）变化后的回执 */
+  | { type: 'report_object_items'; objectId: string; items: string[] };
 
 export type ServerMessage =
   | { type: 'sync_state'; state: GameStateSnapshot }
   | { type: 'set_map'; mapName: string; spawnId: string }
   | { type: 'teleport_player'; mapName: string; spawnId: string }
   /** 按对象 ID 切换客户端后台对象的状态（名称由客户端 Inspector 状态列表定义） */
-  | { type: 'set_object_state'; objectId: string; state: string };
+  | { type: 'set_object_state'; objectId: string; state: string }
+  /** 整体设置对象物品列表 */
+  | { type: 'set_object_items'; objectId: string; items: string[] };
 
 export type GmMessage =
   | { type: 'gm_teleport_player'; mapName: string; spawnId: string }
   | { type: 'gm_set_object_state'; objectId: string; state: string }
+  | { type: 'gm_set_object_items'; objectId: string; items: string[] }
   | { type: 'gm_refresh' };
 
 export interface PlayerStateSnapshot {
@@ -63,6 +70,8 @@ export interface ObjectStateSnapshot {
   mapName: string;
   /** 归一化位置 [0,1]，y 向下；未上报时为 null */
   position: { x: number; y: number } | null;
+  /** 物品列表（字符串） */
+  items: string[];
 }
 
 export interface GameStateSnapshot {

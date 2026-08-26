@@ -30,8 +30,8 @@ namespace DiceTale.Server
     }
 
     /// <summary>
-    /// 通用后台对象状态信息：对象 ID、显示名称、类型显示名、当前状态、全部可选状态名称与归一化位置。
-    /// 由 BackendRegistry 对每个 BackendObject 统一收集。
+    /// 通用后台对象状态信息：对象 ID、显示名称、类型显示名、当前状态、全部可选状态名称、
+    /// 归一化位置与物品列表。由 BackendRegistry 对每个 BackendObject 统一收集。
     /// </summary>
     [Serializable]
     public class ServerObjectInfo
@@ -43,6 +43,8 @@ namespace DiceTale.Server
         public List<string> states = new List<string>();
         /// <summary>对象在地图图片上的归一化位置 [0,1]，y 向下（左上角为原点）。</summary>
         public Position position;
+        /// <summary>物品列表（字符串），与后台同步。</summary>
+        public List<string> items = new List<string>();
     }
 
     [Serializable]
@@ -66,6 +68,15 @@ namespace DiceTale.Server
         public string playerId;
         public Position position;
         public string mapName;
+    }
+
+    /// <summary>物品列表变化后上报给后台（BackendObject 通用，与 GM 页面同步）。</summary>
+    [Serializable]
+    public class ReportObjectItemsMessage
+    {
+        public string type = "report_object_items";
+        public string objectId;
+        public List<string> items = new List<string>();
     }
 
     [Serializable]

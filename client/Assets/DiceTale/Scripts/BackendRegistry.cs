@@ -95,7 +95,8 @@ namespace DiceTale
                     kind = obj.ObjectKind,
                     currentState = obj.CurrentStateName,
                     states = obj.StateNames,
-                    position = obj.GetNormalizedPosition()
+                    position = obj.GetNormalizedPosition(),
+                    items = new List<string>(obj.Items)
                 });
             }
 

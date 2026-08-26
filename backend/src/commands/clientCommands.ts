@@ -20,6 +20,10 @@ export function setObjectState(ws: WebSocket, objectId: string, state: string) {
   send(ws, { type: 'set_object_state', objectId, state });
 }
 
+export function setObjectItems(ws: WebSocket, objectId: string, items: string[]) {
+  send(ws, { type: 'set_object_items', objectId, items });
+}
+
 export function broadcastGmUpdate(gmSockets: Set<WebSocket>, state?: GameStateSnapshot) {
   const snapshot = state ?? gameState.getSnapshot();
   const message: GmUpdateMessage = { type: 'gm_update', state: snapshot };

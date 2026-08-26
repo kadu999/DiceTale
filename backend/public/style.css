@@ -50,6 +50,39 @@ main.layout {
   display: block;
 }
 
+/* ---- 顶部标题栏内的页面切换（地图 / 玩家） ---- */
+.page-tabs {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.page-tab {
+  padding: 0.3rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #d1d5db;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  white-space: nowrap;
+}
+
+.page-tab.active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.page {
+  display: none;
+}
+
+.page.active {
+  display: block;
+}
+
 .panel {
   background: #fff;
   border-radius: 10px;
@@ -67,7 +100,7 @@ main.layout {
   margin-bottom: 0.75rem;
 }
 
-.object-panel {
+.player-panel {
   margin-bottom: 0.75rem;
 }
 
@@ -166,40 +199,6 @@ main.layout {
   100% { transform: scale(1.4); opacity: 0; }
 }
 
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem 1rem;
-  margin-top: 0.5rem;
-  font-size: 0.8rem;
-  color: #444;
-}
-
-.legend-item { display: flex; align-items: center; gap: 0.3rem; }
-
-.marker-dot {
-  display: inline-block;
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  border: 1px solid #fff;
-  box-shadow: 0 0 2px rgba(0,0,0,0.4);
-}
-
-.marker-dot.player { background: #3b82f6; }
-
-.legend-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: #8b5cf6;
-  color: #fff;
-  font-size: 0.72rem;
-}
-
-.legend-pill.door { background: #f59e0b; }
-
 /* ---- 地图目标标记（带名称的标签，可点击选中） ---- */
 .object-marker {
   position: absolute;
@@ -243,6 +242,14 @@ main.layout {
 
 .object-marker-label {
   line-height: 1;
+}
+
+.object-marker-state {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  font-size: 11px;
+  line-height: 1.3;
 }
 
 /* ---- 属性列表（右侧） ---- */
@@ -290,87 +297,118 @@ main.layout {
   font-size: 0.78rem;
 }
 
-/* ---- 后台对象列表 ---- */
-.object-list {
+/* ---- 玩家物品列表编辑 ---- */
+.property-items {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-.object-row {
+.property-item-chips {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.property-item-chip {
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 0.5rem;
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  gap: 4px;
+  padding: 2px 6px 2px 10px;
+  border-radius: 999px;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 0.82rem;
+  max-width: 100%;
+}
+
+.property-item-chip span {
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.property-item-remove {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(55, 48, 163, 0.15);
+  color: #3730a3;
+  font-size: 0.9rem;
+  line-height: 1;
   cursor: pointer;
   touch-action: manipulation;
 }
 
-.object-row:hover {
-  background: #f1f5f9;
+.property-item-add {
+  display: flex;
+  gap: 0.35rem;
 }
 
-.object-row.selected {
-  border-color: #2563eb;
-  background: #eff6ff;
+.property-item-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  background: #fff;
 }
 
-.object-row.empty {
+/* ---- 玩家页：每个玩家一个属性卡片，从左到右排列 ---- */
+.player-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.player-empty {
   color: #9ca3af;
   font-size: 0.85rem;
 }
 
-.object-header {
+.player-card {
+  flex: 0 1 300px;
+  min-width: 0;
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.45rem 0.5rem;
-  background: none;
-  border: none;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 0.9rem;
-  text-align: left;
   touch-action: manipulation;
 }
 
-.object-header:hover {
+.player-card:hover {
   background: #f1f5f9;
 }
 
-.object-kind {
-  flex: 0 0 auto;
-  padding: 0.1rem 0.45rem;
-  border-radius: 6px;
-  background: #e0e7ff;
-  color: #3730a3;
-  font-size: 0.72rem;
-  font-weight: 600;
+.player-card.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
 }
 
-.object-name {
-  font-weight: 600;
+.player-card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.player-card-name {
+  font-weight: 700;
+  font-size: 0.95rem;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.object-id {
-  color: #94a3b8;
-  font-size: 0.75rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.object-current {
-  margin-left: auto;
-  color: #64748b;
-  font-size: 0.78rem;
   white-space: nowrap;
 }
 
@@ -427,6 +465,15 @@ main.layout {
     padding: 0.6rem 0.75rem;
   }
 
+  header h1 {
+    font-size: 0.95rem;
+  }
+
+  .page-tab {
+    padding: 0.25rem 0.7rem;
+    font-size: 0.8rem;
+  }
+
   .map-tabs button {
     padding: 0.25rem 0.6rem;
     font-size: 0.8rem;
@@ -462,9 +509,9 @@ main.layout {
   }
 }
 
-/* 横屏且宽度足够（手机横屏 / 平板横屏）：地图 + 玩家列表两列 */
+/* 横屏且宽度足够（手机横屏 / 平板横屏）：页面内两列（左地图，右属性） */
 @media (orientation: landscape) and (min-width: 640px) {
-  main.layout {
+  .page.active {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 260px;
     gap: 0.75rem;
@@ -472,9 +519,15 @@ main.layout {
   }
 
   .map-panel,
-  .property-panel {
+  .property-panel,
+  .player-panel {
     max-width: none;
     margin: 0;
+  }
+
+  /* 玩家页：玩家卡片占满两列，从左到右排列 */
+  #pagePlayers .player-panel {
+    grid-column: 1 / -1;
   }
 
   .map-container {

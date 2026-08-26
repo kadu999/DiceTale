@@ -228,6 +228,10 @@ MonoBehaviour:
     onEnter:
       m_PersistentCalls:
         m_Calls: []
+  - name: "\u8FDB\u5165"
+    onEnter:
+      m_PersistentCalls:
+        m_Calls: []
   currentState: 0
 --- !u!1 &3890056362384748944
 GameObject:

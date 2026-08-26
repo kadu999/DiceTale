@@ -6,7 +6,7 @@ namespace DiceTale.Server
 {
     /// <summary>
     /// 解析并执行服务器下发的命令：
-    /// sync_state / set_map / teleport_player / set_object_state。
+    /// sync_state / set_map / teleport_player / set_object_state / set_object_items。
     /// </summary>
     public class ServerCommandDispatcher : MonoBehaviour
     {
@@ -24,6 +24,9 @@ namespace DiceTale.Server
                 {
                     case "set_object_state":
                         HandleSetObjectState(msg);
+                        break;
+                    case "set_object_items":
+                        HandleSetObjectItems(msg);
                         break;
                     case "teleport_player":
                         HandleTeleportPlayer(msg);
@@ -65,6 +68,34 @@ namespace DiceTale.Server
             {
                 Debug.LogWarning($"[ServerCommandDispatcher] {objectId}: unknown state '{stateName}'");
             }
+        }
+
+        /// <summary>set_object_items：按 ObjectId 定位后台对象，整体设置物品列表（字符串），并打印结果。</summary>
+        private void HandleSetObjectItems(Dictionary<string, object> msg)
+        {
+            var objectId = JsonParser.GetString(msg, "objectId");
+            var obj = FindBackendObject(objectId);
+            if (obj == null)
+            {
+                Debug.LogWarning($"[ServerCommandDispatcher] BackendObject not found in scene: {objectId}");
+                return;
+            }
+
+            var items = new List<string>();
+            var rawItems = JsonParser.GetArray(msg, "items");
+            if (rawItems != null)
+            {
+                foreach (var raw in rawItems)
+                {
+                    if (raw is string s)
+                    {
+                        items.Add(s);
+                    }
+                }
+            }
+
+            obj.SetItems(items);
+            Debug.Log($"[ServerCommandDispatcher] {objectId} ({obj.DisplayName}): items set ({items.Count})");
         }
 
         private void HandleTeleportPlayer(Dictionary<string, object> msg)

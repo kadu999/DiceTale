@@ -18,6 +18,9 @@ export class GmHandler {
       case 'gm_set_object_state':
         this.setObjectState(message.objectId, message.state);
         break;
+      case 'gm_set_object_items':
+        this.setObjectItems(message.objectId, message.items);
+        break;
       case 'gm_refresh':
         commands.syncState(this.ws);
         break;
@@ -40,6 +43,14 @@ export class GmHandler {
     const clientSocket = this.getClientSocket();
     if (clientSocket) {
       commands.setObjectState(clientSocket, objectId, state);
+    }
+  }
+
+  /** 设置对象物品列表：转发给客户端，客户端回执后广播同步。 */
+  private setObjectItems(objectId: string, items: string[]) {
+    const clientSocket = this.getClientSocket();
+    if (clientSocket) {
+      commands.setObjectItems(clientSocket, objectId, items);
     }
   }
 }

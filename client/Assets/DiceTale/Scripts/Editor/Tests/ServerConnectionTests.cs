@@ -53,6 +53,38 @@ namespace DiceTale.Editor.Tests
         }
 
         [Test]
+        public void ServerObjectInfo_SerializesItems()
+        {
+            var msg = new RegisterMapObjectsMessage { mapName = "Map001" };
+            msg.objects.Add(new ServerObjectInfo
+            {
+                id = "Player_1",
+                name = "小明",
+                kind = "Player",
+                items = new List<string> { "小刀", "草药" }
+            });
+
+            var json = JsonUtility.ToJson(msg);
+            Assert.IsTrue(json.Contains("\"type\":\"register_map_objects\""));
+            Assert.IsTrue(json.Contains("\"items\":[\"小刀\",\"草药\"]"));
+        }
+
+        [Test]
+        public void ReportObjectItemsMessage_SerializesCorrectly()
+        {
+            var msg = new ReportObjectItemsMessage
+            {
+                objectId = "Lever_1",
+                items = new List<string> { "钥匙" }
+            };
+
+            var json = JsonUtility.ToJson(msg);
+            Assert.IsTrue(json.Contains("\"type\":\"report_object_items\""));
+            Assert.IsTrue(json.Contains("\"objectId\":\"Lever_1\""));
+            Assert.IsTrue(json.Contains("\"items\":[\"钥匙\"]"));
+        }
+
+        [Test]
         public void JsonParser_ParsesSyncStateWithObjectDictionary()
         {
             const string json = "{\"type\":\"sync_state\",\"state\":{\"currentMap\":\"Map001\"," +

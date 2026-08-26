@@ -197,6 +197,7 @@ describe('WebSocket server', () => {
       states: ['off', 'on'],
       mapName: 'Map001',
       position: { x: 0.4, y: 0.3 },
+      items: [],
     });
     expect(update.state.objects['Door_2'].name).toBe('东侧门');
     expect(update.state.objects['Door_2'].currentState).toBe('closed');
@@ -299,6 +300,72 @@ describe('WebSocket server', () => {
 
     gm.ws.close();
     client.ws.close();
+  });
+
+  test('register_map_objects carries object items into gm snapshot', async () => {
+    const client = await connect('/client');
+    openSockets.push(client.ws);
+    send(client.ws, { type: 'request_join' });
+    await client.next(); // sync_state
+
+    send(client.ws, {
+      type: 'register_map_objects',
+      mapName: 'Map001',
+      spawnPoints: [],
+      objects: [
+        { id: 'Player_1', name: '小明', kind: 'Player', items: ['小刀', '草药'] },
+        { id: 'Lever_1', name: '大厅拉杆', kind: 'Lever', items: ['扳手'] },
+      ],
+    });
+
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    const update = await gm.next();
+    expect(update.state.objects['Player_1'].items).toEqual(['小刀', '草药']);
+    expect(update.state.objects['Lever_1'].items).toEqual(['扳手']);
+
+    gm.ws.close();
+    client.ws.close();
+  });
+
+  test('report_object_items updates snapshot and broadcasts gm_update', async () => {
+    const client = await connect('/client');
+    openSockets.push(client.ws);
+    send(client.ws, { type: 'request_join' });
+    await client.next(); // sync_state
+    send(client.ws, {
+      type: 'register_map_objects',
+      mapName: 'Map001',
+      spawnPoints: [],
+      objects: [{ id: 'Lever_1', name: '大厅拉杆', kind: 'Lever', items: [] }],
+    });
+
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    await gm.next(); // 注册后广播
+
+    send(client.ws, { type: 'report_object_items', objectId: 'Lever_1', items: ['钥匙'] });
+
+    const update = await gm.next();
+    expect(update.type).toBe('gm_update');
+    expect(update.state.objects['Lever_1'].items).toEqual(['钥匙']);
+  });
+
+  test('gm_set_object_items pushes set_object_items to connected client', async () => {
+    const client = await connect('/client');
+    openSockets.push(client.ws);
+    send(client.ws, { type: 'request_join' });
+    await client.next(); // sync_state
+
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    await gm.next(); // initial gm_update
+    send(gm.ws, { type: 'gm_set_object_items', objectId: 'Lever_1', items: ['铁剑', '药水'] });
+
+    const msg = await client.next();
+    expect(msg.type).toBe('set_object_items');
+    expect(msg.objectId).toBe('Lever_1');
+    expect(msg.items).toEqual(['铁剑', '药水']);
   });
 
   test('client disconnect clears client data in gm snapshot', async () => {

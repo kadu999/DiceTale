@@ -17,6 +17,7 @@ export interface ObjectInfo {
   states: string[];
   mapName: string;
   position: { x: number; y: number } | null;
+  items: string[];
 }
 
 export class GameState {
@@ -79,6 +80,7 @@ export class GameState {
         states: obj.states ?? existing?.states ?? [],
         mapName: obj.mapName ?? existing?.mapName ?? mapName,
         position: obj.position ?? existing?.position ?? null,
+        items: obj.items ?? existing?.items ?? [],
       };
     }
   }
@@ -88,6 +90,14 @@ export class GameState {
     const obj = this.objects[objectId];
     if (!obj) return false;
     obj.currentState = state;
+    return true;
+  }
+
+  /** 更新通用后台对象物品列表（客户端 report_object_items 回执）。 */
+  setObjectItems(objectId: string, items: string[]): boolean {
+    const obj = this.objects[objectId];
+    if (!obj) return false;
+    obj.items = items;
     return true;
   }
 

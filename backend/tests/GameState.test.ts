@@ -7,9 +7,9 @@ describe('GameState', () => {
     state = new GameState();
   });
 
-  test('registerObjects stores name/kind/currentState/states/position per object', () => {
+  test('registerObjects stores name/kind/currentState/states/position/items per object', () => {
     state.registerObjects('Map001', [
-      { id: 'Lever_1', name: '大厅拉杆', kind: 'Lever', currentState: 'off', states: ['off', 'on'], position: { x: 0.4, y: 0.3 } },
+      { id: 'Lever_1', name: '大厅拉杆', kind: 'Lever', currentState: 'off', states: ['off', 'on'], position: { x: 0.4, y: 0.3 }, items: ['扳手'] },
     ]);
 
     expect(state.objects['Lever_1']).toEqual({
@@ -19,6 +19,7 @@ describe('GameState', () => {
       states: ['off', 'on'],
       mapName: 'Map001',
       position: { x: 0.4, y: 0.3 },
+      items: ['扳手'],
     });
   });
 
@@ -47,6 +48,20 @@ describe('GameState', () => {
     expect(state.setObjectState('Lever_1', 'on')).toBe(true);
     expect(state.objects['Lever_1'].currentState).toBe('on');
     expect(state.setObjectState('Missing', 'on')).toBe(false);
+  });
+
+  test('registerObjects keeps items and setObjectItems updates them', () => {
+    state.registerObjects('Map001', [{ id: 'Lever_1', kind: 'Lever', items: ['小刀'] }]);
+    expect(state.objects['Lever_1'].items).toEqual(['小刀']);
+
+    // 未上报 items 时保留已有物品
+    state.registerObjects('Map001', [{ id: 'Lever_1', kind: 'Lever' }]);
+    expect(state.objects['Lever_1'].items).toEqual(['小刀']);
+
+    expect(state.setObjectItems('Lever_1', ['钥匙', '药水'])).toBe(true);
+    expect(state.objects['Lever_1'].items).toEqual(['钥匙', '药水']);
+
+    expect(state.setObjectItems('Missing', ['x'])).toBe(false);
   });
 
   test('clearClientData clears players, objects and spawnPoints', () => {

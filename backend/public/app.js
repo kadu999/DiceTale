@@ -52,11 +52,28 @@ function send(msg) {
 
 // ---------- 渲染 ----------
 
+let activePage = 'map'; // 'map' | 'players'
+
+/** 切换大页面（地图 / 玩家）。 */
+function switchPage(page) {
+  activePage = page === 'players' ? 'players' : 'map';
+  document.getElementById('pageMap').classList.toggle('active', activePage === 'map');
+  document.getElementById('pagePlayers').classList.toggle('active', activePage === 'players');
+  document.getElementById('pageBtnMap').classList.toggle('active', activePage === 'map');
+  document.getElementById('pageBtnPlayers').classList.toggle('active', activePage === 'players');
+  renderPropertyPanel();
+  if (activePage === 'players') {
+    renderPlayerList();
+  } else {
+    setTimeout(fitMapContainer, 50); // 地图页重新显示后重算地图尺寸
+  }
+}
+
 function render() {
   if (!state) return;
   renderMapTabs();
   renderMap();
-  renderObjectList();
+  renderPlayerList();
   renderPropertyPanel();
 }
 
@@ -105,11 +122,11 @@ const ICON_PLAYER =
   '<path d="M4.5 21c0-4.1 3.4-7 7.5-7s7.5 2.9 7.5 7"/>' +
   '</svg>';
 
-/** 选中目标：地图标记与对象列表同步高亮，右侧属性面板显示属性。 */
+/** 选中目标：地图标记与玩家列表同步高亮，属性面板显示属性。 */
 function selectObject(objectId) {
   selectedObjectId = objectId;
   renderMap();
-  renderObjectList();
+  renderPlayerList();
   renderPropertyPanel();
 }
 
@@ -151,6 +168,15 @@ function renderMap() {
 
     marker.appendChild(dot);
     marker.appendChild(label);
+
+    // 标记上同时显示当前状态（未配置状态时省略）
+    if (obj.currentState) {
+      const stateEl = document.createElement('span');
+      stateEl.className = 'object-marker-state';
+      stateEl.textContent = obj.currentState;
+      marker.appendChild(stateEl);
+    }
+
     marker.onclick = () => selectObject(objectId);
     layer.appendChild(marker);
   }
@@ -188,9 +214,14 @@ function fmtPos(pos) {
 
 // ---------- 属性列表（右侧） ----------
 
-/** 渲染选中目标的属性：基础信息 + 可修改的状态切换按钮。 */
+/** 渲染选中目标的属性：基础信息 + 物品 + 可修改的状态切换按钮（属于地图页）。 */
 function renderPropertyPanel() {
-  const container = document.getElementById('propertyList');
+  renderPropertyPanelInto('propertyListMap');
+}
+
+function renderPropertyPanelInto(id) {
+  const container = document.getElementById(id);
+  if (!container) return;
   container.innerHTML = '';
 
   if (!selectedObjectId) {
@@ -206,12 +237,17 @@ function renderPropertyPanel() {
 
   addPropertyRow(container, '名称', obj.name || selectedObjectId);
   addPropertyRow(container, 'ID', selectedObjectId);
-  addPropertyRow(container, '类型', obj.kind || 'object');
-  addPropertyRow(container, '地图', obj.mapName || '-');
   addPropertyRow(container, '位置', fmtPos(obj.position));
-  addPropertyRow(container, '当前状态', obj.currentState || '未配置');
+
+  // 物品列表（BackendObject 通用能力，与后台同步：可添加 / 移除）
+  renderObjectItems(container, selectedObjectId, obj.items || []);
 
   // 状态切换（点击即发送 gm_set_object_state）
+  renderObjectStates(container, selectedObjectId, obj);
+}
+
+/** 渲染状态切换区（属性面板与玩家卡片共用）。 */
+function renderObjectStates(container, objectId, obj) {
   const statesRow = document.createElement('div');
   statesRow.className = 'property-row';
   const label = document.createElement('span');
@@ -232,7 +268,7 @@ function renderPropertyPanel() {
       btn.className = 'state-btn' + (stateName === obj.currentState ? ' active' : '');
       btn.textContent = stateName;
       btn.onclick = () => {
-        send({ type: 'gm_set_object_state', objectId: selectedObjectId, state: stateName });
+        send({ type: 'gm_set_object_state', objectId, state: stateName });
       };
       statesBox.appendChild(btn);
     }
@@ -241,6 +277,126 @@ function renderPropertyPanel() {
   statesRow.appendChild(label);
   statesRow.appendChild(statesBox);
   container.appendChild(statesRow);
+}
+
+/** 渲染玩家页：每个玩家一个属性卡片，从左到右排列。 */
+function renderPlayerList() {
+  const container = document.getElementById('playerList');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const players = Object.entries(state.players || {});
+  if (players.length === 0) {
+    container.innerHTML = '<div class="player-empty">暂无玩家</div>';
+    return;
+  }
+
+  for (const [playerId, player] of players) {
+    const card = document.createElement('div');
+    card.className = 'player-card' + (playerId === selectedObjectId ? ' selected' : '');
+    card.onclick = (e) => {
+      // 卡片内的输入框/按钮操作不触发选中（避免输入框失焦）
+      if (e.target.closest('input, button')) return;
+      selectObject(playerId);
+    };
+
+    // 卡片标题：玩家名
+    const title = document.createElement('div');
+    title.className = 'player-card-title';
+    const name = document.createElement('span');
+    name.className = 'player-card-name';
+    name.textContent = player.name || playerId;
+    title.appendChild(name);
+    card.appendChild(title);
+
+    // 属性：ID / 地图 / 位置
+    addPropertyRow(card, 'ID', playerId);
+    addPropertyRow(card, '地图', player.mapName || '-');
+    addPropertyRow(card, '位置', fmtPos(player.position));
+
+    // 物品编辑 + 状态切换（与地图页属性面板一致）
+    const obj = state.objects && state.objects[playerId];
+    renderObjectItems(card, playerId, (obj && obj.items) || []);
+    renderObjectStates(card, playerId, obj || { states: [], currentState: null });
+
+    container.appendChild(card);
+  }
+}
+
+/** 渲染对象物品列表：标签 + 移除按钮 + 输入框添加，变更即发送 gm_set_object_items 同步。 */
+function renderObjectItems(container, objectId, items) {
+  const row = document.createElement('div');
+  row.className = 'property-row';
+  const label = document.createElement('span');
+  label.className = 'property-label';
+  label.textContent = '物品';
+  const box = document.createElement('div');
+  box.className = 'property-items';
+
+  const chips = document.createElement('div');
+  chips.className = 'property-item-chips';
+  if (items.length === 0) {
+    const empty = document.createElement('span');
+    empty.className = 'property-hint';
+    empty.textContent = '暂无物品';
+    chips.appendChild(empty);
+  } else {
+    for (const item of items) {
+      const chip = document.createElement('span');
+      chip.className = 'property-item-chip';
+
+      const text = document.createElement('span');
+      text.textContent = item;
+
+      const remove = document.createElement('button');
+      remove.className = 'property-item-remove';
+      remove.title = '移除';
+      remove.textContent = '×';
+      remove.onclick = () => {
+        send({
+          type: 'gm_set_object_items',
+          objectId,
+          items: items.filter((i) => i !== item),
+        });
+      };
+
+      chip.appendChild(text);
+      chip.appendChild(remove);
+      chips.appendChild(chip);
+    }
+  }
+
+  const addBox = document.createElement('div');
+  addBox.className = 'property-item-add';
+  const input = document.createElement('input');
+  input.className = 'property-item-input';
+  input.placeholder = '输入物品名';
+  input.maxLength = 40;
+  const addBtn = document.createElement('button');
+  addBtn.className = 'state-btn';
+  addBtn.textContent = '添加';
+  addBtn.onclick = () => {
+    const value = input.value.trim();
+    if (!value) return;
+    send({
+      type: 'gm_set_object_items',
+      objectId,
+      items: items.concat([value]),
+    });
+    input.value = '';
+  };
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addBtn.click();
+  });
+
+  addBox.appendChild(input);
+  addBox.appendChild(addBtn);
+
+  box.appendChild(chips);
+  box.appendChild(addBox);
+  row.appendChild(label);
+  row.appendChild(box);
+  container.appendChild(row);
 }
 
 function addPropertyRow(container, labelText, value) {
@@ -255,48 +411,6 @@ function addPropertyRow(container, labelText, value) {
   row.appendChild(label);
   row.appendChild(valueEl);
   container.appendChild(row);
-}
-
-// ---------- 后台对象列表 ----------
-
-/** 渲染所有 BackendObject：点击行选中目标（属性显示在右侧面板）。 */
-function renderObjectList() {
-  const container = document.getElementById('objectList');
-  container.innerHTML = '';
-
-  const objects = Object.entries(state.objects || {});
-  if (objects.length === 0) {
-    container.innerHTML = '<div class="object-row empty">暂无对象</div>';
-    return;
-  }
-
-  for (const [objectId, obj] of objects) {
-    const row = document.createElement('div');
-    row.className = 'object-row' + (objectId === selectedObjectId ? ' selected' : '');
-
-    const kindEl = document.createElement('span');
-    kindEl.className = 'object-kind';
-    kindEl.textContent = obj.kind || 'object';
-
-    const nameEl = document.createElement('span');
-    nameEl.className = 'object-name';
-    nameEl.textContent = obj.name || objectId;
-
-    const idEl = document.createElement('span');
-    idEl.className = 'object-id';
-    idEl.textContent = objectId;
-
-    const stateEl = document.createElement('span');
-    stateEl.className = 'object-current';
-    stateEl.textContent = obj.currentState ? '当前：' + obj.currentState : '未配置状态';
-
-    row.appendChild(kindEl);
-    row.appendChild(nameEl);
-    row.appendChild(idEl);
-    row.appendChild(stateEl);
-    row.onclick = () => selectObject(objectId);
-    container.appendChild(row);
-  }
 }
 
 // ---- 横屏时地图按 16:9 等比（高度决定宽度），避免 contain 两侧黑边 ----

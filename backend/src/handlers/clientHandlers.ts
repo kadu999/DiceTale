@@ -39,6 +39,11 @@ export class ClientHandler {
           this.broadcast();
         }
         break;
+      case 'report_object_items':
+        if (gameState.setObjectItems(message.objectId, message.items)) {
+          this.broadcast();
+        }
+        break;
       default:
         console.warn('[ClientHandler] Unknown message:', (message as any).type);
     }

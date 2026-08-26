@@ -79,6 +79,58 @@ namespace DiceTale
             }
         }
 
+        private readonly List<string> items = new List<string>();
+
+        /// <summary>物品列表（只读视图；修改用 AddItem/RemoveItem/SetItems，与后台同步）。</summary>
+        public IReadOnlyList<string> Items => items;
+
+        public void AddItem(string item)
+        {
+            if (string.IsNullOrEmpty(item) || items.Contains(item))
+            {
+                return;
+            }
+
+            items.Add(item);
+            ReportItems();
+        }
+
+        public void RemoveItem(string item)
+        {
+            if (items.Remove(item))
+            {
+                ReportItems();
+            }
+        }
+
+        /// <summary>整体设置物品列表（后台 set_object_items 命令使用）。</summary>
+        public void SetItems(IEnumerable<string> newItems)
+        {
+            items.Clear();
+            if (newItems != null)
+            {
+                items.AddRange(newItems);
+            }
+
+            ReportItems();
+        }
+
+        /// <summary>上报物品列表（本地增删或整体设置后触发）。</summary>
+        private void ReportItems()
+        {
+            var connection = Server.ServerConnection.Instance;
+            if (connection == null || !connection.IsConnected)
+            {
+                return;
+            }
+
+            SendToBackend(new Server.ReportObjectItemsMessage
+            {
+                objectId = ObjectId,
+                items = new List<string>(items)
+            });
+        }
+
         protected virtual void OnEnable()
         {
             BackendRegistry.Instance.Register(this);

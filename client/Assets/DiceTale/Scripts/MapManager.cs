@@ -65,6 +65,8 @@ namespace DiceTale
             var game = Object.FindFirstObjectByType<Game>();
             game?.LockInteraction(interactionLockDuration);
 
+            // 玩家挂在当前地图节点下，切图前先摘下来，避免随旧地图一起销毁
+            DetachPlayersFromMap();
             UnloadCurrentMap();
 
             var sprite = LoadMapSprite(mapName);
@@ -155,7 +157,7 @@ namespace DiceTale
             return dynamicGo;
         }
 
-        /// <summary>把玩家移动到指定出生点（spawnId 为空时用第一个出生点）。</summary>
+        /// <summary>把玩家移动到指定出生点（spawnId 为空时用第一个出生点），并挂到当前地图节点下。</summary>
         public void MovePlayersToSpawn(string spawnId)
         {
             var characterManager = CharacterManager.Instance;
@@ -163,6 +165,16 @@ namespace DiceTale
             {
                 Debug.LogWarning($"[MapManager] MovePlayersToSpawn skipped: no players (players={(characterManager != null ? characterManager.Players.Count : -1)})");
                 return;
+            }
+
+            // 玩家挂在当前地图节点下（层级跟随地图）
+            var parent = CurrentMap != null ? CurrentMap.transform : mapRoot;
+            foreach (var player in characterManager.Players)
+            {
+                if (player != null)
+                {
+                    player.transform.SetParent(parent, true);
+                }
             }
 
             var spawn = FindSpawn(spawnId);
@@ -179,6 +191,24 @@ namespace DiceTale
                 {
                     player.transform.position = spawn.Position;
                     player.ReportPosition(); // 传送/出生落点：上报位置
+                }
+            }
+        }
+
+        /// <summary>切换地图前把玩家从当前地图节点摘下来（挂到 MapRoot），避免随旧地图销毁。</summary>
+        private void DetachPlayersFromMap()
+        {
+            var characterManager = CharacterManager.Instance;
+            if (characterManager == null)
+            {
+                return;
+            }
+
+            foreach (var player in characterManager.Players)
+            {
+                if (player != null)
+                {
+                    player.transform.SetParent(mapRoot, true);
                 }
             }
         }
