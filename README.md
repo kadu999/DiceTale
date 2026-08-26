@@ -1,7 +1,8 @@
 # DiceTale（骰子物语）
 
 一个轻量级的桌游跑团（TRPG）Demo 项目：**Unity 客户端 + Node.js 权威服务器**。
-服务器作为后台控制前端的关键游戏状态（门开启、地图传送），并提供 GM 可视化网页后台。
+服务器作为后台控制前端的关键游戏状态（门开启、地图传送、**地图编辑**），并提供 GM 可视化网页后台。
+客户端只负责**从服务器下载地图**游玩，不在前端编辑地图。
 
 ## 项目结构
 
@@ -13,9 +14,11 @@ DiceTale/
 │       ├── BackendManager.cs     # 后端入口（默认连服务器，可切本地 Mock）
 │       └── ...
 ├── server/                       # Node.js 权威服务器（TypeScript + ws）
-│   ├── src/                      # 服务器源码（状态、会话、处理器）
-│   ├── public/                   # GM 网页后台
-│   ├── data/                     # 游戏状态存档（gamestate.json）
+│   ├── src/                      # 服务器源码（状态、会话、处理器、地图目录、网格数据）
+│   ├── public/                   # GM 网页后台（地图查看/编辑、门控制、传送）
+│   ├── data/
+│   │   ├── gamestate.json        # 游戏状态存档（门状态、当前地图等）
+│   │   └── maps/                 # 地图网格数据（服务器权威，可编辑）
 │   └── tests/                    # jest 测试
 └── docs/                         # 设计与实现文档
 ```
@@ -38,25 +41,35 @@ start.bat   :: 启动服务器（缺编译产物时自动先 build）
 - GM 控制台：<http://localhost:8080/>
 - 客户端 WebSocket：`ws://localhost:8080/client`
 - GM WebSocket：`ws://localhost:8080/gm`
-- 状态存档：`server/data/gamestate.json`（服务器是权威状态源，重启后自动恢复）
+- 地图图片：<http://localhost:8080/maps/Map001.png>
+- 网格数据：<http://localhost:8080/maps/Map001.bytes>（客户端下载用）
+- 网格编辑 API：`GET/PUT /api/maps/{name}/grid`（JSON）
+
+## 地图编辑（GM 网页）
+
+1. 打开 GM 控制台，切到要编辑的地图 Tab，点「编辑网格」。
+2. 选择画笔（**障碍** / **擦除**），在地图上拖拽绘制。
+3. 点「保存网格」写回服务器（`server/data/maps/{name}.bytes`）。
+4. 首次启动服务器时，会从客户端 `Resources/Map*.bytes` 自动播种网格数据；
+   没有数据的地图会提示创建默认 64×36 空网格。
+
+门的配置（id、位置、目标地图、是否传送门）在 `server/src/mapCatalog.ts`。
+
+## Unity 客户端接入
+
+1. 用 Unity 6（6000.3.x）打开 `client/`。
+2. 先启动服务器再运行游戏：
+   - `MapManager` 从服务器下载地图图片与网格数据（`http://localhost:8080/maps/...`）；
+   - 服务器不可用时回退本地 `Resources` 资源，可离线运行。
+3. `BackendManager` 自动连接 `ws://localhost:8080/client`，加载地图后自动上报门与出生点。
+4. 想完全离线：取消勾选 `BackendManager` 上的 `Use Server`（走本地 Mock）。
 
 ## 运行测试
 
 ```bash
 cd server
-npm test        # jest：游戏状态、持久化、WebSocket 协议流程
+npm test        # jest：游戏状态、持久化、WebSocket 协议、网格数据与 API
 ```
-
-## Unity 客户端接入
-
-1. 用 Unity 6（6000.3.x）打开 `client/`。
-2. 为场景中需要服务器控制的「门」添加 `Door` 组件，并填写：
-   - `Door Id`（如 `Door_A1`，与 GM 后台一一对应）
-   - `Target Scene Name` / `Target Spawn Id`（传送目标地图与出生点）
-   - 传送门勾选 `Is Portal`
-3. 先启动服务器再运行游戏，`BackendManager` 会自动连接 `ws://localhost:8080/client`，
-   加载地图后自动上报门与出生点。
-4. 想离线运行：取消勾选 `BackendManager` 上的 `Use Server`（走本地 Mock）。
 
 ## 通信协议
 
