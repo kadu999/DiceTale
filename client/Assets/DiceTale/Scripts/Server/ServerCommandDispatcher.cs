@@ -6,7 +6,7 @@ namespace DiceTale.Server
 {
     /// <summary>
     /// 解析并执行服务器下发的命令：
-    /// sync_state / set_map / set_door_state / teleport_player。
+    /// sync_state / set_map / teleport_player / set_object_state。
     /// </summary>
     public class ServerCommandDispatcher : MonoBehaviour
     {
@@ -22,8 +22,8 @@ namespace DiceTale.Server
 
                 switch (JsonParser.GetString(msg, "type"))
                 {
-                    case "set_door_state":
-                        HandleSetDoorState(msg);
+                    case "set_object_state":
+                        HandleSetObjectState(msg);
                         break;
                     case "teleport_player":
                         HandleTeleportPlayer(msg);
@@ -45,18 +45,26 @@ namespace DiceTale.Server
             }
         }
 
-        private void HandleSetDoorState(Dictionary<string, object> msg)
+        /// <summary>set_object_state：按 ObjectId 定位后台对象，按名称切换其状态，并打印结果。</summary>
+        private void HandleSetObjectState(Dictionary<string, object> msg)
         {
-            var doorId = JsonParser.GetString(msg, "doorId");
-            var unlocked = JsonParser.GetBool(msg, "unlocked");
-            var door = FindDoor(doorId);
-            if (door == null)
+            var objectId = JsonParser.GetString(msg, "objectId");
+            var stateName = JsonParser.GetString(msg, "state");
+            var obj = FindBackendObject(objectId);
+            if (obj == null)
             {
-                Debug.LogWarning($"[ServerCommandDispatcher] Door not found in scene: {doorId}");
+                Debug.LogWarning($"[ServerCommandDispatcher] BackendObject not found in scene: {objectId}");
                 return;
             }
 
-            door.SetUnlocked(unlocked);
+            if (obj.TrySetState(stateName))
+            {
+                Debug.Log($"[ServerCommandDispatcher] {objectId} ({obj.DisplayName}): state -> '{stateName}' OK");
+            }
+            else
+            {
+                Debug.LogWarning($"[ServerCommandDispatcher] {objectId}: unknown state '{stateName}'");
+            }
         }
 
         private void HandleTeleportPlayer(Dictionary<string, object> msg)
@@ -89,31 +97,15 @@ namespace DiceTale.Server
             {
                 mapManager.LoadMap(currentMap);
             }
-
-            var doors = JsonParser.GetObject(state, "doors");
-            if (doors != null)
-            {
-                foreach (var pair in doors)
-                {
-                    var doorState = pair.Value as Dictionary<string, object>;
-                    if (doorState == null)
-                    {
-                        continue;
-                    }
-
-                    var door = FindDoor(pair.Key);
-                    door?.SetUnlocked(JsonParser.GetBool(doorState, "unlocked"));
-                }
-            }
         }
 
-        private Door FindDoor(string doorId)
+        private BackendObject FindBackendObject(string objectId)
         {
-            foreach (var door in UnityEngine.Object.FindObjectsByType<Door>(FindObjectsSortMode.None))
+            foreach (var obj in UnityEngine.Object.FindObjectsByType<BackendObject>(FindObjectsSortMode.None))
             {
-                if (door.DoorId == doorId)
+                if (obj.ObjectId == objectId)
                 {
-                    return door;
+                    return obj;
                 }
             }
 

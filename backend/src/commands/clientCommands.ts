@@ -12,12 +12,12 @@ export function syncState(ws: WebSocket) {
   send(ws, { type: 'sync_state', state: gameState.getSnapshot() });
 }
 
-export function setDoorState(ws: WebSocket, doorId: string, unlocked: boolean) {
-  send(ws, { type: 'set_door_state', doorId, unlocked });
-}
-
 export function teleportPlayer(ws: WebSocket, mapName: string, spawnId: string) {
   send(ws, { type: 'teleport_player', mapName, spawnId });
+}
+
+export function setObjectState(ws: WebSocket, objectId: string, state: string) {
+  send(ws, { type: 'set_object_state', objectId, state });
 }
 
 export function broadcastGmUpdate(gmSockets: Set<WebSocket>, state?: GameStateSnapshot) {

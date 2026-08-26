@@ -5,7 +5,6 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { ClientSession } from './ClientSession';
 import { GmSession } from './GmSession';
 import { gameState } from './GameState';
-import { loadState } from './persistence';
 import { broadcastGmUpdate } from './commands/clientCommands';
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
@@ -125,10 +124,10 @@ wss.on('connection', (ws, req) => {
     ws.on('close', () => {
       if (clientSocket === ws) {
         clientSocket = null;
-        // 客户端断开：清除玩家，通知 GM 移除玩家图标/列表（单客户端架构）
-        gameState.clearPlayers();
+        // 客户端断开：清空其上报的运行时数据（玩家/对象/出生点），通知 GM 移除（单客户端架构）
+        gameState.clearClientData();
         broadcastToGm();
-        console.log('[Server] Client disconnected, players cleared');
+        console.log('[Server] Client disconnected, client data cleared');
       }
     });
     return;
@@ -147,8 +146,6 @@ wss.on('connection', (ws, req) => {
 
   ws.close(1008, 'Unknown path');
 });
-
-loadState();
 
 if (require.main === module) {
   server.listen(PORT, () => {

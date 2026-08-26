@@ -8,45 +8,57 @@ namespace DiceTale.Editor.Tests
     public class ServerConnectionTests
     {
         [Test]
-        public void RequestDoorAccessMessage_SerializesCorrectly()
-        {
-            var msg = new RequestDoorAccessMessage { doorId = "Door_A1" };
-            var json = JsonUtility.ToJson(msg);
-            Assert.IsTrue(json.Contains("\"type\":\"request_door_access\""));
-            Assert.IsTrue(json.Contains("\"doorId\":\"Door_A1\""));
-        }
-
-        [Test]
-        public void RegisterMapObjectsMessage_SerializesDoorsAndSpawns()
+        public void RegisterMapObjectsMessage_SerializesSpawnsAndObjects()
         {
             var msg = new RegisterMapObjectsMessage { mapName = "Map001" };
-            msg.doors.Add(new DoorInfo { id = "Door_A1", targetMap = "Map002", targetSpawn = "Default", isPortal = true });
             msg.spawnPoints.Add(new SpawnInfo { id = "Default" });
+            msg.objects.Add(new ServerObjectInfo
+            {
+                id = "Lever_1",
+                name = "大厅拉杆",
+                kind = "Lever",
+                currentState = "off",
+                states = new List<string> { "off", "on" },
+                position = new Position { x = 0.4f, y = 0.3f }
+            });
 
             var json = JsonUtility.ToJson(msg);
             Assert.IsTrue(json.Contains("\"type\":\"register_map_objects\""));
             Assert.IsTrue(json.Contains("\"mapName\":\"Map001\""));
-            Assert.IsTrue(json.Contains("\"Door_A1\""));
-            Assert.IsTrue(json.Contains("\"targetMap\":\"Map002\""));
+            Assert.IsTrue(json.Contains("\"Default\""));
+            Assert.IsTrue(json.Contains("\"Lever_1\""));
+            Assert.IsTrue(json.Contains("\"大厅拉杆\""));
+            Assert.IsTrue(json.Contains("\"currentState\":\"off\""));
+            Assert.IsTrue(json.Contains("\"position\":{\"x\":0.4"));
         }
 
         [Test]
-        public void JsonParser_ParsesSetDoorState()
+        public void ReportObjectStateMessage_SerializesCorrectly()
         {
-            const string json = "{\"type\":\"set_door_state\",\"doorId\":\"Door_A1\",\"unlocked\":true}";
-            var msg = JsonParser.ParseObject(json);
-            Assert.AreEqual("set_door_state", JsonParser.GetString(msg, "type"));
-            Assert.AreEqual("Door_A1", JsonParser.GetString(msg, "doorId"));
-            Assert.IsTrue(JsonParser.GetBool(msg, "unlocked"));
+            var msg = new ReportObjectStateMessage { objectId = "Lever_1", state = "on" };
+            var json = JsonUtility.ToJson(msg);
+            Assert.IsTrue(json.Contains("\"type\":\"report_object_state\""));
+            Assert.IsTrue(json.Contains("\"objectId\":\"Lever_1\""));
+            Assert.IsTrue(json.Contains("\"state\":\"on\""));
         }
 
         [Test]
-        public void JsonParser_ParsesSyncStateWithDoorDictionary()
+        public void RequestTeleportMessage_SerializesCorrectly()
+        {
+            var msg = new RequestTeleportMessage { mapName = "Map002", spawnId = "North" };
+            var json = JsonUtility.ToJson(msg);
+            Assert.IsTrue(json.Contains("\"type\":\"request_teleport\""));
+            Assert.IsTrue(json.Contains("\"mapName\":\"Map002\""));
+            Assert.IsTrue(json.Contains("\"spawnId\":\"North\""));
+        }
+
+        [Test]
+        public void JsonParser_ParsesSyncStateWithObjectDictionary()
         {
             const string json = "{\"type\":\"sync_state\",\"state\":{\"currentMap\":\"Map001\"," +
                                 "\"player\":{\"position\":{\"x\":1.5,\"y\":2.5}}," +
-                                "\"doors\":{\"Door_A1\":{\"unlocked\":true,\"targetMap\":\"Map002\"," +
-                                "\"targetSpawn\":\"Default\",\"isPortal\":true}}," +
+                                "\"objects\":{\"Lever_1\":{\"kind\":\"Lever\",\"currentState\":\"off\"," +
+                                "\"states\":[\"off\",\"on\"]}}," +
                                 "\"spawnPoints\":{\"Map001\":[{\"id\":\"Default\"}]}}}";
 
             var msg = JsonParser.ParseObject(json);
@@ -55,14 +67,13 @@ namespace DiceTale.Editor.Tests
             var state = JsonParser.GetObject(msg, "state");
             Assert.AreEqual("Map001", JsonParser.GetString(state, "currentMap"));
 
-            var doors = JsonParser.GetObject(state, "doors");
-            Assert.IsNotNull(doors);
-            Assert.IsTrue(doors.ContainsKey("Door_A1"));
-            var doorState = doors["Door_A1"] as Dictionary<string, object>;
-            Assert.IsNotNull(doorState);
-            Assert.IsTrue(JsonParser.GetBool(doorState, "unlocked"));
-            Assert.AreEqual("Map002", JsonParser.GetString(doorState, "targetMap"));
-            Assert.IsTrue(JsonParser.GetBool(doorState, "isPortal"));
+            var objects = JsonParser.GetObject(state, "objects");
+            Assert.IsNotNull(objects);
+            Assert.IsTrue(objects.ContainsKey("Lever_1"));
+            var objState = objects["Lever_1"] as Dictionary<string, object>;
+            Assert.IsNotNull(objState);
+            Assert.AreEqual("Lever", JsonParser.GetString(objState, "kind"));
+            Assert.AreEqual("off", JsonParser.GetString(objState, "currentState"));
 
             var player = JsonParser.GetObject(state, "player");
             var position = JsonParser.GetObject(player, "position");

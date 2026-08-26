@@ -93,7 +93,7 @@ describe('WebSocket server', () => {
     expect(msg.state.spawnPoints).toBeDefined();
   });
 
-  test('client-registered door with position appears in gm snapshot', async () => {
+  test('client-registered spawn points and objects appear in gm snapshot', async () => {
     const client = await connect('/client');
     openSockets.push(client.ws);
     send(client.ws, { type: 'request_join' });
@@ -102,85 +102,30 @@ describe('WebSocket server', () => {
     send(client.ws, {
       type: 'register_map_objects',
       mapName: 'Map001',
-      doors: [
-        { id: 'ClientDoor_1', targetMap: 'Map002', targetSpawn: 'North', isPortal: true, position: { x: 0.81, y: 0.45 } },
-        { id: 'ClientDoor_2', targetMap: 'Map002', targetSpawn: 'Default', isPortal: false },
-      ],
       spawnPoints: [{ id: 'Default' }],
+      objects: [{ id: 'Lever_1', kind: 'Lever', currentState: 'off', states: ['off', 'on'] }],
     });
 
     const gm = await connect('/gm');
     openSockets.push(gm.ws);
     const update = await gm.next(); // 客户端注册后广播的 gm_update
 
-    const door1 = update.state.doors['ClientDoor_1'];
-    expect(door1).toBeDefined();
-    expect(door1.mapName).toBe('Map001');
-    expect(door1.position).toEqual({ x: 0.81, y: 0.45 });
-    expect(door1.isPortal).toBe(true);
-
-    // 未上报 position 的门使用默认中心位置，mapName 取注册时的地图
-    const door2 = update.state.doors['ClientDoor_2'];
-    expect(door2.mapName).toBe('Map001');
-    expect(door2.position).toEqual({ x: 0.5, y: 0.5 });
-
     expect(update.state.spawnPoints['Map001']).toEqual([{ id: 'Default' }]);
+    expect(update.state.objects['Lever_1'].currentState).toBe('off');
   });
 
-  test('portal door access triggers teleport_player', async () => {
+  test('request_teleport pushes teleport_player to client', async () => {
     const client = await connect('/client');
     openSockets.push(client.ws);
     send(client.ws, { type: 'request_join' });
     await client.next(); // sync_state
 
-    send(client.ws, {
-      type: 'register_map_objects',
-      mapName: 'Map001',
-      doors: [{ id: 'TestPortalA', targetMap: 'Map002', targetSpawn: 'North', isPortal: true }],
-      spawnPoints: [{ id: 'Default' }, { id: 'North' }],
-    });
-    send(client.ws, { type: 'request_door_access', doorId: 'TestPortalA' });
+    send(client.ws, { type: 'request_teleport', mapName: 'Map002', spawnId: 'North' });
 
     const msg = await client.next();
     expect(msg.type).toBe('teleport_player');
     expect(msg.mapName).toBe('Map002');
     expect(msg.spawnId).toBe('North');
-  });
-
-  test('normal door access triggers set_door_state unlocked', async () => {
-    const client = await connect('/client');
-    openSockets.push(client.ws);
-    send(client.ws, { type: 'request_join' });
-    await client.next(); // sync_state
-
-    send(client.ws, {
-      type: 'register_map_objects',
-      mapName: 'Map001',
-      doors: [{ id: 'TestDoorB', targetMap: 'Map002', targetSpawn: 'Default', isPortal: false }],
-      spawnPoints: [{ id: 'Default' }],
-    });
-    send(client.ws, { type: 'request_door_access', doorId: 'TestDoorB' });
-
-    const msg = await client.next();
-    expect(msg.type).toBe('set_door_state');
-    expect(msg.doorId).toBe('TestDoorB');
-    expect(msg.unlocked).toBe(true);
-  });
-
-  test('unknown door access is ignored without command', async () => {
-    const client = await connect('/client');
-    openSockets.push(client.ws);
-    send(client.ws, { type: 'request_join' });
-    await client.next(); // sync_state
-
-    send(client.ws, { type: 'request_door_access', doorId: 'MissingDoor' });
-
-    let receivedCommand = false;
-    client.ws.on('message', () => {
-      receivedCommand = true;
-    });
-    await new Promise((r) => setTimeout(r, 200));
-    expect(receivedCommand).toBe(false);
   });
 
   test('gm connects and receives initial gm_update', async () => {
@@ -189,60 +134,6 @@ describe('WebSocket server', () => {
     const msg = await gm.next();
     expect(msg.type).toBe('gm_update');
     expect(msg.state.currentMap).toBeDefined();
-  });
-
-  test('gm_open_door pushes set_door_state to connected client', async () => {
-    const client = await connect('/client');
-    openSockets.push(client.ws);
-    send(client.ws, { type: 'request_join' });
-    await client.next(); // sync_state
-    send(client.ws, {
-      type: 'register_map_objects',
-      mapName: 'Map001',
-      doors: [{ id: 'TestDoorC', targetMap: 'Map002', targetSpawn: 'Default', isPortal: false }],
-      spawnPoints: [{ id: 'Default' }],
-    });
-
-    const gm = await connect('/gm');
-    openSockets.push(gm.ws);
-    await gm.next(); // initial gm_update
-    send(gm.ws, { type: 'gm_open_door', doorId: 'TestDoorC' });
-
-    const msg = await client.next();
-    expect(msg.type).toBe('set_door_state');
-    expect(msg.doorId).toBe('TestDoorC');
-    expect(msg.unlocked).toBe(true);
-  });
-
-  test('gm_close_door pushes set_door_state unlocked=false', async () => {
-    const client = await connect('/client');
-    openSockets.push(client.ws);
-    send(client.ws, { type: 'request_join' });
-    await client.next(); // sync_state
-    send(client.ws, {
-      type: 'register_map_objects',
-      mapName: 'Map001',
-      doors: [{ id: 'CloseDoorTest', targetMap: 'Map002', targetSpawn: 'Default', isPortal: false }],
-      spawnPoints: [{ id: 'Default' }],
-    });
-
-    const gm = await connect('/gm');
-    openSockets.push(gm.ws);
-    await gm.next(); // 客户端注册后广播的 gm_update
-
-    send(gm.ws, { type: 'gm_open_door', doorId: 'CloseDoorTest' });
-    const opened = await client.next();
-    expect(opened.type).toBe('set_door_state');
-    expect(opened.unlocked).toBe(true);
-
-    send(gm.ws, { type: 'gm_close_door', doorId: 'CloseDoorTest' });
-    const closed = await client.next();
-    expect(closed.type).toBe('set_door_state');
-    expect(closed.doorId).toBe('CloseDoorTest');
-    expect(closed.unlocked).toBe(false);
-
-    gm.ws.close();
-    client.ws.close();
   });
 
   test('gm_teleport_player pushes teleport_player to connected client', async () => {
@@ -260,6 +151,100 @@ describe('WebSocket server', () => {
     expect(msg.type).toBe('teleport_player');
     expect(msg.mapName).toBe('Map003');
     expect(msg.spawnId).toBe('Default');
+  });
+
+  test('gm_set_object_state pushes set_object_state to connected client', async () => {
+    const client = await connect('/client');
+    openSockets.push(client.ws);
+    send(client.ws, { type: 'request_join' });
+    await client.next(); // sync_state
+
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    await gm.next(); // initial gm_update
+    send(gm.ws, { type: 'gm_set_object_state', objectId: 'Door_1', state: 'open' });
+
+    const msg = await client.next();
+    expect(msg.type).toBe('set_object_state');
+    expect(msg.objectId).toBe('Door_1');
+    expect(msg.state).toBe('open');
+  });
+
+  test('register_map_objects objects appear in gm snapshot with state list', async () => {
+    const client = await connect('/client');
+    openSockets.push(client.ws);
+    send(client.ws, { type: 'request_join' });
+    await client.next(); // sync_state
+
+    send(client.ws, {
+      type: 'register_map_objects',
+      mapName: 'Map001',
+      spawnPoints: [{ id: 'Default' }],
+      objects: [
+        { id: 'Lever_1', name: '大厅拉杆', kind: 'Lever', currentState: 'off', states: ['off', 'on'], position: { x: 0.4, y: 0.3 } },
+        { id: 'Door_2', name: '东侧门', kind: 'Door', currentState: 'closed', states: ['closed', 'open'], position: { x: 0.7, y: 0.5 } },
+      ],
+    });
+
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    const update = await gm.next(); // 注册后广播的 gm_update
+
+    expect(update.state.objects['Lever_1']).toEqual({
+      name: '大厅拉杆',
+      kind: 'Lever',
+      currentState: 'off',
+      states: ['off', 'on'],
+      mapName: 'Map001',
+      position: { x: 0.4, y: 0.3 },
+    });
+    expect(update.state.objects['Door_2'].name).toBe('东侧门');
+    expect(update.state.objects['Door_2'].currentState).toBe('closed');
+    expect(update.state.objects['Door_2'].states).toEqual(['closed', 'open']);
+    expect(update.state.objects['Door_2'].position).toEqual({ x: 0.7, y: 0.5 });
+  });
+
+  test('report_object_state updates snapshot and broadcasts gm_update', async () => {
+    const client = await connect('/client');
+    openSockets.push(client.ws);
+    send(client.ws, { type: 'request_join' });
+    await client.next(); // sync_state
+    send(client.ws, {
+      type: 'register_map_objects',
+      mapName: 'Map001',
+      spawnPoints: [],
+      objects: [{ id: 'Lever_1', kind: 'Lever', currentState: 'off', states: ['off', 'on'] }],
+    });
+
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    await gm.next(); // 初始 gm_update（已包含注册的对象）
+
+    send(client.ws, { type: 'report_object_state', objectId: 'Lever_1', state: 'on' });
+
+    const update = await gm.next();
+    expect(update.type).toBe('gm_update');
+    expect(update.state.objects['Lever_1'].currentState).toBe('on');
+  });
+
+  test('report_object_state for unknown object is ignored', async () => {
+    const client = await connect('/client');
+    openSockets.push(client.ws);
+    send(client.ws, { type: 'request_join' });
+    await client.next(); // sync_state
+
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    await gm.next(); // initial gm_update
+
+    send(client.ws, { type: 'report_object_state', objectId: 'Missing', state: 'on' });
+
+    let receivedUpdate = false;
+    gm.ws.on('message', () => {
+      receivedUpdate = true;
+    });
+    await new Promise((r) => setTimeout(r, 200));
+    expect(receivedUpdate).toBe(false);
   });
 
   test('report_player_position updates gm snapshot', async () => {
@@ -316,23 +301,33 @@ describe('WebSocket server', () => {
     client.ws.close();
   });
 
-  test('client disconnect clears players in gm snapshot', async () => {
+  test('client disconnect clears client data in gm snapshot', async () => {
     const client = await connect('/client');
     openSockets.push(client.ws);
     send(client.ws, { type: 'request_join' });
     await client.next(); // sync_state
 
     send(client.ws, { type: 'register_players', players: [{ id: 'Player_1', name: '小明' }] });
+    send(client.ws, {
+      type: 'register_map_objects',
+      mapName: 'Map001',
+      spawnPoints: [{ id: 'Default' }],
+      objects: [{ id: 'Lever_1', name: '大厅拉杆', kind: 'Lever', currentState: 'off', states: ['off', 'on'] }],
+    });
 
     const gm = await connect('/gm');
     openSockets.push(gm.ws);
     const update = await gm.next(); // 注册后广播
     expect(Object.keys(update.state.players)).toContain('Player_1');
+    expect(Object.keys(update.state.objects)).toContain('Lever_1');
+    expect(update.state.spawnPoints['Map001']).toEqual([{ id: 'Default' }]);
 
-    // 客户端断开 → 后台清空玩家并广播
+    // 客户端断开 → 后台清空玩家/对象/出生点并广播
     client.ws.close();
     const cleared = await gm.next();
     expect(cleared.state.players).toEqual({});
+    expect(cleared.state.objects).toEqual({});
+    expect(cleared.state.spawnPoints).toEqual({});
 
     gm.ws.close();
   });

@@ -3,7 +3,7 @@ using UnityEngine;
 namespace DiceTale
 {
     /// <summary>
-    /// 传送门：玩家触碰后由后台下发 teleport_player 命令切换地图。
+    /// 传送门：玩家触碰后请求后台下发 teleport_player 命令切换地图（通用 request_teleport 消息）。
     /// 后台不可用时本地回退切图，保证单机仍可玩。
     /// </summary>
     public class PortalDoor : Door
@@ -16,16 +16,17 @@ namespace DiceTale
 
         public override bool IsPortal => true;
 
-        protected override string ReportTargetMap => targetSceneName;
-        protected override string ReportTargetSpawn => targetSpawnId;
-
         protected override void ExecuteInteract()
         {
             var connection = Server.ServerConnection.Instance;
             if (connection != null && connection.IsConnected)
             {
-                // 传送门：由后台下发 teleport_player 命令后切换地图，客户端不直接切图
-                Debug.Log($"[Door] Portal {DoorId} access granted, waiting for server teleport.");
+                // 传送门：请求后台下发 teleport_player 命令后切换地图，客户端不直接切图
+                SendToBackend(new Server.RequestTeleportMessage
+                {
+                    mapName = targetSceneName,
+                    spawnId = targetSpawnId
+                });
             }
             else
             {

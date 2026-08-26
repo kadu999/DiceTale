@@ -4,6 +4,7 @@ let state = null;
 let selectedMap = null;
 let lastManualMapPick = 0;
 let apiMaps = []; // GET /api/maps 返回的所有可观看地图 [{name, image}]
+let selectedObjectId = null; // 当前选中的目标（对象 ID）
 
 // 加载时获取服务器可提供的地图列表（浏览所有地图）
 fetch('/api/maps')
@@ -55,7 +56,8 @@ function render() {
   if (!state) return;
   renderMapTabs();
   renderMap();
-  renderPlayerList();
+  renderObjectList();
+  renderPropertyPanel();
 }
 
 function knownMaps() {
@@ -97,24 +99,19 @@ function num(v, fallback) {
 }
 
 // ---- 物体图标（内联 SVG，白色，兼容旧 WebView）----
-const ICON_DOOR =
-  '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-  '<rect x="4" y="3" width="16" height="18" rx="2"/>' +
-  '<line x1="7" y1="7" x2="7" y2="17"/>' +
-  '<circle cx="14.5" cy="12" r="1.4" fill="#fff" stroke="none"/>' +
-  '</svg>';
-
-const ICON_PORTAL =
-  '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-  '<path d="M4 21V10a8 8 0 0 1 16 0v11"/>' +
-  '<circle cx="12" cy="10" r="3.2" fill="#fff" stroke="none" opacity="0.75"/>' +
-  '</svg>';
-
 const ICON_PLAYER =
   '<svg viewBox="0 0 24 24" width="16" height="16" fill="#fff">' +
   '<circle cx="12" cy="7.5" r="3.5"/>' +
   '<path d="M4.5 21c0-4.1 3.4-7 7.5-7s7.5 2.9 7.5 7"/>' +
   '</svg>';
+
+/** 选中目标：地图标记与对象列表同步高亮，右侧属性面板显示属性。 */
+function selectObject(objectId) {
+  selectedObjectId = objectId;
+  renderMap();
+  renderObjectList();
+  renderPropertyPanel();
+}
 
 function renderMap() {
   // 跟随玩家当前地图：除非用户在 5 秒内手动选择了其他地图
@@ -129,56 +126,58 @@ function renderMap() {
     image.src = `/maps/${map}.png`;
   }
 
-  const layer = document.getElementById('doorLayer');
+  const layer = document.getElementById('overlayLayer');
   layer.innerHTML = '';
 
-  // 门标记（客户端上报的位置）
-  for (const [id, door] of Object.entries(state.doors || {})) {
-    if (door.mapName !== map) continue;
+  // 对象目标标记（显示名称，可点击选中；玩家单独用实时位置渲染）
+  for (const [objectId, obj] of Object.entries(state.objects || {})) {
+    if (obj.kind === 'Player') continue;
+    if (obj.mapName !== map) continue;
+    if (!obj.position) continue;
 
     const marker = document.createElement('button');
-    marker.className = `door-marker ${door.unlocked ? 'unlocked' : 'locked'}`;
-    marker.title = `${id}\n${door.isPortal ? '传送门' : '普通门'} → ${door.targetMap} / ${door.targetSpawn}\n${door.unlocked ? '已开启（点击关闭）' : '锁定（点击开启）'}`;
-    marker.innerHTML = door.isPortal ? ICON_PORTAL : ICON_DOOR;
-    marker.style.left = `${num(door.position && door.position.x, 0.5) * 100}%`;
-    marker.style.top = `${num(door.position && door.position.y, 0.5) * 100}%`;
-    marker.onclick = () => toggleDoor(id, door.unlocked);
+    marker.className = 'object-marker kind-' + (obj.kind || 'object') +
+      (objectId === selectedObjectId ? ' selected' : '');
+    marker.title = `${obj.name || objectId} (${objectId})\n${obj.currentState ? '当前：' + obj.currentState : '未配置状态'}`;
+    marker.style.left = `${num(obj.position.x, 0.5) * 100}%`;
+    marker.style.top = `${num(obj.position.y, 0.5) * 100}%`;
+
+    const dot = document.createElement('span');
+    dot.className = 'object-marker-dot';
+
+    const label = document.createElement('span');
+    label.className = 'object-marker-label';
+    label.textContent = obj.name || objectId;
+
+    marker.appendChild(dot);
+    marker.appendChild(label);
+    marker.onclick = () => selectObject(objectId);
     layer.appendChild(marker);
   }
 
-  // 玩家标记（每个玩家一个，显示在其所在的地图上）
+  // 玩家标记（实时位置；点击选中玩家对象）
   for (const [playerId, player] of Object.entries(state.players || {})) {
     if (player.mapName !== map) continue;
 
-    const marker = document.createElement('div');
-    marker.className = 'player-marker';
+    const marker = document.createElement('button');
+    marker.className = 'player-marker' + (playerId === selectedObjectId ? ' selected' : '');
     marker.title = player.name || playerId;
-    marker.innerHTML = ICON_PLAYER;
     marker.style.left = `${num(player.position && player.position.x, 0.5) * 100}%`;
     marker.style.top = `${num(player.position && player.position.y, 0.5) * 100}%`;
+
+    const icon = document.createElement('span');
+    icon.innerHTML = ICON_PLAYER;
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'player-marker-name';
+    nameEl.textContent = player.name || playerId;
+
+    marker.appendChild(icon);
+    marker.appendChild(nameEl);
+    marker.onclick = () => {
+      if (state.objects && state.objects[playerId]) selectObject(playerId);
+    };
     layer.appendChild(marker);
-  }
-}
-
-function renderPlayerList() {
-  const container = document.getElementById('playerList');
-  container.innerHTML = '';
-
-  const players = Object.entries(state.players || {});
-  if (players.length === 0) {
-    container.innerHTML = '<div class="player-row empty">暂无玩家</div>';
-    return;
-  }
-
-  for (const [playerId, player] of players) {
-    const row = document.createElement('div');
-    row.className = 'player-row';
-    row.innerHTML = `
-      <i class="marker-dot player"></i>
-      <span class="player-name">${player.name || playerId}</span>
-      <span class="player-info">${player.mapName} · ${fmtPos(player.position)}</span>
-    `;
-    container.appendChild(row);
   }
 }
 
@@ -187,11 +186,117 @@ function fmtPos(pos) {
   return `(${pos.x.toFixed(2)}, ${pos.y.toFixed(2)})`;
 }
 
-function toggleDoor(doorId, currentlyUnlocked) {
-  send({
-    type: currentlyUnlocked ? 'gm_close_door' : 'gm_open_door',
-    doorId,
-  });
+// ---------- 属性列表（右侧） ----------
+
+/** 渲染选中目标的属性：基础信息 + 可修改的状态切换按钮。 */
+function renderPropertyPanel() {
+  const container = document.getElementById('propertyList');
+  container.innerHTML = '';
+
+  if (!selectedObjectId) {
+    container.innerHTML = '<div class="property-empty">请在地图上点击目标，查看并修改其属性</div>';
+    return;
+  }
+
+  const obj = state.objects && state.objects[selectedObjectId];
+  if (!obj) {
+    container.innerHTML = '<div class="property-empty">未找到该对象（可能已移除）</div>';
+    return;
+  }
+
+  addPropertyRow(container, '名称', obj.name || selectedObjectId);
+  addPropertyRow(container, 'ID', selectedObjectId);
+  addPropertyRow(container, '类型', obj.kind || 'object');
+  addPropertyRow(container, '地图', obj.mapName || '-');
+  addPropertyRow(container, '位置', fmtPos(obj.position));
+  addPropertyRow(container, '当前状态', obj.currentState || '未配置');
+
+  // 状态切换（点击即发送 gm_set_object_state）
+  const statesRow = document.createElement('div');
+  statesRow.className = 'property-row';
+  const label = document.createElement('span');
+  label.className = 'property-label';
+  label.textContent = '切换状态';
+  const statesBox = document.createElement('div');
+  statesBox.className = 'property-states';
+
+  const states = obj.states || [];
+  if (states.length === 0) {
+    const hint = document.createElement('div');
+    hint.className = 'property-hint';
+    hint.textContent = '该对象未配置状态列表（在客户端 Inspector 的 BackendObject 状态列表里配置）';
+    statesBox.appendChild(hint);
+  } else {
+    for (const stateName of states) {
+      const btn = document.createElement('button');
+      btn.className = 'state-btn' + (stateName === obj.currentState ? ' active' : '');
+      btn.textContent = stateName;
+      btn.onclick = () => {
+        send({ type: 'gm_set_object_state', objectId: selectedObjectId, state: stateName });
+      };
+      statesBox.appendChild(btn);
+    }
+  }
+
+  statesRow.appendChild(label);
+  statesRow.appendChild(statesBox);
+  container.appendChild(statesRow);
+}
+
+function addPropertyRow(container, labelText, value) {
+  const row = document.createElement('div');
+  row.className = 'property-row';
+  const label = document.createElement('span');
+  label.className = 'property-label';
+  label.textContent = labelText;
+  const valueEl = document.createElement('span');
+  valueEl.className = 'property-value';
+  valueEl.textContent = value;
+  row.appendChild(label);
+  row.appendChild(valueEl);
+  container.appendChild(row);
+}
+
+// ---------- 后台对象列表 ----------
+
+/** 渲染所有 BackendObject：点击行选中目标（属性显示在右侧面板）。 */
+function renderObjectList() {
+  const container = document.getElementById('objectList');
+  container.innerHTML = '';
+
+  const objects = Object.entries(state.objects || {});
+  if (objects.length === 0) {
+    container.innerHTML = '<div class="object-row empty">暂无对象</div>';
+    return;
+  }
+
+  for (const [objectId, obj] of objects) {
+    const row = document.createElement('div');
+    row.className = 'object-row' + (objectId === selectedObjectId ? ' selected' : '');
+
+    const kindEl = document.createElement('span');
+    kindEl.className = 'object-kind';
+    kindEl.textContent = obj.kind || 'object';
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'object-name';
+    nameEl.textContent = obj.name || objectId;
+
+    const idEl = document.createElement('span');
+    idEl.className = 'object-id';
+    idEl.textContent = objectId;
+
+    const stateEl = document.createElement('span');
+    stateEl.className = 'object-current';
+    stateEl.textContent = obj.currentState ? '当前：' + obj.currentState : '未配置状态';
+
+    row.appendChild(kindEl);
+    row.appendChild(nameEl);
+    row.appendChild(idEl);
+    row.appendChild(stateEl);
+    row.onclick = () => selectObject(objectId);
+    container.appendChild(row);
+  }
 }
 
 // ---- 横屏时地图按 16:9 等比（高度决定宽度），避免 contain 两侧黑边 ----

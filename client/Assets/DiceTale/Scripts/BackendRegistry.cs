@@ -86,6 +86,17 @@ namespace DiceTale
                 }
 
                 obj.AppendToReport(mapMsg, playerMsg);
+
+                // 通用对象状态信息：所有 BackendObject 统一上报，供 GM 页面展示与切换状态
+                mapMsg.objects.Add(new Server.ServerObjectInfo
+                {
+                    id = obj.ObjectId,
+                    name = obj.DisplayName,
+                    kind = obj.ObjectKind,
+                    currentState = obj.CurrentStateName,
+                    states = obj.StateNames,
+                    position = obj.GetNormalizedPosition()
+                });
             }
 
             if (!string.IsNullOrEmpty(mapMsg.mapName))

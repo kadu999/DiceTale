@@ -1,14 +1,5 @@
 import { GameStateSnapshot } from './types';
 
-export interface DoorInfo {
-  unlocked: boolean;
-  targetMap: string;
-  targetSpawn: string;
-  isPortal: boolean;
-  mapName: string;
-  position: { x: number; y: number };
-}
-
 export interface SpawnPointInfo {
   id: string;
 }
@@ -19,13 +10,21 @@ export interface PlayerInfo {
   mapName: string;
 }
 
+export interface ObjectInfo {
+  name: string;
+  kind: string;
+  currentState: string | null;
+  states: string[];
+  mapName: string;
+  position: { x: number; y: number } | null;
+}
+
 export class GameState {
   currentMap = 'Map001';
   players: Record<string, PlayerInfo> = {};
-  doors: Record<string, DoorInfo> = {};
   spawnPoints: Record<string, SpawnPointInfo[]> = {};
-  /** 跨重启记忆的门解锁状态（doorId -> unlocked）。门本体由客户端上报，不持久化。 */
-  doorUnlocked: Record<string, boolean> = {};
+  /** 通用后台对象（BackendObject）：objectId -> 状态信息（对象本体由客户端主导，不持久化） */
+  objects: Record<string, ObjectInfo> = {};
 
   setMap(mapName: string, _spawnId?: string) {
     this.currentMap = mapName;
@@ -43,9 +42,11 @@ export class GameState {
     }
   }
 
-  /** 客户端断开时清空玩家（单客户端架构：断开 = 没有玩家）。 */
-  clearPlayers() {
+  /** 客户端断开时清空其上报的运行时数据（玩家/对象/出生点；单客户端架构：断开 = 没有客户端）。 */
+  clearClientData() {
     this.players = {};
+    this.objects = {};
+    this.spawnPoints = {};
   }
 
   /** 更新玩家位置（归一化图片坐标 + 所在地图）。 */
@@ -60,44 +61,33 @@ export class GameState {
     player.mapName = mapName;
   }
 
-  /**
-   * 注册/更新门信息。以 doorId 为全局键合并：
-   * - unlocked 状态取 doorUnlocked 记忆（跨重启保留，客户端主导门本体）；
-   * - targetMap / targetSpawn / isPortal / position / mapName 以最新上报为准。
-   */
-  registerDoors(
-    mapName: string,
-    doors: Array<
-      Partial<DoorInfo> & {
-        id: string;
-        targetMap: string;
-        targetSpawn: string;
-        isPortal: boolean;
-      }
-    >
-  ) {
-    for (const door of doors) {
-      const existing = this.doors[door.id];
-      this.doors[door.id] = {
-        unlocked: this.doorUnlocked[door.id] ?? existing?.unlocked ?? false,
-        targetMap: door.targetMap,
-        targetSpawn: door.targetSpawn,
-        isPortal: door.isPortal,
-        mapName: door.mapName ?? existing?.mapName ?? mapName,
-        position: door.position ?? existing?.position ?? { x: 0.5, y: 0.5 },
-      };
-    }
-  }
-
   registerSpawnPoints(mapName: string, spawnPoints: SpawnPointInfo[]) {
     this.spawnPoints[mapName] = spawnPoints;
   }
 
-  setDoorUnlocked(doorId: string, unlocked = true): boolean {
-    const door = this.doors[doorId];
-    if (!door) return false;
-    door.unlocked = unlocked;
-    this.doorUnlocked[doorId] = unlocked;
+  /** 注册/更新通用后台对象状态信息（按 objectId 合并，保留未上报字段）。 */
+  registerObjects(
+    mapName: string,
+    objects: Array<Partial<ObjectInfo> & { id: string }>
+  ) {
+    for (const obj of objects) {
+      const existing = this.objects[obj.id];
+      this.objects[obj.id] = {
+        name: obj.name ?? existing?.name ?? obj.id,
+        kind: obj.kind ?? existing?.kind ?? 'object',
+        currentState: obj.currentState ?? existing?.currentState ?? null,
+        states: obj.states ?? existing?.states ?? [],
+        mapName: obj.mapName ?? existing?.mapName ?? mapName,
+        position: obj.position ?? existing?.position ?? null,
+      };
+    }
+  }
+
+  /** 更新通用后台对象当前状态（客户端 report_object_state 回执）。 */
+  setObjectState(objectId: string, state: string): boolean {
+    const obj = this.objects[objectId];
+    if (!obj) return false;
+    obj.currentState = state;
     return true;
   }
 
@@ -105,8 +95,8 @@ export class GameState {
     return {
       currentMap: this.currentMap,
       players: JSON.parse(JSON.stringify(this.players)),
-      doors: JSON.parse(JSON.stringify(this.doors)),
       spawnPoints: JSON.parse(JSON.stringify(this.spawnPoints)),
+      objects: JSON.parse(JSON.stringify(this.objects)),
     };
   }
 }

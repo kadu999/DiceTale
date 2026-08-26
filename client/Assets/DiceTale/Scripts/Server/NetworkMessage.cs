@@ -14,36 +14,35 @@ namespace DiceTale.Server
     }
 
     [Serializable]
-    public class RequestDoorAccessMessage
-    {
-        public string type = "request_door_access";
-        public string doorId;
-    }
-
-    [Serializable]
     public class RegisterMapObjectsMessage
     {
         public string type = "register_map_objects";
         public string mapName;
-        public List<DoorInfo> doors = new List<DoorInfo>();
         public List<SpawnInfo> spawnPoints = new List<SpawnInfo>();
-    }
-
-    [Serializable]
-    public class DoorInfo
-    {
-        public string id;
-        public string targetMap;
-        public string targetSpawn;
-        public bool isPortal;
-        /// <summary>门在地图图片上的归一化位置 [0,1]，y 向下（左上角为原点）。</summary>
-        public Position position;
+        /// <summary>所有 BackendObject 的通用状态信息（供 GM 页面展示与切换状态）。</summary>
+        public List<ServerObjectInfo> objects = new List<ServerObjectInfo>();
     }
 
     [Serializable]
     public class SpawnInfo
     {
         public string id;
+    }
+
+    /// <summary>
+    /// 通用后台对象状态信息：对象 ID、显示名称、类型显示名、当前状态、全部可选状态名称与归一化位置。
+    /// 由 BackendRegistry 对每个 BackendObject 统一收集。
+    /// </summary>
+    [Serializable]
+    public class ServerObjectInfo
+    {
+        public string id;
+        public string name;
+        public string kind;
+        public string currentState;
+        public List<string> states = new List<string>();
+        /// <summary>对象在地图图片上的归一化位置 [0,1]，y 向下（左上角为原点）。</summary>
+        public Position position;
     }
 
     [Serializable]
@@ -67,6 +66,23 @@ namespace DiceTale.Server
         public string playerId;
         public Position position;
         public string mapName;
+    }
+
+    [Serializable]
+    public class ReportObjectStateMessage
+    {
+        public string type = "report_object_state";
+        public string objectId;
+        public string state;
+    }
+
+    /// <summary>请求后台下发 teleport_player 命令切换地图（传送门使用）。</summary>
+    [Serializable]
+    public class RequestTeleportMessage
+    {
+        public string type = "request_teleport";
+        public string mapName;
+        public string spawnId;
     }
 
     [Serializable]

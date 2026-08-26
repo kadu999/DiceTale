@@ -19,3 +19,5 @@ if errorlevel 1 (
 echo [build] Done. Output: dist\index.js
 echo [build] Run start.bat to launch the server.
 exit /b 0
+
+pause

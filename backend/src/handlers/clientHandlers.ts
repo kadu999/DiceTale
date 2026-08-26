@@ -1,7 +1,6 @@
 import { WebSocket } from 'ws';
 import { ClientMessage } from '../types';
 import { gameState } from '../GameState';
-import { saveState } from '../persistence';
 import * as commands from '../commands/clientCommands';
 
 export class ClientHandler {
@@ -18,52 +17,30 @@ export class ClientHandler {
         break;
       case 'register_map_objects':
         gameState.setMap(message.mapName);
-        gameState.registerDoors(message.mapName, message.doors);
         gameState.registerSpawnPoints(message.mapName, message.spawnPoints);
-        saveState();
+        gameState.registerObjects(message.mapName, message.objects ?? []);
         this.broadcast();
         break;
       case 'register_players':
         gameState.registerPlayers(message.players);
         this.broadcast();
         break;
-      case 'request_door_access':
-        this.handleDoorAccess(message.doorId);
-        break;
       case 'request_teleport':
         gameState.setMap(message.mapName);
         commands.teleportPlayer(this.ws, message.mapName, message.spawnId);
-        saveState();
         this.broadcast();
         break;
       case 'report_player_position':
         gameState.setPlayerPosition(message.playerId, message.position, message.mapName);
         this.broadcast();
         break;
+      case 'report_object_state':
+        if (gameState.setObjectState(message.objectId, message.state)) {
+          this.broadcast();
+        }
+        break;
       default:
         console.warn('[ClientHandler] Unknown message:', (message as any).type);
     }
-  }
-
-  private handleDoorAccess(doorId: string) {
-    const door = gameState.doors[doorId];
-    if (!door) {
-      console.warn('[ClientHandler] Door not found:', doorId);
-      return;
-    }
-
-    if (!door.unlocked) {
-      gameState.setDoorUnlocked(doorId, true);
-    }
-
-    if (door.isPortal) {
-      gameState.setMap(door.targetMap);
-      commands.teleportPlayer(this.ws, door.targetMap, door.targetSpawn);
-    } else {
-      commands.setDoorState(this.ws, doorId, true);
-    }
-
-    saveState();
-    this.broadcast();
   }
 }

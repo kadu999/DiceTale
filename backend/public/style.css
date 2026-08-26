@@ -63,7 +63,11 @@ main.layout {
   margin-bottom: 0.75rem;
 }
 
-.player-panel {
+.property-panel {
+  margin-bottom: 0.75rem;
+}
+
+.object-panel {
   margin-bottom: 0.75rem;
 }
 
@@ -115,54 +119,44 @@ main.layout {
   object-fit: contain;
 }
 
-.door-layer {
+.overlay-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
 
-.door-marker {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 2px solid #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  pointer-events: auto;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
-  transition: transform 0.1s;
-  touch-action: manipulation;
-}
-
-.door-marker:active { transform: translate(-50%, -50%) scale(1.15); }
-
-.door-marker.locked { background: #ef4444; color: #fff; }
-.door-marker.unlocked { background: #22c55e; color: #fff; }
-
 .player-marker {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 999px;
   background: #3b82f6;
   border: 2px solid #fff;
   box-shadow: 0 1px 5px rgba(0,0,0,0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
+  color: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.player-marker-name {
+  line-height: 1;
+}
+
+.player-marker.selected {
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.9), 0 1px 6px rgba(0,0,0,0.6);
 }
 
 .player-marker::after {
   content: '';
   position: absolute;
   inset: -8px;
-  border-radius: 50%;
+  border-radius: 999px;
   border: 2px solid rgba(59, 130, 246, 0.5);
   animation: player-pulse 1.6s ease-out infinite;
 }
@@ -192,20 +186,80 @@ main.layout {
   box-shadow: 0 0 2px rgba(0,0,0,0.4);
 }
 
-.marker-dot.locked { background: #ef4444; }
-.marker-dot.unlocked { background: #22c55e; }
 .marker-dot.player { background: #3b82f6; }
 
-/* ---- 玩家列表 ---- */
-.player-list {
+.legend-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #8b5cf6;
+  color: #fff;
+  font-size: 0.72rem;
+}
+
+.legend-pill.door { background: #f59e0b; }
+
+/* ---- 地图目标标记（带名称的标签，可点击选中） ---- */
+.object-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #8b5cf6;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.45);
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  transition: transform 0.1s, box-shadow 0.1s;
+  font-size: 12px;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.object-marker:active {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.object-marker.kind-Door { background: #f59e0b; }
+.object-marker.kind-SpawnPoint { background: #10b981; }
+
+.object-marker.selected {
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.9), 0 1px 6px rgba(0,0,0,0.5);
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.object-marker-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.85);
+}
+
+.object-marker-label {
+  line-height: 1;
+}
+
+/* ---- 属性列表（右侧） ---- */
+.property-list {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
 }
 
-.player-row {
+.property-empty {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.property-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
   padding: 0.45rem 0.5rem;
   background: #f8fafc;
@@ -214,19 +268,126 @@ main.layout {
   font-size: 0.9rem;
 }
 
-.player-row.empty {
+.property-label {
+  flex: 0 0 auto;
+  min-width: 4.5em;
+  color: #64748b;
+}
+
+.property-value {
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.property-states {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.property-hint {
+  color: #9ca3af;
+  font-size: 0.78rem;
+}
+
+/* ---- 后台对象列表 ---- */
+.object-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.object-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.object-row:hover {
+  background: #f1f5f9;
+}
+
+.object-row.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.object-row.empty {
   color: #9ca3af;
   font-size: 0.85rem;
 }
 
-.player-name {
+.object-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.45rem 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-align: left;
+  touch-action: manipulation;
+}
+
+.object-header:hover {
+  background: #f1f5f9;
+}
+
+.object-kind {
+  flex: 0 0 auto;
+  padding: 0.1rem 0.45rem;
+  border-radius: 6px;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 0.72rem;
   font-weight: 600;
 }
 
-.player-info {
+.object-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.object-id {
+  color: #94a3b8;
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.object-current {
   margin-left: auto;
   color: #64748b;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.state-btn {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.82rem;
+  touch-action: manipulation;
+}
+
+.state-btn.active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
 }
 
 /* ---- 手机竖屏时的横屏引导 ---- */
@@ -272,13 +433,6 @@ main.layout {
     border-radius: 6px;
   }
 
-  .door-marker {
-    width: 44px;
-    height: 44px;
-    font-size: 20px;
-    line-height: 38px;
-  }
-
   body {
     font-size: 16px;
   }
@@ -318,7 +472,7 @@ main.layout {
   }
 
   .map-panel,
-  .player-panel {
+  .property-panel {
     max-width: none;
     margin: 0;
   }
