@@ -82,23 +82,29 @@ namespace DiceTale
             texture.SetPixels(colors);
             texture.Apply();
 
+            // 每个像素对应一个格子：用 ppu 让 sprite 世界尺寸 = 网格尺寸，无需再缩放
+            var gridWidth = gridMap.GridWidth;
+            var gridHeight = gridMap.GridHeight;
+            var pixelsPerUnit = gridWidth > 0f ? gridSize.x / gridWidth : 1f;
+
             var sprite = Sprite.Create(
                 texture,
                 new Rect(0, 0, gridSize.x, gridSize.y),
                 new Vector2(0.5f, 0.5f),
-                1f
+                pixelsPerUnit
             );
 
             var go = new GameObject("FogOverlay");
             go.transform.SetParent(transform, false);
             go.transform.localPosition = Vector3.zero;
-            // 纹理每个像素对应一个格子：缩放铺满整个网格
-            go.transform.localScale = new Vector3(gridMap.GridWidth, gridMap.GridHeight, 1f);
+            go.transform.localScale = Vector3.one;
 
             fogRenderer = go.AddComponent<SpriteRenderer>();
             fogRenderer.sprite = sprite;
             fogRenderer.material = new Material(Shader.Find("Sprites/Default"));
             fogRenderer.sortingOrder = fogSortingOrder;
+
+            Debug.Log($"[FogOfWar] overlay created: sprite={gridSize.x}x{gridSize.y}px ppu={pixelsPerUnit:F2} world={gridWidth:F1}x{gridHeight:F1}");
         }
 
         /// <summary>雾1~雾5 只是区域标记，运行时所有雾效果一致（统一浓淡）。</summary>
