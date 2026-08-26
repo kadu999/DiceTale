@@ -316,6 +316,27 @@ describe('WebSocket server', () => {
     client.ws.close();
   });
 
+  test('client disconnect clears players in gm snapshot', async () => {
+    const client = await connect('/client');
+    openSockets.push(client.ws);
+    send(client.ws, { type: 'request_join' });
+    await client.next(); // sync_state
+
+    send(client.ws, { type: 'register_players', players: [{ id: 'Player_1', name: '小明' }] });
+
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    const update = await gm.next(); // 注册后广播
+    expect(Object.keys(update.state.players)).toContain('Player_1');
+
+    // 客户端断开 → 后台清空玩家并广播
+    client.ws.close();
+    const cleared = await gm.next();
+    expect(cleared.state.players).toEqual({});
+
+    gm.ws.close();
+  });
+
   test('GET /api/maps lists all viewable maps', async () => {
     const res = await httpGet('/api/maps');
     expect(res.status).toBe(200);

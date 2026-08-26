@@ -43,6 +43,11 @@ export class GameState {
     }
   }
 
+  /** 客户端断开时清空玩家（单客户端架构：断开 = 没有玩家）。 */
+  clearPlayers() {
+    this.players = {};
+  }
+
   /** 更新玩家位置（归一化图片坐标 + 所在地图）。 */
   setPlayerPosition(playerId: string, position: { x: number; y: number }, mapName: string) {
     const player = this.players[playerId];

@@ -123,7 +123,13 @@ wss.on('connection', (ws, req) => {
     new ClientSession(ws, gmSockets, broadcastToGm);
 
     ws.on('close', () => {
-      if (clientSocket === ws) clientSocket = null;
+      if (clientSocket === ws) {
+        clientSocket = null;
+        // 客户端断开：清除玩家，通知 GM 移除玩家图标/列表（单客户端架构）
+        gameState.clearPlayers();
+        broadcastToGm();
+        console.log('[Server] Client disconnected, players cleared');
+      }
     });
     return;
   }
