@@ -11,3 +11,4 @@ if not exist "dist\index.js" (
 echo [start] Starting DiceTale server...
 echo [start] GM console: http://localhost:8080/
 call npm start
+pause

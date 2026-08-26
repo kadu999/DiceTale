@@ -1,0 +1,7 @@
+# Android 构建产物与本地配置（相对本目录）
+build/
+.gradle/
+local.properties
+.idea/
+*.iml
+captures/
