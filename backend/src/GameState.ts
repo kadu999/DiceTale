@@ -24,6 +24,8 @@ export class GameState {
   players: Record<string, PlayerInfo> = {};
   doors: Record<string, DoorInfo> = {};
   spawnPoints: Record<string, SpawnPointInfo[]> = {};
+  /** 跨重启记忆的门解锁状态（doorId -> unlocked）。门本体由客户端上报，不持久化。 */
+  doorUnlocked: Record<string, boolean> = {};
 
   setMap(mapName: string, _spawnId?: string) {
     this.currentMap = mapName;
@@ -55,7 +57,7 @@ export class GameState {
 
   /**
    * 注册/更新门信息。以 doorId 为全局键合并：
-   * - unlocked 状态跨地图保留（由后台记录）；
+   * - unlocked 状态取 doorUnlocked 记忆（跨重启保留，客户端主导门本体）；
    * - targetMap / targetSpawn / isPortal / position / mapName 以最新上报为准。
    */
   registerDoors(
@@ -72,7 +74,7 @@ export class GameState {
     for (const door of doors) {
       const existing = this.doors[door.id];
       this.doors[door.id] = {
-        unlocked: existing?.unlocked ?? false,
+        unlocked: this.doorUnlocked[door.id] ?? existing?.unlocked ?? false,
         targetMap: door.targetMap,
         targetSpawn: door.targetSpawn,
         isPortal: door.isPortal,
@@ -90,6 +92,7 @@ export class GameState {
     const door = this.doors[doorId];
     if (!door) return false;
     door.unlocked = unlocked;
+    this.doorUnlocked[doorId] = unlocked;
     return true;
   }
 
