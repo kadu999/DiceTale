@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace DiceTale
 {
@@ -24,6 +25,10 @@ namespace DiceTale
         [Tooltip("雾边缘羽化强度（0=不羽化）")]
         [SerializeField]
         private int edgeSmoothPasses = 2;
+
+        [Tooltip("允许按住鼠标右键擦除鼠标所指的雾（逐格擦除）")]
+        [SerializeField]
+        private bool allowRightClickErase = true;
 
         private static readonly GridCellType[] FogTypes =
         {
@@ -56,7 +61,54 @@ namespace DiceTale
             }
 
             checkTimer = checkInterval;
+
+            if (allowRightClickErase)
+            {
+                HandleRightClickErase();
+            }
+
             CheckPlayerFogArea();
+        }
+
+        /// <summary>按住鼠标右键，逐格擦除鼠标所指的雾。</summary>
+        private void HandleRightClickErase()
+        {
+            var mouse = Mouse.current;
+            var camera = Camera.main;
+            if (mouse == null || camera == null || gridMap == null || fogColors == null)
+            {
+                return;
+            }
+
+            if (!mouse.rightButton.isPressed)
+            {
+                return;
+            }
+
+            var world = camera.ScreenToWorldPoint(mouse.position.ReadValue());
+            var gridPos = gridMap.WorldToGrid(world);
+
+            // 只擦除雾格子
+            if (!IsFogType(gridMap.GetCellType(gridPos)))
+            {
+                return;
+            }
+
+            var index = gridPos.y * width + gridPos.x;
+            if (index < 0 || index >= fogColors.Length)
+            {
+                return;
+            }
+
+            var color = fogColors[index];
+            if (color.a <= 0f)
+            {
+                return;
+            }
+
+            fogColors[index] = new Color(color.r, color.g, color.b, 0f);
+            RebuildTexture();
+            Debug.Log($"[FogOfWar] erased fog cell at {gridPos}");
         }
 
         private void OnDestroy()
