@@ -142,15 +142,18 @@ namespace DiceTale
             var characterManager = CharacterManager.Instance;
             if (characterManager == null || characterManager.Players.Count == 0)
             {
+                Debug.LogWarning($"[MapManager] MovePlayersToSpawn skipped: no players (players={(characterManager != null ? characterManager.Players.Count : -1)})");
                 return;
             }
 
             var spawn = FindSpawn(spawnId);
             if (spawn == null)
             {
+                Debug.LogWarning($"[MapManager] Spawn point not found: {spawnId ?? "(default)"} (map={CurrentMapName})");
                 return;
             }
 
+            Debug.Log($"[MapManager] Moving {characterManager.Players.Count} player(s) to spawn '{spawn.Id}' at {spawn.Position} (map={CurrentMapName})");
             foreach (var player in characterManager.Players)
             {
                 if (player != null)
