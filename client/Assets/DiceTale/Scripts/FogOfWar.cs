@@ -334,9 +334,7 @@ namespace DiceTale
 
             fogState.Apply(); // 只上传一次
 
-            displayMaterial.mainTexture = fogState;
-
-            //BlurFog(); // 状态变化后重新羽化一次
+            BlurFog(); // 状态变化后重新羽化一次
         }
 
         private void ClearCell(int index)

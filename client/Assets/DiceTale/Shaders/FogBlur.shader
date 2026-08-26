@@ -8,7 +8,7 @@ Shader "DiceTale/FogBlur"
     SubShader
     {
         Tags { "Queue"="Transparent" "RenderType"="Transparent" "IgnoreProjector"="True" }
-        Blend SrcAlpha OneMinusSrcAlpha
+        Blend Off
         Cull Off
         ZWrite Off
 
