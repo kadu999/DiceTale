@@ -101,7 +101,10 @@ namespace DiceTale.Editor
         {
             if (state.ReferenceTexture != null)
             {
-                GUI.DrawTexture(gridRect, state.ReferenceTexture, ScaleMode.StretchToFill);
+                var aspect = (float)state.ReferenceTexture.height / state.ReferenceTexture.width;
+                var imageHeight = gridRect.width * aspect;
+                var imageRect = new Rect(gridRect.x, gridRect.y + (gridRect.height - imageHeight) * 0.5f, gridRect.width, imageHeight);
+                GUI.DrawTexture(imageRect, state.ReferenceTexture, ScaleMode.StretchToFill);
             }
             else
             {
