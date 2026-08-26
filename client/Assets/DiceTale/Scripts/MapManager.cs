@@ -156,7 +156,6 @@ namespace DiceTale
                 if (player != null)
                 {
                     player.transform.position = spawn.Position;
-                    player.GetComponent<PlayerMover>()?.Stop();
                     player.ReportPosition(); // 传送/出生落点：上报位置
                 }
             }

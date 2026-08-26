@@ -4,7 +4,7 @@ namespace DiceTale
 {
     /// <summary>
     /// 玩家：继承 <see cref="BackendObject"/>，自动注册到后台。
-    /// 位置上报只在移动开始/到达时触发（由 PlayerMover 调用），不持续发送轨迹。
+    /// 位置上报在瞬移/传送落点时触发（由 InputManager / MapManager 调用）。
     /// </summary>
     public class Player : BackendObject
     {
@@ -33,7 +33,7 @@ namespace DiceTale
 
         /// <summary>
         /// 上报当前玩家位置（归一化图片坐标）。
-        /// 由 PlayerMover 在移动开始/到达时调用，传送落点由 MapManager 调用。
+        /// 由 InputManager 在瞬移后调用，传送落点由 MapManager 调用。
         /// </summary>
         public void ReportPosition()
         {

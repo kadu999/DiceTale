@@ -66,15 +66,23 @@ namespace DiceTale
                 return;
             }
 
-            var mover = player.GetComponent<PlayerMover>();
-            if (mover != null)
+            // A* 判断是否可达（不可达则不移动）
+            var gridMap = Object.FindFirstObjectByType<GridMap>();
+            if (gridMap != null)
             {
-                mover.MoveTo(targetPosition);
+                var startGrid = gridMap.WorldToGrid(player.transform.position);
+                var endGrid = gridMap.WorldToGrid(targetPosition);
+                var gridPath = gridMap.FindPath(startGrid, endGrid);
+                if (gridPath == null)
+                {
+                    Debug.Log($"无法移动到目标位置：{endGrid} 被阻挡或不可达");
+                    return;
+                }
             }
-            else
-            {
-                player.transform.position = targetPosition;
-            }
+
+            // 可达：直接瞬移过去（不播放移动过程）
+            player.transform.position = targetPosition;
+            player.ReportPosition();
         }
     }
 }
