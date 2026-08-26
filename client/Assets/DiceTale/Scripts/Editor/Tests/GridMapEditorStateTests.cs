@@ -142,7 +142,7 @@ namespace DiceTale.Editor.Tests
             var gridMap = _cleanupGameObject.AddComponent<GridMap>();
             gridMap.LoadData("TestMap");
 
-            _cleanupFilePath = Path.Combine(Application.dataPath, "DiceTale/Resources/TestMap.json");
+            _cleanupFilePath = Path.Combine(Application.dataPath, "DiceTale/Resources/TestMap.bin");
 
             Assert.AreEqual(GridCellType.Difficult, gridMap.GetCellType(new Vector2Int(1, 1)));
             Assert.AreEqual(GridCellType.Water, gridMap.GetCellType(new Vector2Int(2, 2)));

@@ -13,9 +13,17 @@ namespace DiceTale.Editor
         [SerializeField] private GridCellType selectedType = GridCellType.Obstacle;
         [SerializeField] private int brushSize = 1;
         [SerializeField] private bool eraseMode;
-        [SerializeField] private List<GridCellData> serializedCells = new List<GridCellData>();
+        [SerializeField] private List<SerializedCell> serializedCells = new List<SerializedCell>();
 
         private Dictionary<Vector2Int, GridCellType> cellTypes = new Dictionary<Vector2Int, GridCellType>();
+
+        [System.Serializable]
+        private class SerializedCell
+        {
+            public int x;
+            public int y;
+            public int mask;
+        }
 
         public string MapName { get => mapName; set => mapName = value; }
         public Vector2Int GridSize { get => gridSize; set => gridSize = Vector2Int.Max(value, Vector2Int.one); }
@@ -59,7 +67,7 @@ namespace DiceTale.Editor
                 }
 
                 var pos = new Vector2Int(cell.x, cell.y);
-                var type = (GridCellType)cell.type;
+                var type = MaskToGridCellType(cell.mask);
                 if (type != GridCellType.Empty && IsInsideGrid(pos))
                 {
                     cellTypes[pos] = type;
@@ -71,17 +79,17 @@ namespace DiceTale.Editor
         {
             if (serializedCells == null)
             {
-                serializedCells = new List<GridCellData>();
+                serializedCells = new List<SerializedCell>();
             }
 
             serializedCells.Clear();
             foreach (var pair in cellTypes)
             {
-                serializedCells.Add(new GridCellData
+                serializedCells.Add(new SerializedCell
                 {
                     x = pair.Key.x,
                     y = pair.Key.y,
-                    type = (int)pair.Value
+                    mask = GridCellTypeToMask(pair.Value)
                 });
             }
         }
@@ -143,7 +151,8 @@ namespace DiceTale.Editor
             var data = new GridMapData
             {
                 gridSizeX = gridSize.x,
-                gridSizeY = gridSize.y
+                gridSizeY = gridSize.y,
+                cells = new int[gridSize.x * gridSize.y]
             };
 
             foreach (var pair in cellTypes)
@@ -153,23 +162,25 @@ namespace DiceTale.Editor
                     continue;
                 }
 
-                data.cells.Add(new GridCellData
-                {
-                    x = pair.Key.x,
-                    y = pair.Key.y,
-                    type = (int)pair.Value
-                });
+                SetCellMask(data.cells, pair.Key.x, pair.Key.y, gridSize.x, GridCellTypeToMask(pair.Value));
             }
 
-            var json = JsonUtility.ToJson(data, true);
             var directory = Path.Combine(Application.dataPath, GridMapEditorConstants.DataDirectoryFull);
             if (!Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
             }
 
-            var path = Path.Combine(directory, $"{mapName}.json");
-            File.WriteAllText(path, json);
+            var path = Path.Combine(directory, $"{mapName}.bin");
+            using (var writer = new BinaryWriter(File.Open(path, FileMode.Create)))
+            {
+                writer.Write(data.gridSizeX);
+                writer.Write(data.gridSizeY);
+                foreach (var mask in data.cells)
+                {
+                    writer.Write(mask);
+                }
+            }
             AssetDatabase.Refresh();
             Debug.Log($"地图数据已保存: {path}");
         }
@@ -181,33 +192,43 @@ namespace DiceTale.Editor
                 return;
             }
 
-            var path = Path.Combine(Application.dataPath, GridMapEditorConstants.DataDirectoryFull, $"{mapName}.json");
+            var path = Path.Combine(Application.dataPath, GridMapEditorConstants.DataDirectoryFull, $"{mapName}.bin");
             if (!File.Exists(path))
             {
                 return;
             }
 
-            var json = File.ReadAllText(path);
-            var data = JsonUtility.FromJson<GridMapData>(json);
-            if (data?.cells == null)
+            using (var reader = new BinaryReader(File.Open(path, FileMode.Open)))
             {
-                return;
-            }
-
-            Undo.RecordObject(this, "Load Grid");
-            cellTypes.Clear();
-
-            GridSize = new Vector2Int(data.gridSizeX, data.gridSizeY);
-            foreach (var cell in data.cells)
-            {
-                var pos = new Vector2Int(cell.x, cell.y);
-                if (IsInsideGrid(pos))
+                var data = new GridMapData();
+                data.gridSizeX = reader.ReadInt32();
+                data.gridSizeY = reader.ReadInt32();
+                var count = data.gridSizeX * data.gridSizeY;
+                data.cells = new int[count];
+                for (int i = 0; i < count; i++)
                 {
-                    cellTypes[pos] = (GridCellType)cell.type;
+                    data.cells[i] = reader.ReadInt32();
                 }
-            }
 
-            SyncDictionaryToSerializedCells();
+                Undo.RecordObject(this, "Load Grid");
+                cellTypes.Clear();
+
+                GridSize = new Vector2Int(data.gridSizeX, data.gridSizeY);
+                for (int y = 0; y < gridSize.y; y++)
+                {
+                    for (int x = 0; x < gridSize.x; x++)
+                    {
+                        var pos = new Vector2Int(x, y);
+                        var type = MaskToGridCellType(GetCellMask(data.cells, x, y, gridSize.x));
+                        if (IsInsideGrid(pos) && type != GridCellType.Empty)
+                        {
+                            cellTypes[pos] = type;
+                        }
+                    }
+                }
+
+                SyncDictionaryToSerializedCells();
+            }
         }
 
         public void LoadReferenceTexture(string filePath)
@@ -238,6 +259,38 @@ namespace DiceTale.Editor
         private bool IsInsideGrid(Vector2Int pos)
         {
             return pos.x >= 0 && pos.x < gridSize.x && pos.y >= 0 && pos.y < gridSize.y;
+        }
+
+        private static int GetCellMask(int[] cells, int x, int y, int width)
+        {
+            return cells[y * width + x];
+        }
+
+        private static void SetCellMask(int[] cells, int x, int y, int width, int mask)
+        {
+            cells[y * width + x] = mask;
+        }
+
+        private static int GridCellTypeToMask(GridCellType type)
+        {
+            switch (type)
+            {
+                case GridCellType.Obstacle: return 1;
+                case GridCellType.Difficult: return 2;
+                case GridCellType.Water: return 4;
+                default: return 0;
+            }
+        }
+
+        private static GridCellType MaskToGridCellType(int mask)
+        {
+            switch (mask)
+            {
+                case 1: return GridCellType.Obstacle;
+                case 2: return GridCellType.Difficult;
+                case 4: return GridCellType.Water;
+                default: return GridCellType.Empty;
+            }
         }
     }
 }

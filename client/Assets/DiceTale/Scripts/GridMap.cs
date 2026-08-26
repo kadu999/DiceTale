@@ -5,19 +5,11 @@ using UnityEngine;
 namespace DiceTale
 {
     [System.Serializable]
-    public class GridCellData
-    {
-        public int x;
-        public int y;
-        public int type;
-    }
-
-    [System.Serializable]
     public class GridMapData
     {
         public int gridSizeX = 20;
         public int gridSizeY = 20;
-        public List<GridCellData> cells = new List<GridCellData>();
+        public int[] cells = new int[0];
     }
 
     public class GridMap : MonoBehaviour
@@ -106,17 +98,31 @@ namespace DiceTale
                 return;
             }
 
-            var data = JsonUtility.FromJson<GridMapData>(textAsset.text);
-            if (data?.cells == null)
+            using (var reader = new BinaryReader(new MemoryStream(textAsset.bytes)))
             {
-                return;
-            }
+                var data = new GridMapData();
+                data.gridSizeX = reader.ReadInt32();
+                data.gridSizeY = reader.ReadInt32();
+                var count = data.gridSizeX * data.gridSizeY;
+                data.cells = new int[count];
+                for (int i = 0; i < count; i++)
+                {
+                    data.cells[i] = reader.ReadInt32();
+                }
 
-            gridSize = new Vector2Int(data.gridSizeX, data.gridSizeY);
+                gridSize = new Vector2Int(data.gridSizeX, data.gridSizeY);
 
-            foreach (var cell in data.cells)
-            {
-                cellTypes[new Vector2Int(cell.x, cell.y)] = (GridCellType)cell.type;
+                for (int y = 0; y < gridSize.y; y++)
+                {
+                    for (int x = 0; x < gridSize.x; x++)
+                    {
+                        var type = MaskToGridCellType(GetCellMask(data.cells, x, y, gridSize.x));
+                        if (type != GridCellType.Empty)
+                        {
+                            cellTypes[new Vector2Int(x, y)] = type;
+                        }
+                    }
+                }
             }
         }
 
@@ -125,7 +131,8 @@ namespace DiceTale
             var data = new GridMapData
             {
                 gridSizeX = gridSize.x,
-                gridSizeY = gridSize.y
+                gridSizeY = gridSize.y,
+                cells = new int[gridSize.x * gridSize.y]
             };
 
             foreach (var pair in cellTypes)
@@ -135,15 +142,8 @@ namespace DiceTale
                     continue;
                 }
 
-                data.cells.Add(new GridCellData
-                {
-                    x = pair.Key.x,
-                    y = pair.Key.y,
-                    type = (int)pair.Value
-                });
+                SetCellMask(data.cells, pair.Key.x, pair.Key.y, gridSize.x, GridCellTypeToMask(pair.Value));
             }
-
-            var json = JsonUtility.ToJson(data, true);
 
 #if UNITY_EDITOR
             var directory = Path.Combine(Application.dataPath, "DiceTale/Resources");
@@ -152,10 +152,50 @@ namespace DiceTale
                 Directory.CreateDirectory(directory);
             }
 
-            var path = Path.Combine(directory, $"{fileName ?? this.name}.json");
-            File.WriteAllText(path, json);
+            var path = Path.Combine(directory, $"{fileName ?? this.name}.bin");
+            using (var writer = new BinaryWriter(File.Open(path, FileMode.Create)))
+            {
+                writer.Write(data.gridSizeX);
+                writer.Write(data.gridSizeY);
+                foreach (var mask in data.cells)
+                {
+                    writer.Write(mask);
+                }
+            }
             UnityEditor.AssetDatabase.Refresh();
 #endif
+        }
+
+        private static int GetCellMask(int[] cells, int x, int y, int width)
+        {
+            return cells[y * width + x];
+        }
+
+        private static void SetCellMask(int[] cells, int x, int y, int width, int mask)
+        {
+            cells[y * width + x] = mask;
+        }
+
+        private static int GridCellTypeToMask(GridCellType type)
+        {
+            switch (type)
+            {
+                case GridCellType.Obstacle: return 1;
+                case GridCellType.Difficult: return 2;
+                case GridCellType.Water: return 4;
+                default: return 0;
+            }
+        }
+
+        private static GridCellType MaskToGridCellType(int mask)
+        {
+            switch (mask)
+            {
+                case 1: return GridCellType.Obstacle;
+                case 2: return GridCellType.Difficult;
+                case 4: return GridCellType.Water;
+                default: return GridCellType.Empty;
+            }
         }
 
         public bool IsWalkable(Vector2Int gridPos)
