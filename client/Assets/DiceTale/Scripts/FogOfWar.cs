@@ -180,8 +180,9 @@ namespace DiceTale
                 {
                     for (int x = 0; x < width; x++)
                     {
-                        // 地图四边的格子不平滑（保持干脆，不向边界外扩散）
-                        if (x == 0 || x == width - 1 || y == 0 || y == height - 1)
+                        // 模糊窗口（3x3）触及地图边界的格子不平滑，防止羽化传染到地图边缘
+                        bool touchesBorder = x <= 1 || x >= width - 2 || y <= 1 || y >= height - 2;
+                        if (touchesBorder)
                         {
                             next[y * width + x] = alphaMap[y * width + x];
                             continue;
