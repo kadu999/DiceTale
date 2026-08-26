@@ -14,6 +14,9 @@ namespace DiceTale
         private string targetSpawnId = "Default";
 
         [SerializeField]
+        private string doorId;
+
+        [SerializeField]
         private bool isPortal = true;
 
         [SerializeField]
@@ -59,6 +62,23 @@ namespace DiceTale
         }
 
         public void Interact(Player player)
+        {
+            if (BackendManager.Instance != null && !string.IsNullOrEmpty(doorId))
+            {
+                BackendManager.Instance.RequestDoorAccess(doorId, allowed =>
+                {
+                    if (allowed)
+                    {
+                        ExecuteInteract();
+                    }
+                });
+                return;
+            }
+
+            ExecuteInteract();
+        }
+
+        private void ExecuteInteract()
         {
             if (isPortal)
             {

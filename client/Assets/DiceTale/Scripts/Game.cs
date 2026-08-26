@@ -18,6 +18,7 @@ namespace DiceTale
         public ProgressManager ProgressManager { get; private set; }
         public InputManager InputManager { get; private set; }
         public MapManager MapManager { get; private set; }
+        public BackendManager BackendManager { get; private set; }
 
         public GameState State { get; private set; } = GameState.Boot;
         public bool CanInteract { get; private set; } = true;
@@ -29,6 +30,7 @@ namespace DiceTale
             ProgressManager = GetOrCreateManager<ProgressManager>();
             InputManager = GetOrCreateManager<InputManager>();
             MapManager = GetOrCreateManager<MapManager>();
+            BackendManager = GetOrCreateManager<BackendManager>();
         }
 
         private void Start()
