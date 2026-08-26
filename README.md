@@ -1,27 +1,60 @@
 # DiceTale（骰子物语）
 
-一个轻量级的桌游跑团 Demo 项目，用于展示跑团（TRPG）中的角色卡与骰子判定概念。
+一个轻量级的桌游跑团（TRPG）Demo 项目：**Unity 客户端 + Node.js 权威服务器**。
+服务器作为后台控制前端的关键游戏状态（门开启、地图传送），并提供 GM 可视化网页后台。
 
-## 项目定位
-
-- **名称**：DiceTale / 骰子物语
-- **核心意象**：Dice（骰子）+ Tale（故事），代表跑团中“掷骰驱动叙事”的体验。
-- **当前阶段**：Demo 骨架，仅作项目展示与命名占位。
-
-## 目录结构
+## 项目结构
 
 ```
 DiceTale/
-├── index.html      # 项目入口页
-├── assets/
-│   ├── style.css   # 基础样式
-│   └── app.js      # 前端交互脚本
-└── README.md       # 项目说明
+├── client/                       # Unity 客户端（Unity 6 / 6000.3.x）
+│   └── Assets/DiceTale/Scripts/
+│       ├── Server/               # WebSocket 连接层（连接、命令分发、JSON 解析）
+│       ├── BackendManager.cs     # 后端入口（默认连服务器，可切本地 Mock）
+│       └── ...
+├── server/                       # Node.js 权威服务器（TypeScript + ws）
+│   ├── src/                      # 服务器源码（状态、会话、处理器）
+│   ├── public/                   # GM 网页后台
+│   ├── data/                     # 游戏状态存档（gamestate.json）
+│   └── tests/                    # jest 测试
+└── docs/                         # 设计与实现文档
 ```
 
-## 本地预览
+## 服务器启动
 
-用浏览器直接打开 `index.html` 即可。
+```bash
+cd server
+npm install
+npm run dev
+```
+
+- GM 控制台：<http://localhost:8080/>
+- 客户端 WebSocket：`ws://localhost:8080/client`
+- GM WebSocket：`ws://localhost:8080/gm`
+- 状态存档：`server/data/gamestate.json`（服务器是权威状态源，重启后自动恢复）
+
+## 运行测试
+
+```bash
+cd server
+npm test        # jest：游戏状态、持久化、WebSocket 协议流程
+```
+
+## Unity 客户端接入
+
+1. 用 Unity 6（6000.3.x）打开 `client/`。
+2. 为场景中需要服务器控制的「门」添加 `Door` 组件，并填写：
+   - `Door Id`（如 `Door_A1`，与 GM 后台一一对应）
+   - `Target Scene Name` / `Target Spawn Id`（传送目标地图与出生点）
+   - 传送门勾选 `Is Portal`
+3. 先启动服务器再运行游戏，`BackendManager` 会自动连接 `ws://localhost:8080/client`，
+   加载地图后自动上报门与出生点。
+4. 想离线运行：取消勾选 `BackendManager` 上的 `Use Server`（走本地 Mock）。
+
+## 通信协议
+
+所有消息均为 JSON，通过 WebSocket 传输。完整协议与设计见
+`docs/superpowers/specs/2026-08-26-authoritative-server-mvp-design.md`。
 
 ## License
 
