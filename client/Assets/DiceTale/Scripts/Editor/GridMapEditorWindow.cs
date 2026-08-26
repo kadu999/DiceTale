@@ -22,6 +22,15 @@ namespace DiceTale.Editor
             state.hideFlags = HideFlags.HideAndDontSave;
         }
 
+        private void OnDisable()
+        {
+            if (state != null)
+            {
+                DestroyImmediate(state);
+                state = null;
+            }
+        }
+
         private void OnGUI()
         {
             renderer.DrawToolbar(
