@@ -84,6 +84,7 @@ namespace DiceTale
 
         /// <summary>
         /// 向服务器上报当前地图的门与出生点，使 GM 后台可控制的对象与游戏内对象一一对应。
+        /// 客户端是地图/物体的主导者：位置由客户端换算成图片归一化坐标后上报。
         /// </summary>
         private void ReportMapObjects()
         {
@@ -102,7 +103,8 @@ namespace DiceTale
                     id = door.DoorId,
                     targetMap = door.TargetSceneName,
                     targetSpawn = door.TargetSpawnId,
-                    isPortal = door.IsPortal
+                    isPortal = door.IsPortal,
+                    position = GetNormalizedPosition(door.transform.position)
                 });
             }
 
@@ -113,6 +115,76 @@ namespace DiceTale
 
             connection.Send(msg);
             Debug.Log($"[MapManager] Reported {msg.doors.Count} doors, {msg.spawnPoints.Count} spawn points for {CurrentMapName}");
+        }
+
+        /// <summary>把世界坐标换算成地图图片上的归一化坐标（y 向下，左上角为原点）。</summary>
+        private Server.Position GetNormalizedPosition(Vector3 worldPosition)
+        {
+            var spriteRenderer = CurrentMap != null ? CurrentMap.GetComponent<SpriteRenderer>() : null;
+            if (spriteRenderer == null || spriteRenderer.sprite == null)
+            {
+                return new Server.Position { x = 0.5f, y = 0.5f };
+            }
+
+            var bounds = spriteRenderer.bounds;
+            if (bounds.size.x <= 0f || bounds.size.y <= 0f)
+            {
+                return new Server.Position { x = 0.5f, y = 0.5f };
+            }
+
+            return new Server.Position
+            {
+                x = Mathf.Clamp01((worldPosition.x - bounds.min.x) / bounds.size.x),
+                y = Mathf.Clamp01(1f - (worldPosition.y - bounds.min.y) / bounds.size.y)
+            };
+        }
+
+        // ---- 玩家位置上报 ----
+
+        [SerializeField]
+        private float positionReportInterval = 1f;
+
+        private float positionReportTimer;
+        private Vector3 lastReportedPosition;
+
+        private void Update()
+        {
+            positionReportTimer -= Time.deltaTime;
+            if (positionReportTimer > 0f)
+            {
+                return;
+            }
+
+            positionReportTimer = positionReportInterval;
+            ReportPlayerPosition();
+        }
+
+        /// <summary>节流上报当前玩家位置，供 GM 后台显示（服务器只记录，不校验）。</summary>
+        private void ReportPlayerPosition()
+        {
+            var connection = Server.ServerConnection.Instance;
+            if (connection == null || !connection.IsConnected)
+            {
+                return;
+            }
+
+            var player = CharacterManager.Instance?.CurrentPlayer;
+            if (player == null)
+            {
+                return;
+            }
+
+            var pos = player.transform.position;
+            if (Vector3.Distance(pos, lastReportedPosition) < 0.01f)
+            {
+                return;
+            }
+
+            lastReportedPosition = pos;
+            connection.Send(new Server.ReportPlayerPositionMessage
+            {
+                position = new Server.Position { x = pos.x, y = pos.y }
+            });
         }
 
         private Sprite LoadMapSprite(string mapName)

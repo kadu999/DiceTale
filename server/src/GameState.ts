@@ -1,5 +1,4 @@
 import { GameStateSnapshot } from './types';
-import { mapCatalog } from './mapCatalog';
 
 export interface DoorInfo {
   unlocked: boolean;
@@ -19,28 +18,6 @@ export class GameState {
   player = { position: { x: 0, y: 0 } };
   doors: Record<string, DoorInfo> = {};
   spawnPoints: Record<string, SpawnPointInfo[]> = {};
-
-  /**
-   * 启动时用服务器地图目录播种门与出生点。
-   * 保留已持久化的 unlocked 状态；客户端 register_map_objects 仍可覆盖元数据。
-   */
-  seedFromCatalog() {
-    for (const map of mapCatalog) {
-      this.spawnPoints[map.name] = map.spawns.map((id) => ({ id }));
-
-      for (const door of map.doors) {
-        const existing = this.doors[door.id];
-        this.doors[door.id] = {
-          unlocked: existing?.unlocked ?? false,
-          targetMap: door.targetMap,
-          targetSpawn: door.targetSpawn,
-          isPortal: door.isPortal,
-          mapName: map.name,
-          position: { ...door.position },
-        };
-      }
-    }
-  }
 
   setMap(mapName: string, _spawnId?: string) {
     this.currentMap = mapName;

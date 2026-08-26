@@ -112,7 +112,6 @@ wss.on('connection', (ws, req) => {
 });
 
 loadState();
-gameState.seedFromCatalog();
 
 if (require.main === module) {
   server.listen(PORT, () => {

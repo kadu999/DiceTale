@@ -40,6 +40,17 @@ start.bat   :: 启动服务器（缺编译产物时自动先 build）
 - GM WebSocket：`ws://localhost:8080/gm`
 - 状态存档：`server/data/gamestate.json`（服务器是权威状态源，重启后自动恢复）
 
+## 数据流（客户端主导）
+
+客户端（Unity）是地图与物体的主导者，服务器被动接收并展示：
+
+- 客户端加载地图后通过 `register_map_objects` 上报：地图名、**门**（id、图片归一化位置、目标地图/出生点、是否传送门）、出生点；
+- 客户端移动时通过 `report_player_position` 节流上报玩家位置；
+- 服务器把这些信息存为权威状态，推送给 GM 网页显示；
+- 服务器只负责**触发控制**：GM 开门/关门/传送时向客户端下发命令执行。
+
+GM 页面显示的地图图片由服务器静态提供（`/maps/{mapName}.png`），门的标记位置、玩家位置全部来自客户端上报。
+
 ## 运行测试
 
 ```bash
@@ -55,7 +66,7 @@ npm test        # jest：游戏状态、持久化、WebSocket 协议流程
    - `Target Scene Name` / `Target Spawn Id`（传送目标地图与出生点）
    - 传送门勾选 `Is Portal`
 3. 先启动服务器再运行游戏，`BackendManager` 会自动连接 `ws://localhost:8080/client`，
-   加载地图后自动上报门与出生点。
+   加载地图后自动上报门（含位置）与出生点；玩家移动时自动上报位置。
 4. 想离线运行：取消勾选 `BackendManager` 上的 `Use Server`（走本地 Mock）。
 
 ## 通信协议

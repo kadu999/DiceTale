@@ -75,29 +75,38 @@ describe('WebSocket server', () => {
     expect(msg.state.spawnPoints).toBeDefined();
   });
 
-  test('catalog doors are seeded with positions in sync_state', async () => {
+  test('client-registered door with position appears in gm snapshot', async () => {
     const client = await connect('/client');
     openSockets.push(client.ws);
     send(client.ws, { type: 'request_join' });
+    await client.next(); // sync_state
 
-    const msg = await client.next();
-    expect(msg.type).toBe('sync_state');
+    send(client.ws, {
+      type: 'register_map_objects',
+      mapName: 'Map001',
+      doors: [
+        { id: 'ClientDoor_1', targetMap: 'Map002', targetSpawn: 'North', isPortal: true, position: { x: 0.81, y: 0.45 } },
+        { id: 'ClientDoor_2', targetMap: 'Map002', targetSpawn: 'Default', isPortal: false },
+      ],
+      spawnPoints: [{ id: 'Default' }],
+    });
 
-    const door = msg.state.doors['Map001_Door_1'];
-    expect(door).toBeDefined();
-    expect(door.mapName).toBe('Map001');
-    expect(door.position.x).toBeCloseTo(0.801, 2);
-    expect(door.position.y).toBeCloseTo(0.477, 2);
-    expect(door.isPortal).toBe(true);
-    expect(door.targetMap).toBe('Map002');
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    const update = await gm.next(); // 客户端注册后广播的 gm_update
 
-    const bridge = msg.state.doors['Map001_Door_2'];
-    expect(bridge).toBeDefined();
-    expect(bridge.isPortal).toBe(false);
-    expect(bridge.position.y).toBeCloseTo(0.589, 2);
+    const door1 = update.state.doors['ClientDoor_1'];
+    expect(door1).toBeDefined();
+    expect(door1.mapName).toBe('Map001');
+    expect(door1.position).toEqual({ x: 0.81, y: 0.45 });
+    expect(door1.isPortal).toBe(true);
 
-    expect(msg.state.spawnPoints['Map001']).toEqual([{ id: 'Map001_001' }]);
-    expect(msg.state.spawnPoints['Map003']).toEqual([{ id: 'Map003_001' }]);
+    // 未上报 position 的门使用默认中心位置，mapName 取注册时的地图
+    const door2 = update.state.doors['ClientDoor_2'];
+    expect(door2.mapName).toBe('Map001');
+    expect(door2.position).toEqual({ x: 0.5, y: 0.5 });
+
+    expect(update.state.spawnPoints['Map001']).toEqual([{ id: 'Default' }]);
   });
 
   test('portal door access triggers teleport_player', async () => {
@@ -192,20 +201,26 @@ describe('WebSocket server', () => {
     openSockets.push(client.ws);
     send(client.ws, { type: 'request_join' });
     await client.next(); // sync_state
+    send(client.ws, {
+      type: 'register_map_objects',
+      mapName: 'Map001',
+      doors: [{ id: 'CloseDoorTest', targetMap: 'Map002', targetSpawn: 'Default', isPortal: false }],
+      spawnPoints: [{ id: 'Default' }],
+    });
 
     const gm = await connect('/gm');
     openSockets.push(gm.ws);
-    await gm.next(); // initial gm_update
+    await gm.next(); // 客户端注册后广播的 gm_update
 
-    send(gm.ws, { type: 'gm_open_door', doorId: 'Map001_Door_1' });
+    send(gm.ws, { type: 'gm_open_door', doorId: 'CloseDoorTest' });
     const opened = await client.next();
     expect(opened.type).toBe('set_door_state');
     expect(opened.unlocked).toBe(true);
 
-    send(gm.ws, { type: 'gm_close_door', doorId: 'Map001_Door_1' });
+    send(gm.ws, { type: 'gm_close_door', doorId: 'CloseDoorTest' });
     const closed = await client.next();
     expect(closed.type).toBe('set_door_state');
-    expect(closed.doorId).toBe('Map001_Door_1');
+    expect(closed.doorId).toBe('CloseDoorTest');
     expect(closed.unlocked).toBe(false);
 
     gm.ws.close();
@@ -227,5 +242,25 @@ describe('WebSocket server', () => {
     expect(msg.type).toBe('teleport_player');
     expect(msg.mapName).toBe('Map003');
     expect(msg.spawnId).toBe('Default');
+  });
+
+  test('report_player_position updates gm snapshot', async () => {
+    const client = await connect('/client');
+    openSockets.push(client.ws);
+    send(client.ws, { type: 'request_join' });
+    await client.next(); // sync_state
+
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    await gm.next(); // initial gm_update
+
+    send(client.ws, { type: 'report_player_position', position: { x: 3.5, y: -2.25 } });
+
+    const update = await gm.next(); // 位置上报触发广播
+    expect(update.type).toBe('gm_update');
+    expect(update.state.player.position).toEqual({ x: 3.5, y: -2.25 });
+
+    gm.ws.close();
+    client.ws.close();
   });
 });

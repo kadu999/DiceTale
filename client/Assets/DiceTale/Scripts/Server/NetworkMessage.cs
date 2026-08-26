@@ -36,6 +36,8 @@ namespace DiceTale.Server
         public string targetMap;
         public string targetSpawn;
         public bool isPortal;
+        /// <summary>门在地图图片上的归一化位置 [0,1]，y 向下（左上角为原点）。</summary>
+        public Position position;
     }
 
     [Serializable]
