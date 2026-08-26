@@ -31,7 +31,23 @@ namespace DiceTale
 
         private void Start()
         {
+            var connection = Server.ServerConnection.Instance;
+            if (connection != null)
+            {
+                // 服务器连接（或重连）成功后补报当前地图对象
+                connection.OnConnected += ReportMapObjects;
+            }
+
             LoadMap(initialMapName, "Default");
+        }
+
+        private void OnDisable()
+        {
+            var connection = Server.ServerConnection.Instance;
+            if (connection != null)
+            {
+                connection.OnConnected -= ReportMapObjects;
+            }
         }
 
         public void LoadMap(string mapName, string spawnId = null)
@@ -62,6 +78,41 @@ namespace DiceTale
             CurrentMapName = mapName;
 
             MovePlayersToSpawn(spawnId ?? "Default");
+
+            ReportMapObjects();
+        }
+
+        /// <summary>
+        /// 向服务器上报当前地图的门与出生点，使 GM 后台可控制的对象与游戏内对象一一对应。
+        /// </summary>
+        private void ReportMapObjects()
+        {
+            var connection = Server.ServerConnection.Instance;
+            if (connection == null || !connection.IsConnected)
+            {
+                return;
+            }
+
+            var msg = new Server.RegisterMapObjectsMessage { mapName = CurrentMapName };
+
+            foreach (var door in Object.FindObjectsByType<Door>(FindObjectsSortMode.None))
+            {
+                msg.doors.Add(new Server.DoorInfo
+                {
+                    id = door.DoorId,
+                    targetMap = door.TargetSceneName,
+                    targetSpawn = door.TargetSpawnId,
+                    isPortal = door.IsPortal
+                });
+            }
+
+            foreach (var spawn in Object.FindObjectsByType<SpawnPoint>(FindObjectsSortMode.None))
+            {
+                msg.spawnPoints.Add(new Server.SpawnInfo { id = spawn.Id });
+            }
+
+            connection.Send(msg);
+            Debug.Log($"[MapManager] Reported {msg.doors.Count} doors, {msg.spawnPoints.Count} spawn points for {CurrentMapName}");
         }
 
         private Sprite LoadMapSprite(string mapName)
