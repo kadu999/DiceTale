@@ -141,6 +141,16 @@ namespace DiceTale.Editor
                     return new Color(1f, 0.5f, 0f, 0.6f);
                 case GridCellType.Water:
                     return new Color(0f, 0.5f, 1f, 0.6f);
+                case GridCellType.Fog1:
+                    return new Color(0.85f, 0.85f, 0.9f, 0.55f);
+                case GridCellType.Fog2:
+                    return new Color(0.78f, 0.78f, 0.86f, 0.6f);
+                case GridCellType.Fog3:
+                    return new Color(0.7f, 0.7f, 0.82f, 0.65f);
+                case GridCellType.Fog4:
+                    return new Color(0.6f, 0.62f, 0.78f, 0.7f);
+                case GridCellType.Fog5:
+                    return new Color(0.5f, 0.54f, 0.74f, 0.75f);
                 default:
                     return Color.clear;
             }

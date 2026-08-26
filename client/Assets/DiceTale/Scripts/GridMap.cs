@@ -165,6 +165,11 @@ namespace DiceTale
                 case GridCellType.Obstacle: return 1;
                 case GridCellType.Difficult: return 2;
                 case GridCellType.Water: return 4;
+                case GridCellType.Fog1: return 8;
+                case GridCellType.Fog2: return 16;
+                case GridCellType.Fog3: return 32;
+                case GridCellType.Fog4: return 64;
+                case GridCellType.Fog5: return 128;
                 default: return 0;
             }
         }
@@ -176,6 +181,11 @@ namespace DiceTale
                 case 1: return GridCellType.Obstacle;
                 case 2: return GridCellType.Difficult;
                 case 4: return GridCellType.Water;
+                case 8: return GridCellType.Fog1;
+                case 16: return GridCellType.Fog2;
+                case 32: return GridCellType.Fog3;
+                case 64: return GridCellType.Fog4;
+                case 128: return GridCellType.Fog5;
                 default: return GridCellType.Empty;
             }
         }
@@ -388,6 +398,16 @@ namespace DiceTale
                     return new Color(1f, 0.5f, 0f, 0.5f);
                 case GridCellType.Water:
                     return new Color(0f, 0.5f, 1f, 0.5f);
+                case GridCellType.Fog1:
+                    return new Color(0.85f, 0.85f, 0.9f, 0.4f);
+                case GridCellType.Fog2:
+                    return new Color(0.78f, 0.78f, 0.86f, 0.45f);
+                case GridCellType.Fog3:
+                    return new Color(0.7f, 0.7f, 0.82f, 0.5f);
+                case GridCellType.Fog4:
+                    return new Color(0.6f, 0.62f, 0.78f, 0.55f);
+                case GridCellType.Fog5:
+                    return new Color(0.5f, 0.54f, 0.74f, 0.6f);
                 default:
                     return Color.clear;
             }

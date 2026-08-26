@@ -273,6 +273,11 @@ namespace DiceTale.Editor
                 case GridCellType.Obstacle: return 1;
                 case GridCellType.Difficult: return 2;
                 case GridCellType.Water: return 4;
+                case GridCellType.Fog1: return 8;
+                case GridCellType.Fog2: return 16;
+                case GridCellType.Fog3: return 32;
+                case GridCellType.Fog4: return 64;
+                case GridCellType.Fog5: return 128;
                 default: return 0;
             }
         }
@@ -284,6 +289,11 @@ namespace DiceTale.Editor
                 case 1: return GridCellType.Obstacle;
                 case 2: return GridCellType.Difficult;
                 case 4: return GridCellType.Water;
+                case 8: return GridCellType.Fog1;
+                case 16: return GridCellType.Fog2;
+                case 32: return GridCellType.Fog3;
+                case 64: return GridCellType.Fog4;
+                case 128: return GridCellType.Fog5;
                 default: return GridCellType.Empty;
             }
         }
