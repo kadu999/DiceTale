@@ -20,9 +20,9 @@ namespace DiceTale
         [SerializeField]
         private float checkInterval = 0.2f;
 
-        [Tooltip("雾边缘羽化强度（0=不羽化）")]
+        [Tooltip("雾边缘羽化强度（0=不羽化，边缘干脆）")]
         [SerializeField]
-        private int edgeSmoothPasses = 2;
+        private int edgeSmoothPasses = 0;
 
         private GridMap gridMap;
         private SpriteRenderer fogRenderer;
