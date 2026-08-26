@@ -86,7 +86,7 @@ namespace DiceTale
                     Graphics.Blit(blurRTs[i - 1], blurRTs[i], blurMaterial);
                 }
 
-                combineMaterial.mainTexture = blurRTs[blurRTs.Length - 1];
+                combineMaterial.SetTexture("_FogTex", blurRTs[blurRTs.Length - 1]);
             }
         }
 
