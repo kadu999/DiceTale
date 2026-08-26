@@ -4,9 +4,10 @@ using UnityEngine;
 namespace DiceTale
 {
     /// <summary>
-    /// 迷雾区域（探索揭示）：
-    /// 所有雾标记（Fog1~Fog5）合成一块整体雾，边缘整体羽化（合在一起）；
-    /// 但揭示按区域分开——玩家进入某个区域，只挖掉该区域的雾，其他区域保持遮挡。
+    /// 迷雾区域（探索揭示，GPU 渲染）：
+    /// 所有雾标记（Fog1~Fog5）合成一块整体雾，边缘羽化在 GPU 上通过模糊 shader 完成；
+    /// 揭示按区域分开——玩家进入某个区域，只挖掉该区域的雾，其他区域保持遮挡。
+    /// 支持按住鼠标右键逐格擦除（输入经 InputManager）。
     /// 需要与 GridMap 同物体。
     /// </summary>
     [RequireComponent(typeof(GridMap))]
@@ -21,10 +22,6 @@ namespace DiceTale
         [SerializeField]
         private float checkInterval = 0.2f;
 
-        [Tooltip("雾边缘羽化强度（0=不羽化）")]
-        [SerializeField]
-        private int edgeSmoothPasses = 2;
-
         [Tooltip("允许按住鼠标右键擦除鼠标所指的雾（逐格擦除）")]
         [SerializeField]
         private bool allowRightClickErase = true;
@@ -36,11 +33,17 @@ namespace DiceTale
         };
 
         private GridMap gridMap;
-        private SpriteRenderer fogRenderer;
-        private Texture2D fogTexture;
-        private Color[] fogColors;
+
+        // 雾状态（CPU 维护的格子级纹理，alpha：1=雾存在 0=已揭示）
+        private Texture2D stateTexture;
         private int width;
         private int height;
+
+        // GPU 羽化结果
+        private RenderTexture blurredRT;
+        private Material blurMaterial;
+        private Material displayMaterial;
+
         private readonly Dictionary<GridCellType, List<int>> cellsByType = new Dictionary<GridCellType, List<int>>();
         private readonly HashSet<GridCellType> revealedAreas = new HashSet<GridCellType>();
         private float checkTimer;
@@ -61,63 +64,34 @@ namespace DiceTale
 
             // 玩家进入区域揭示：节流即可
             checkTimer -= Time.deltaTime;
-            if (checkTimer > 0f)
+            if (checkTimer <= 0f)
             {
-                return;
+                checkTimer = checkInterval;
+                CheckPlayerFogArea();
             }
 
-            checkTimer = checkInterval;
-            CheckPlayerFogArea();
-        }
-
-        /// <summary>按住鼠标右键，逐格擦除鼠标所指的雾。</summary>
-        private void HandleRightClickErase()
-        {
-            if (gridMap == null || fogColors == null)
+            // GPU 羽化：状态纹理 -> 模糊 RT（小纹理，每帧便宜）
+            if (stateTexture != null && blurredRT != null && blurMaterial != null)
             {
-                return;
+                Graphics.Blit(stateTexture, blurredRT, blurMaterial);
             }
-
-            var input = Object.FindFirstObjectByType<InputManager>();
-            if (input == null || !input.IsRightMouseHeld)
-            {
-                return;
-            }
-
-            var gridPos = gridMap.WorldToGrid(input.GetMouseWorldPosition());
-
-            // 只擦除雾格子
-            if (!IsFogType(gridMap.GetCellType(gridPos)))
-            {
-                return;
-            }
-
-            var index = gridPos.y * width + gridPos.x;
-            if (index < 0 || index >= fogColors.Length)
-            {
-                return;
-            }
-
-            var color = fogColors[index];
-            if (color.a <= 0f)
-            {
-                return;
-            }
-
-            fogColors[index] = new Color(color.r, color.g, color.b, 0f);
-            RebuildTexture();
-            Debug.Log($"[FogOfWar] erased fog cell at {gridPos}");
         }
 
         private void OnDestroy()
         {
-            if (fogTexture != null)
+            if (stateTexture != null)
             {
-                Destroy(fogTexture);
+                Destroy(stateTexture);
+            }
+
+            if (blurredRT != null)
+            {
+                blurredRT.Release();
+                Destroy(blurredRT);
             }
         }
 
-        /// <summary>生成整体雾纹理：所有雾格子合并成一块，整体羽化，默认遮挡。</summary>
+        /// <summary>生成整体雾状态 + GPU 模糊链 + 显示层。</summary>
         private void BuildFog()
         {
             if (gridMap == null)
@@ -137,11 +111,17 @@ namespace DiceTale
             width = gridSize.x;
             height = gridSize.y;
             var gridWidth = gridMap.GridWidth;
-            var pixelsPerUnit = gridWidth > 0f ? width / gridWidth : 1f;
+            var gridHeight = gridMap.GridHeight;
 
-            fogColors = new Color[width * height];
-            cellsByType.Clear();
+            // 1. 雾状态纹理（格子级）：雾格子 alpha=1，其余透明
+            stateTexture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            stateTexture.filterMode = FilterMode.Point;
+            stateTexture.wrapMode = TextureWrapMode.Clamp;
+            stateTexture.name = "FogState";
+
+            var colors = new Color[width * height];
             var fogCells = 0;
+            cellsByType.Clear();
 
             for (int y = 0; y < height; y++)
             {
@@ -154,7 +134,7 @@ namespace DiceTale
                     }
 
                     var index = y * width + x;
-                    fogColors[index] = new Color(fogColor.r, fogColor.g, fogColor.b, 1f);
+                    colors[index] = new Color(fogColor.r, fogColor.g, fogColor.b, 1f);
                     fogCells++;
 
                     if (!cellsByType.TryGetValue(type, out var list))
@@ -167,6 +147,9 @@ namespace DiceTale
                 }
             }
 
+            stateTexture.SetPixels(colors);
+            stateTexture.Apply();
+
             Debug.Log($"[FogOfWar] {name}: fog cells={fogCells}, grid={width}x{height}");
 
             if (fogCells == 0)
@@ -174,50 +157,44 @@ namespace DiceTale
                 return;
             }
 
-            fogTexture = new Texture2D(width, height, TextureFormat.RGBA32, false);
-            fogTexture.filterMode = FilterMode.Bilinear;
-            fogTexture.wrapMode = TextureWrapMode.Clamp;
-            fogTexture.name = "FogArea";
+            // 2. GPU 羽化链：状态纹理 -> 放大 2x 的模糊 RT
+            blurredRT = new RenderTexture(width * 2, height * 2, 0, RenderTextureFormat.ARGB32);
+            blurredRT.filterMode = FilterMode.Bilinear;
+            blurredRT.wrapMode = TextureWrapMode.Clamp;
+
+            var blurShader = Shader.Find("DiceTale/FogBlur");
+            if (blurShader == null)
+            {
+                Debug.LogError("[FogOfWar] Shader 'DiceTale/FogBlur' not found!");
+                return;
+            }
+
+            blurMaterial = new Material(blurShader);
+            blurMaterial.SetVector("_GridSize", new Vector4(width, height, 0f, 0f));
+
+            // 3. 显示层：quad + 采样模糊 RT
+            displayMaterial = new Material(Shader.Find("Sprites/Default"));
+            displayMaterial.mainTexture = blurredRT;
 
             var go = new GameObject("FogOverlay");
             go.transform.SetParent(transform, false);
             go.transform.localPosition = Vector3.zero;
-            go.transform.localScale = Vector3.one;
+            go.transform.localScale = new Vector3(gridWidth, gridHeight, 1f);
 
-            fogRenderer = go.AddComponent<SpriteRenderer>();
-            fogRenderer.sprite = Sprite.Create(
-                fogTexture,
-                new Rect(0, 0, width, height),
-                new Vector2(0.5f, 0.5f),
-                pixelsPerUnit
-            );
-            fogRenderer.material = new Material(Shader.Find("Sprites/Default"));
-            fogRenderer.sortingOrder = fogSortingOrder;
-            fogRenderer.enabled = true;
+            var meshFilter = go.AddComponent<MeshFilter>();
+            meshFilter.mesh = Resources.GetBuiltinResource<Mesh>("Quad.fbx");
 
-            RebuildTexture();
-            Debug.Log($"[FogOfWar] fog overlay created (blocking)");
+            var meshRenderer = go.AddComponent<MeshRenderer>();
+            meshRenderer.material = displayMaterial;
+            meshRenderer.sortingOrder = fogSortingOrder;
+
+            Debug.Log("[FogOfWar] fog overlay created (GPU blur)");
         }
 
-        /// <summary>基于当前雾 alpha 状态重羽化并更新纹理。</summary>
-        private void RebuildTexture()
-        {
-            if (fogTexture == null || fogColors == null)
-            {
-                return;
-            }
-
-            var colors = (Color[])fogColors.Clone();
-            SmoothFogAlpha(colors, width, height, edgeSmoothPasses);
-
-            fogTexture.SetPixels(colors);
-            fogTexture.Apply();
-        }
-
-        /// <summary>检查玩家所在格子：进入某个雾区域，只挖掉该区域的雾。</summary>
+        /// <summary>检查玩家所在格子：进入某个雾区域则只挖掉该区域的雾。</summary>
         private void CheckPlayerFogArea()
         {
-            if (gridMap == null || fogColors == null)
+            if (gridMap == null || stateTexture == null)
             {
                 return;
             }
@@ -238,76 +215,54 @@ namespace DiceTale
 
             revealedAreas.Add(type);
 
-            // 只挖掉该区域的雾格子，其他区域保持遮挡
             if (cellsByType.TryGetValue(type, out var indices))
             {
                 for (int i = 0; i < indices.Count; i++)
                 {
-                    var color = fogColors[indices[i]];
-                    fogColors[indices[i]] = new Color(color.r, color.g, color.b, 0f);
+                    ClearStatePixel(indices[i]);
                 }
 
-                RebuildTexture();
+                stateTexture.Apply();
                 Debug.Log($"[FogOfWar] area {type} revealed (cleared) by player at {gridPos}, remaining areas intact");
             }
         }
 
-        /// <summary>对雾纹理的 alpha 通道做多次 3x3 均值模糊（地图四边不平滑）。</summary>
-        private static void SmoothFogAlpha(Color[] colors, int width, int height, int passes)
+        /// <summary>按住鼠标右键，逐格擦除鼠标所指的雾（输入统一走 InputManager）。</summary>
+        private void HandleRightClickErase()
         {
-            if (passes <= 0)
+            if (gridMap == null || stateTexture == null)
             {
                 return;
             }
 
-            var alphaMap = new float[width * height];
-            for (int i = 0; i < colors.Length; i++)
+            var input = Object.FindFirstObjectByType<InputManager>();
+            if (input == null || !input.IsRightMouseHeld)
             {
-                alphaMap[i] = colors[i].a;
+                return;
             }
 
-            for (int pass = 0; pass < passes; pass++)
+            var gridPos = gridMap.WorldToGrid(input.GetMouseWorldPosition());
+
+            if (!IsFogType(gridMap.GetCellType(gridPos)))
             {
-                var next = new float[width * height];
-                for (int y = 0; y < height; y++)
-                {
-                    for (int x = 0; x < width; x++)
-                    {
-                        // 模糊窗口（3x3）触及地图边界的格子不平滑，防止羽化传染到地图边缘
-                        bool touchesBorder = x <= 1 || x >= width - 2 || y <= 1 || y >= height - 2;
-                        if (touchesBorder)
-                        {
-                            next[y * width + x] = alphaMap[y * width + x];
-                            continue;
-                        }
-
-                        float sum = 0f;
-                        int count = 0;
-                        for (int dy = -1; dy <= 1; dy++)
-                        {
-                            for (int dx = -1; dx <= 1; dx++)
-                            {
-                                int nx = x + dx;
-                                int ny = y + dy;
-                                if (nx >= 0 && nx < width && ny >= 0 && ny < height)
-                                {
-                                    sum += alphaMap[ny * width + nx];
-                                    count++;
-                                }
-                            }
-                        }
-
-                        next[y * width + x] = sum / count;
-                    }
-                }
-
-                alphaMap = next;
+                return;
             }
 
-            for (int i = 0; i < colors.Length; i++)
+            var index = gridPos.y * width + gridPos.x;
+            if (index < 0 || index >= width * height)
             {
-                colors[i] = new Color(colors[i].r, colors[i].g, colors[i].b, alphaMap[i]);
+                return;
             }
+
+            ClearStatePixel(index);
+            stateTexture.Apply();
+        }
+
+        private void ClearStatePixel(int index)
+        {
+            var x = index % width;
+            var y = index / width;
+            stateTexture.SetPixel(x, y, new Color(fogColor.r, fogColor.g, fogColor.b, 0f));
         }
 
         private static bool IsFogType(GridCellType type)

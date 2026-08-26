@@ -1,0 +1,80 @@
+Shader "DiceTale/FogBlur"
+{
+    Properties
+    {
+        _MainTex ("Fog State", 2D) = "white" {}
+        _GridSize ("Grid Size", Vector) = (64, 36, 0, 0)
+    }
+    SubShader
+    {
+        Tags { "Queue"="Transparent" "RenderType"="Transparent" "IgnoreProjector"="True" }
+        Blend SrcAlpha OneMinusSrcAlpha
+        Cull Off
+        ZWrite Off
+
+        Pass
+        {
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #include "UnityCG.cginc"
+
+            sampler2D _MainTex;
+            float4 _MainTex_TexelSize;
+            float2 _GridSize;
+
+            struct appdata
+            {
+                float4 vertex : POSITION;
+                float2 uv : TEXCOORD0;
+            };
+
+            struct v2f
+            {
+                float2 uv : TEXCOORD0;
+                float4 vertex : SV_POSITION;
+            };
+
+            v2f vert(appdata v)
+            {
+                v2f o;
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                o.uv = v.uv;
+                return o;
+            }
+
+            fixed4 frag(v2f i) : SV_Target
+            {
+                // 地图四边 1 格内不平滑（保持干脆，不向边界外扩散）
+                float2 cell = float2(1.0 / max(_GridSize.x, 1.0), 1.0 / max(_GridSize.y, 1.0));
+                bool nearEdge = i.uv.x < cell.x * 1.5 || i.uv.x > 1.0 - cell.x * 1.5
+                             || i.uv.y < cell.y * 1.5 || i.uv.y > 1.0 - cell.y * 1.5;
+                if (nearEdge)
+                {
+                    return tex2D(_MainTex, i.uv);
+                }
+
+                // 3x3 高斯模糊（GPU 羽化雾边缘）
+                float2 texel = _MainTex_TexelSize.xy;
+                float weights[3][3] =
+                {
+                    { 1.0, 2.0, 1.0 },
+                    { 2.0, 4.0, 2.0 },
+                    { 1.0, 2.0, 1.0 }
+                };
+
+                fixed4 col = 0.0;
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    for (int dx = -1; dx <= 1; dx++)
+                    {
+                        col += tex2D(_MainTex, i.uv + float2(dx, dy) * texel) * weights[dy + 1][dx + 1];
+                    }
+                }
+                col /= 16.0;
+                return col;
+            }
+            ENDCG
+        }
+    }
+}
