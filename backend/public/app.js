@@ -378,22 +378,6 @@ function renderItemDistribution(container, obj) {
     line.appendChild(countEl);
     line.appendChild(plus);
     container.appendChild(line);
-
-    // 玩家名固定宽度放不下时缩小字号，保持一行
-    fitDistributeName(nameEl);
-  }
-}
-
-/** 玩家名在固定宽度内自动缩小字号：太长时缩小，保持一行不换行。 */
-function fitDistributeName(el) {
-  var size = 13;
-  el.style.fontSize = size + 'px';
-  var maxWidth = el.clientWidth - 4;
-  var range = document.createRange();
-  range.selectNodeContents(el);
-  while (range.getBoundingClientRect().width > maxWidth && size > 7) {
-    size -= 1;
-    el.style.fontSize = size + 'px';
   }
 }
 

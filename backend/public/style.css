@@ -336,6 +336,7 @@ main.layout {
 .property-list {
   display: flex;
   flex-direction: column;
+  overflow-x: hidden; /* 防止内部内容过宽产生横向滚动条 */
 }
 
 .property-empty {
@@ -421,13 +422,22 @@ main.layout {
 .property-distribute-line {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0.2rem 0.25rem;
+  gap: 6px;
+  padding: 0.15rem 0.1rem;
+  min-width: 0;
+}
+
+/* − / + 按钮紧凑化，避免撑宽 */
+.property-distribute-line .state-btn {
+  flex: 0 0 auto;
+  min-width: 28px;
+  padding: 0.2rem 0.4rem;
+  text-align: center;
 }
 
 .property-distribute-count {
   flex: 0 0 auto;
-  min-width: 24px;
+  min-width: 20px;
   text-align: center;
   font-weight: 600;
   color: #e2e8f0;
@@ -438,12 +448,13 @@ main.layout {
   margin-left: auto;
 }
 
-/* 玩家名固定宽度（长度不固定，过长由 JS 缩小字号保持一行） */
+/* 玩家名可伸缩，超长省略号（不再固定宽度撑爆面板） */
 .property-distribute-name {
-  flex: 0 0 84px;
-  width: 84px;
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
+  text-overflow: ellipsis;
   text-align: center;
   font-size: 0.85rem;
   color: #e2e8f0;
