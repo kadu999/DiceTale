@@ -23,26 +23,24 @@
   <main class="layout">
     <!-- 地图页：地图查看 + 目标属性 -->
     <section id="pageMap" class="page active">
-      <section class="panel map-panel">
-        <div id="mapTabs" class="map-tabs"></div>
-        <div id="mapContainer" class="map-container">
-          <img id="mapImage" alt="地图" draggable="false">
-          <div id="overlayLayer" class="overlay-layer"></div>
+      <div class="map-grid">
+        <div class="map-cell">
+          <div id="mapContainer" class="map-container">
+            <div id="mapTabs" class="map-tabs"></div>
+            <img id="mapImage" alt="地图" draggable="false">
+            <div id="overlayLayer" class="overlay-layer"></div>
+          </div>
         </div>
-      </section>
-
-      <details class="panel property-panel" open>
-        <summary>属性</summary>
-        <div id="propertyListMap" class="property-list"></div>
-      </details>
+        <section class="panel property-panel">
+          <div class="property-title">属性</div>
+          <div id="propertyListMap" class="property-list"></div>
+        </section>
+      </div>
     </section>
 
-    <!-- 玩家页：每个玩家一个属性卡片 -->
+    <!-- 玩家页：每个玩家一个属性面板（与地图页属性面板同款），从左到右排列 -->
     <section id="pagePlayers" class="page">
-      <details class="panel player-panel" open>
-        <summary>玩家</summary>
-        <div id="playerList" class="player-list"></div>
-      </details>
+      <div id="playerList" class="player-list"></div>
     </section>
   </main>
 

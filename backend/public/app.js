@@ -94,7 +94,7 @@ function switchPage(page) {
   if (activePage === 'players') {
     renderPlayerList();
   } else {
-    setTimeout(fitMapContainer, 50); // 地图页重新显示后重算地图尺寸
+    setTimeout(fitLayout, 50); // 地图页重新显示后重算地图尺寸与属性面板等高
   }
 }
 
@@ -104,6 +104,7 @@ function render() {
   renderMap();
   renderPlayerList();
   renderPropertyPanel();
+  syncPropertyHeight(); // 属性面板重新渲染后保持与地图框等高
 }
 
 function knownMaps() {
@@ -244,6 +245,7 @@ function renderPropertyPanel() {
   renderPropertyPanelInto('propertyListMap');
 }
 
+/** 渲染选中目标的属性：基本信息 + 物品/道具 + 状态（分区展示，地图页右侧）。 */
 function renderPropertyPanelInto(id) {
   const container = document.getElementById(id);
   if (!container) return;
@@ -260,20 +262,37 @@ function renderPropertyPanelInto(id) {
     return;
   }
 
-  addPropertyRow(container, '名称', obj.name || selectedObjectId);
-  addPropertyRow(container, 'ID', selectedObjectId);
-  addPropertyRow(container, '位置', fmtPos(obj.position));
+  // 基本信息
+  const info = propertySection(container, '基本信息');
+  addPropertyRow(info, '名称', obj.name || selectedObjectId);
+  addPropertyRow(info, 'ID', selectedObjectId);
+  addPropertyRow(info, '位置', fmtPos(obj.position));
 
-  // 道具对象：显示玩家分配列表（[-][数量]玩家[+]），替代自身的物品编辑
+  // 道具对象：玩家分配列表（内部自带「分配道具（剩余 N）」标题）；普通对象：物品编辑
   if (obj.kind === 'ItemObject' || obj.itemName) {
-    renderItemDistribution(container, obj);
+    renderItemDistribution(propertySection(container), obj);
   } else {
-    // 物品列表（SceneObject 通用能力，与后台同步：可添加 / 移除）
-    renderObjectItems(container, selectedObjectId, obj.items || []);
+    renderObjectItems(propertySection(container, '物品'), selectedObjectId, obj.items || [], null);
   }
 
-  // 状态切换（点击即发送 gm_set_object_state）
-  renderObjectStates(container, selectedObjectId, obj);
+  // 状态（未配置状态列表时不显示整个区）
+  if (((obj.states) || []).length > 0) {
+    renderObjectStates(propertySection(container, '状态'), selectedObjectId, obj, null);
+  }
+}
+
+/** 创建属性分区（可选标题；无标题时只作为分组容器）。 */
+function propertySection(container, title) {
+  const section = document.createElement('section');
+  section.className = 'property-section';
+  if (title) {
+    const h = document.createElement('div');
+    h.className = 'property-section-title';
+    h.textContent = title;
+    section.appendChild(h);
+  }
+  container.appendChild(section);
+  return section;
 }
 
 /** 道具对象当前剩余数量 = 上报的总数 - 所有玩家已持有该道具的数量；非道具对象返回 null。后台乐观更新后即时重算。 */
@@ -378,35 +397,35 @@ function fitDistributeName(el) {
   }
 }
 
-/** 渲染状态切换区（属性面板与玩家卡片共用）。 */
-function renderObjectStates(container, objectId, obj) {
+/** 渲染状态切换区（属性面板与玩家卡片共用）；对象未配置状态列表时不显示。
+ *  labelText 为空时省略左侧标签（配合分区标题使用）。 */
+function renderObjectStates(container, objectId, obj, labelText) {
+  const states = (obj && obj.states) || [];
+  if (states.length === 0) {
+    return; // 未配置状态列表：整个「切换状态」区都不显示
+  }
+
   const statesRow = document.createElement('div');
   statesRow.className = 'property-row';
-  const label = document.createElement('span');
-  label.className = 'property-label';
-  label.textContent = '切换状态';
+  if (labelText) {
+    const label = document.createElement('span');
+    label.className = 'property-label';
+    label.textContent = labelText;
+    statesRow.appendChild(label);
+  }
   const statesBox = document.createElement('div');
   statesBox.className = 'property-states';
 
-  const states = obj.states || [];
-  if (states.length === 0) {
-    const hint = document.createElement('div');
-    hint.className = 'property-hint';
-    hint.textContent = '该对象未配置状态列表（在客户端 Inspector 的 SceneObject 状态列表里配置）';
-    statesBox.appendChild(hint);
-  } else {
-    for (const stateName of states) {
-      const btn = document.createElement('button');
-      btn.className = 'state-btn' + (stateName === obj.currentState ? ' active' : '');
-      btn.textContent = stateName;
-      btn.onclick = () => {
-        send({ type: 'gm_set_object_state', objectId, state: stateName });
-      };
-      statesBox.appendChild(btn);
-    }
+  for (const stateName of states) {
+    const btn = document.createElement('button');
+    btn.className = 'state-btn' + (stateName === obj.currentState ? ' active' : '');
+    btn.textContent = stateName;
+    btn.onclick = () => {
+      send({ type: 'gm_set_object_state', objectId, state: stateName });
+    };
+    statesBox.appendChild(btn);
   }
 
-  statesRow.appendChild(label);
   statesRow.appendChild(statesBox);
   container.appendChild(statesRow);
 }
@@ -432,24 +451,31 @@ function renderPlayerList() {
       selectObject(playerId);
     };
 
-    // 卡片标题：玩家名
+    // 标题：玩家名居中（与地图页属性面板一致）
     const title = document.createElement('div');
-    title.className = 'player-card-title';
-    const name = document.createElement('span');
-    name.className = 'player-card-name';
-    name.textContent = player.name || playerId;
-    title.appendChild(name);
+    title.className = 'property-title';
+    title.textContent = player.name || playerId;
     card.appendChild(title);
 
-    // 属性：ID / 地图 / 位置
-    addPropertyRow(card, 'ID', playerId);
-    addPropertyRow(card, '地图', player.mapName || '-');
-    addPropertyRow(card, '位置', fmtPos(player.position));
+    // 内容区：与属性面板同款，超高时面板内滚动
+    const list = document.createElement('div');
+    list.className = 'property-list';
+    card.appendChild(list);
 
-    // 物品编辑 + 状态切换（与地图页属性面板一致）
+    // 基本信息
+    const info = propertySection(list, '基本信息');
+    addPropertyRow(info, 'ID', playerId);
+    addPropertyRow(info, '地图', player.mapName || '-');
+    addPropertyRow(info, '位置', fmtPos(player.position));
+
+    // 物品编辑（与地图页属性面板一致的物品区）
     const obj = state.objects && state.objects[playerId];
-    renderObjectItems(card, playerId, (obj && obj.items) || []);
-    renderObjectStates(card, playerId, obj || { states: [], currentState: null });
+    renderObjectItems(propertySection(list, '物品'), playerId, (obj && obj.items) || [], null);
+
+    // 状态切换（未配置状态列表时不显示）
+    if (((obj && obj.states) || []).length > 0) {
+      renderObjectStates(propertySection(list, '状态'), playerId, obj || {}, null);
+    }
 
     container.appendChild(card);
   }
@@ -479,13 +505,17 @@ function canAddItem(name) {
   return held < stock;
 }
 
-/** 渲染对象物品列表：按道具名分组显示「道具名 ×数量」，移除按钮每次移除一个，输入框添加；变更即发送 gm_set_object_items 同步。 */
-function renderObjectItems(container, objectId, items) {
+/** 渲染对象物品列表：按道具名分组显示「道具名 ×数量」，移除按钮每次移除一个，输入框添加；变更即发送 gm_set_object_items 同步。
+ *  labelText 为空时省略左侧标签（配合分区标题使用）。 */
+function renderObjectItems(container, objectId, items, labelText) {
   const row = document.createElement('div');
   row.className = 'property-row';
-  const label = document.createElement('span');
-  label.className = 'property-label';
-  label.textContent = '物品';
+  if (labelText) {
+    const label = document.createElement('span');
+    label.className = 'property-label';
+    label.textContent = labelText;
+    row.appendChild(label);
+  }
   const box = document.createElement('div');
   box.className = 'property-items';
 
@@ -560,7 +590,6 @@ function renderObjectItems(container, objectId, items) {
 
   box.appendChild(chips);
   box.appendChild(addBox);
-  row.appendChild(label);
   row.appendChild(box);
   container.appendChild(row);
 }
@@ -594,10 +623,32 @@ function fitMapContainer() {
   }
 }
 
-window.addEventListener('resize', fitMapContainer);
+/** 属性面板高度 = 地图所在框（mapContainer）的实际高度，保证两栏等高。 */
+function syncPropertyHeight() {
+  var mapContainer = document.getElementById('mapContainer');
+  var propertyPanel = document.querySelector('.property-panel');
+  if (!mapContainer || !propertyPanel) return;
+
+  // 属性面板所在页不可见时不设置（兼容旧 WebView，避免依赖 closest）
+  var page = propertyPanel;
+  while (page && !(page.classList && page.classList.contains('page'))) {
+    page = page.parentElement;
+  }
+  if (page && !page.classList.contains('active')) return;
+
+  propertyPanel.style.height = mapContainer.clientHeight + 'px';
+}
+
+/** 地图尺寸 + 属性面板等高一起刷新。 */
+function fitLayout() {
+  fitMapContainer();
+  syncPropertyHeight();
+}
+
+window.addEventListener('resize', fitLayout);
 window.addEventListener('orientationchange', function () {
-  setTimeout(fitMapContainer, 300);
+  setTimeout(fitLayout, 300);
 });
-setTimeout(fitMapContainer, 300);
+setTimeout(fitLayout, 300);
 
 connect();

@@ -26,7 +26,11 @@ const CONTENT_TYPES: Record<string, string> = {
 
 function serveFile(res: http.ServerResponse, filePath: string) {
   const ext = path.extname(filePath);
-  res.writeHead(200, { 'Content-Type': CONTENT_TYPES[ext] || 'application/octet-stream' });
+  res.writeHead(200, {
+    'Content-Type': CONTENT_TYPES[ext] || 'application/octet-stream',
+    // 开发控制台：静态资源不做缓存，改完刷新即生效
+    'Cache-Control': 'no-cache',
+  });
   fs.createReadStream(filePath).pipe(res);
 }
 
@@ -69,8 +73,8 @@ function serveStatic(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  const urlPath = req.url && req.url !== '/' ? req.url : '/';
-  // 只允许 public 目录内的静态文件；拒绝 .. 越权路径（如 /../config.json）
+  // 剥离查询串（如 /app.js?v=1 应解析为 /app.js），避免命中 index.html 回退
+  const urlPath = (req.url || '').split('?')[0];
   const resolvedPath = path.resolve(PUBLIC_DIR, '.' + urlPath);
   if (resolvedPath !== PUBLIC_DIR && !resolvedPath.startsWith(PUBLIC_DIR + path.sep)) {
     res.writeHead(403, { 'Content-Type': 'text/plain' });

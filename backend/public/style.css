@@ -9,7 +9,8 @@ html, body {
 
 body {
   font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-  background: #f5f5f5;
+  background: #0f172a;
+  color: #e2e8f0;
   font-size: 15px;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -22,30 +23,49 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
   padding: 0.75rem 1rem;
-  background: #222;
+  background: #0b1220;
+  border-bottom: 1px solid #24304a;
   color: #fff;
 }
 
 header h1 {
   font-size: 1.05rem;
   margin: 0;
+  flex: 0 0 auto;
 }
 
+/* ---- 状态灯：小圆点 + 文字 ---- */
 .status {
-  padding: 0.3rem 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.2rem 0.65rem;
   border-radius: 999px;
-  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+  font-size: 0.78rem;
   white-space: nowrap;
 }
 
-.status.connected { background: #22c55e; }
-.status.disconnected { background: #ef4444; }
+.status::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #64748b;
+  flex: 0 0 auto;
+}
+
+.status.connected::before { background: #22c55e; }
+.status.disconnected::before { background: #ef4444; }
 
 .status-group {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  flex: 0 0 auto;
 }
 
 /* 操作失败提示（客户端未连接、超出库存等） */
@@ -54,7 +74,8 @@ header h1 {
   left: 50%;
   bottom: 2rem;
   transform: translateX(-50%) translateY(1rem);
-  background: rgba(17, 17, 17, 0.92);
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.3);
   color: #fff;
   padding: 0.6rem 1.2rem;
   border-radius: 999px;
@@ -88,10 +109,10 @@ main.layout {
 
 .page-tab {
   padding: 0.3rem 0.9rem;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #d1d5db;
+  background: transparent;
+  color: #cbd5e1;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
@@ -100,9 +121,9 @@ main.layout {
 }
 
 .page-tab.active {
-  background: #2563eb;
+  background: #3b82f6;
   color: #fff;
-  border-color: #2563eb;
+  border-color: #3b82f6;
 }
 
 .page {
@@ -114,52 +135,68 @@ main.layout {
 }
 
 .panel {
-  background: #fff;
+  background: #1e293b;
+  border: 1px solid #2b3952;
   border-radius: 10px;
   padding: 0.75rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
   max-width: 1200px;
   margin: 0 auto;
-}
-
-.map-panel {
-  margin-bottom: 0.75rem;
 }
 
 .property-panel {
   margin-bottom: 0.75rem;
 }
 
-.player-panel {
-  margin-bottom: 0.75rem;
+/* 属性面板：标题置顶居中，内容列表 */
+.property-title {
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: #94a3b8;
+  padding: 0 0 0.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 /* ---- 地图视图 ---- */
+/* 地图选择器：悬浮贴在地图框顶边内侧的半透明胶囊条，不占布局高度 */
 .map-tabs {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
   display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.6rem;
+  gap: 0.3rem;
+  max-width: calc(100% - 16px);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  padding-bottom: 0.2rem;
+  scrollbar-width: none;
+  padding: 0.25rem 0.3rem;
+  border-radius: 999px;
+  background: rgba(11, 18, 32, 0.78);
+  border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
 .map-tabs button {
   flex: 0 0 auto;
-  padding: 0.5rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: #fff;
+  padding: 0.22rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: #cbd5e1;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   touch-action: manipulation;
+  white-space: nowrap;
 }
 
 .map-tabs button.active {
-  background: #2563eb;
+  background: #3b82f6;
   color: #fff;
-  border-color: #2563eb;
+  border-color: #3b82f6;
 }
 
 .map-container {
@@ -168,7 +205,8 @@ main.layout {
   aspect-ratio: 16 / 9;
   /* 旧 WebView 不支持 aspect-ratio 时的高度兜底 */
   min-height: 200px;
-  background: #111;
+  background: #0b1220;
+  border: 1px solid #334155;
   border-radius: 8px;
   overflow: hidden;
   user-select: none;
@@ -188,42 +226,52 @@ main.layout {
   pointer-events: none;
 }
 
-/* 玩家标记：圆形令牌，玩家名居中显示（无图标） */
+/* 玩家标记：圆形令牌，玩家名居中显示（无图标）。
+   未选中时瘦身为小圆点（少遮挡地图），选中/当前时放大显示名字。 */
 .player-marker {
   position: absolute;
   transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
-  padding: 3px;
+  width: 34px;
+  height: 34px;
+  padding: 2px;
   border-radius: 50%;
   background: #3b82f6;
-  border: 2px solid #fff;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
   color: #fff;
-  font-size: 13px;
-  line-height: 1.15;
+  font-size: 10px;
+  line-height: 1.1;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
   cursor: pointer;
   pointer-events: auto;
   touch-action: manipulation;
+  transition: width 0.15s, height 0.15s, font-size 0.15s;
 }
 
 .player-marker.selected {
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 1px 6px rgba(0, 0, 0, 0.6);
+  width: 48px;
+  height: 48px;
+  font-size: 13px;
+  border-color: #fff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 1px 6px rgba(0, 0, 0, 0.7);
 }
 
-/* 圆形脉冲圈：绕令牌扩散 */
+/* 圆形脉冲圈：仅选中/当前的玩家标记扩散（未选中保持安静，减少视觉噪声） */
 .player-marker::after {
   content: '';
   position: absolute;
   inset: -8px;
   border-radius: 50%;
   border: 2px solid rgba(59, 130, 246, 0.5);
+  opacity: 0;
+}
+
+.player-marker.selected::after {
   animation: player-pulse 1.6s ease-out infinite;
 }
 
@@ -242,8 +290,8 @@ main.layout {
   padding: 5px 10px;
   border-radius: 999px;
   background: #8b5cf6;
-  border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.45);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.6);
   cursor: pointer;
   pointer-events: auto;
   touch-action: manipulation;
@@ -261,7 +309,7 @@ main.layout {
 .object-marker.kind-SceneObject { background: #f59e0b; }
 
 .object-marker.selected {
-  box-shadow: 0 0 0 3px rgba(255,255,255,0.9), 0 1px 6px rgba(0,0,0,0.5);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 1px 6px rgba(0, 0, 0, 0.6);
   transform: translate(-50%, -50%) scale(1.08);
 }
 
@@ -270,7 +318,7 @@ main.layout {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.85);
+  background: rgba(255, 255, 255, 0.85);
 }
 
 .object-marker-label {
@@ -280,7 +328,7 @@ main.layout {
 .object-marker-state {
   padding: 1px 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.3);
   font-size: 11px;
   line-height: 1.3;
 }
@@ -289,22 +337,45 @@ main.layout {
 .property-list {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
 }
 
 .property-empty {
-  color: #9ca3af;
+  color: #64748b;
   font-size: 0.85rem;
+  padding: 0.25rem;
 }
 
+/* 分区：细分割线 + 小标题，取代一字段一盒子的旧样式 */
+.property-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.55rem 0.15rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.property-section:first-child {
+  border-top: none;
+  padding-top: 0.15rem;
+}
+
+.property-section:last-child {
+  padding-bottom: 0;
+}
+
+.property-section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+/* 属性行：无边框，label 与 value 同行 */
 .property-row {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
-  padding: 0.45rem 0.5rem;
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  padding: 0.15rem 0.25rem;
   font-size: 0.9rem;
 }
 
@@ -316,6 +387,7 @@ main.layout {
 
 .property-value {
   font-weight: 600;
+  color: #e2e8f0;
   word-break: break-all;
 }
 
@@ -326,7 +398,7 @@ main.layout {
 }
 
 .property-hint {
-  color: #9ca3af;
+  color: #64748b;
   font-size: 0.78rem;
 }
 
@@ -341,25 +413,17 @@ main.layout {
 
 /* ---- 道具分配区：标题一行 + 每玩家一行 [-][玩家名][数量][+] ---- */
 .property-distribute-title {
-  margin-top: 0.5rem;
-  padding: 0.45rem 0.5rem;
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  padding: 0.3rem 0.25rem;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .property-distribute-line {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 0.35rem;
-  padding: 0.3rem 0.5rem;
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  padding: 0.2rem 0.25rem;
 }
 
 .property-distribute-count {
@@ -367,7 +431,7 @@ main.layout {
   min-width: 24px;
   text-align: center;
   font-weight: 600;
-  color: #1f2937;
+  color: #e2e8f0;
 }
 
 /* [+] 靠右：推到本行最右端 */
@@ -383,7 +447,7 @@ main.layout {
   white-space: nowrap;
   text-align: center;
   font-size: 0.85rem;
-  color: #1f2937;
+  color: #e2e8f0;
 }
 
 .property-item-chips {
@@ -398,8 +462,8 @@ main.layout {
   gap: 4px;
   padding: 2px 6px 2px 10px;
   border-radius: 999px;
-  background: #e0e7ff;
-  color: #3730a3;
+  background: rgba(99, 102, 241, 0.22);
+  color: #c7d2fe;
   font-size: 0.82rem;
   max-width: 100%;
 }
@@ -417,8 +481,8 @@ main.layout {
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: rgba(55, 48, 163, 0.15);
-  color: #3730a3;
+  background: rgba(199, 210, 254, 0.16);
+  color: #c7d2fe;
   font-size: 0.9rem;
   line-height: 1;
   cursor: pointer;
@@ -434,13 +498,18 @@ main.layout {
   flex: 1 1 auto;
   min-width: 0;
   padding: 0.3rem 0.6rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid #334155;
   border-radius: 8px;
   font-size: 0.85rem;
-  background: #fff;
+  background: #0f172a;
+  color: #e2e8f0;
 }
 
-/* ---- 玩家页：每个玩家一个属性卡片，从左到右排列 ---- */
+.property-item-input::placeholder {
+  color: #64748b;
+}
+
+/* ---- 玩家页：每个玩家一个属性面板（与地图页属性面板同款），左到右排列，高度拉到底部 ---- */
 .player-list {
   display: flex;
   flex-wrap: wrap;
@@ -449,63 +518,57 @@ main.layout {
 }
 
 .player-empty {
-  color: #9ca3af;
+  color: #64748b;
   font-size: 0.85rem;
 }
 
 .player-card {
-  flex: 0 1 300px;
+  flex: 0 0 220px;
+  width: 220px;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  padding: 0.6rem;
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
+  height: calc(100vh - 80px); /* 高度直接拉到底部 */
+  height: calc(100dvh - 80px);
+  padding: 0.75rem;
+  background: #1e293b;
+  border: 1px solid #2b3952;
   border-radius: 10px;
   cursor: pointer;
   touch-action: manipulation;
 }
 
+.player-card .property-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto; /* 内容超高时面板内滚动 */
+}
+
 .player-card:hover {
-  background: #f1f5f9;
+  background: #22304a;
+  border-color: #3a4a66;
 }
 
 .player-card.selected {
-  border-color: #2563eb;
-  background: #eff6ff;
-}
-
-.player-card-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 0.35rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.player-card-name {
-  font-weight: 700;
-  font-size: 0.95rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  border-color: #3b82f6;
+  background: #1c2b46;
 }
 
 .state-btn {
   padding: 0.3rem 0.7rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid #334155;
   border-radius: 999px;
-  background: #fff;
+  background: #0f172a;
+  color: #e2e8f0;
   cursor: pointer;
   font-size: 0.82rem;
   touch-action: manipulation;
 }
 
 .state-btn.active {
-  background: #2563eb;
+  background: #3b82f6;
   color: #fff;
-  border-color: #2563eb;
+  border-color: #3b82f6;
 }
 
 .state-btn:disabled {
@@ -528,7 +591,7 @@ main.layout {
     align-items: center;
     justify-content: center;
     gap: 1.2rem;
-    background: rgba(15, 23, 42, 0.94);
+    background: rgba(11, 18, 32, 0.96);
     color: #fff;
     text-align: center;
     font-size: 1.15rem;
@@ -560,9 +623,8 @@ main.layout {
   }
 
   .map-tabs button {
-    padding: 0.25rem 0.6rem;
+    padding: 0.18rem 0.6rem;
     font-size: 0.8rem;
-    border-radius: 6px;
   }
 
   body {
@@ -576,47 +638,54 @@ main.layout {
     padding: 0.4rem 0.75rem;
   }
 
-  /* 地图面板内容居中，地图容器宽度由 JS 按 16:9 等比设置，避免黑边 */
-  .map-panel {
+  /* 地图容器在网格单元内水平居中，宽度由 JS 按 16:9 等比设置，避免黑边 */
+  .map-cell {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    justify-content: center;
   }
 
-  /* 地图按视口高度撑满，宽度 = 高度 * 16/9（JS 计算），比 16:9 全宽更大且无黑边 */
+  /* 地图按视口高度撑满，宽度 = 高度 * 16/9（JS 计算），比 16:9 全宽更大且无黑边；
+     width 用 100% 兜底：JS 设置 16:9 宽度前先铺满单元格，避免塌缩成 0 宽 */
   .map-container {
     aspect-ratio: auto;
-    width: auto;
+    width: 100%;
     max-width: 100%;
-    height: calc(100vh - 150px);
-    height: calc(100dvh - 150px); /* 支持 dvh 的浏览器覆盖 vh */
+    height: calc(100vh - 80px);
+    height: calc(100dvh - 80px); /* 支持 dvh 的浏览器覆盖 vh */
     min-height: 220px;
   }
 }
 
-/* 横屏且宽度足够（手机横屏 / 平板横屏）：页面内两列（左地图，右属性） */
+/* 横屏且宽度足够（手机横屏 / 平板横屏）：地图与属性面板同网格，顶对齐、等高拉伸 */
 @media (orientation: landscape) and (min-width: 640px) {
-  .page.active {
+  .map-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 260px;
+    grid-template-columns: minmax(0, 1fr) 220px;
     gap: 0.75rem;
-    align-items: start;
+    align-items: stretch;
   }
 
-  .map-panel,
-  .property-panel,
-  .player-panel {
+  .map-cell {
+    min-width: 0;
+  }
+
+  .property-panel {
     max-width: none;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 
-  /* 玩家页：玩家卡片占满两列，从左到右排列 */
-  #pagePlayers .player-panel {
-    grid-column: 1 / -1;
+  /* 属性内容超高时面板内滚动，保持与地图框等高 */
+  .property-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .map-container {
-    height: calc(100vh - 150px);
-    height: calc(100dvh - 150px);
+    height: calc(100vh - 80px);
+    height: calc(100dvh - 80px);
   }
 }
