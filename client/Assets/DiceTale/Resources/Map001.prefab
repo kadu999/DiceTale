@@ -630,6 +630,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.TeleportAction
   range: 1
+  teleportAllPlayers: 1
   targetMapName: Map002
   targetMarkerId: 001
   triggerStateName: "\u8FDB\u5165"
