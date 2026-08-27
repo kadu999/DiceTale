@@ -45,6 +45,17 @@ namespace DiceTale
             new Color(0.95f, 0.8f, 0.2f, 1f),  // 黄
         };
 
+        /// <summary>按玩家序号取区分色（与地图上玩家精灵颜色一致，超出循环取色）。</summary>
+        public static Color GetPlayerColor(int index)
+        {
+            if (index < 0)
+            {
+                return Color.white;
+            }
+
+            return PlayerPalette[index % PlayerPalette.Length];
+        }
+
         public void CreatePlayers(int count)
         {
             ClearPlayers();

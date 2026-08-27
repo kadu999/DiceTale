@@ -8,7 +8,12 @@ namespace DiceTale
     /// <summary>
     /// 玩家信息面板（挂在 Resources/PlayerPanel 预制体根节点上，由 Game 实例化加载）：
     /// 左侧 240px 宽、满高，从上到下 4 等分格子，每格显示玩家名字与拥有的道具；
-    /// 点击格子切换当前玩家，当前玩家高亮。玩家数量变化重填，当前玩家/道具变化刷新。
+    /// 点击格子切换当前玩家，当前玩家高亮。
+    ///
+    /// 美化：
+    /// - 每格做成卡片（四周留缝，面板底色透出作为分隔）；
+    /// - 格子左侧一条玩家区分色条（与地图精灵颜色一致）；
+    /// - 名字用玩家区分色，道具浅灰并带「·」前缀逐行显示。
     ///
     /// 预制体结构约定（绑定按名字查找）：
     ///   PlayerPanel
@@ -33,9 +38,19 @@ namespace DiceTale
         [SerializeField, Tooltip("空格子背景色（玩家不足时）")]
         private Color m_EmptyColor = new Color(0f, 0f, 0f, 0.2f);
 
+        [SerializeField, Tooltip("道具文字颜色")]
+        private Color m_ItemsColor = new Color(0.82f, 0.85f, 0.88f, 1f);
+
+        [SerializeField, Tooltip("格子四周留缝（px，透出面板底色形成分隔）")]
+        private Vector2 m_SlotInset = new Vector2(4f, 2f);
+
+        [SerializeField, Tooltip("左侧玩家区分色条宽度（px）")]
+        private float m_AccentWidth = 6f;
+
         private readonly List<RectTransform> slots = new List<RectTransform>();
         private readonly List<Text> nameTexts = new List<Text>();
         private readonly List<Text> itemTexts = new List<Text>();
+        private readonly List<Image> accents = new List<Image>();
         private readonly List<string> cachedItemStrings = new List<string>();
         private int lastPlayerCount = -1;
         private int lastCurrentIndex = -1;
@@ -76,7 +91,7 @@ namespace DiceTale
             RefreshItemsIfChanged(manager);
         }
 
-        /// <summary>按预制体约定查找并绑定格子（PlayerSlot_i / Name / Items），绑定按钮点击与面板背景色。</summary>
+        /// <summary>按预制体约定查找并绑定格子（PlayerSlot_i / Name / Items），套用卡片留缝、色条与点击。</summary>
         private void BindSlots()
         {
             var rootImage = GetComponent<Image>();
@@ -102,9 +117,18 @@ namespace DiceTale
                     break;
                 }
 
-                slots.Add(slot.GetComponent<RectTransform>());
+                var rt = slot.GetComponent<RectTransform>();
+                // 卡片留缝：四周向内收，面板底色透出形成分隔线
+                rt.offsetMin = new Vector2(m_SlotInset.x, m_SlotInset.y);
+                rt.offsetMax = new Vector2(-m_SlotInset.x, -m_SlotInset.y);
+
+                // 左侧玩家区分色条（纯装饰，不拦截点击）
+                var accent = CreateAccentBar(slot);
+
+                slots.Add(rt);
                 nameTexts.Add(nameText.GetComponent<Text>());
                 itemTexts.Add(itemText.GetComponent<Text>());
+                accents.Add(accent);
                 cachedItemStrings.Add(string.Empty);
 
                 // 点击格子切换当前玩家
@@ -131,7 +155,26 @@ namespace DiceTale
             RefreshHighlight();
         }
 
-        /// <summary>按当前玩家列表重填所有格子的名字/道具/可用状态。</summary>
+        /// <summary>创建格子左侧的玩家区分色条。</summary>
+        private Image CreateAccentBar(Transform slot)
+        {
+            var go = new GameObject("Accent", typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(slot, false);
+
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0f, 0f);
+            rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot = new Vector2(0f, 0.5f);
+            rt.sizeDelta = new Vector2(m_AccentWidth, 0f);
+            rt.anchoredPosition = Vector2.zero;
+
+            var image = go.GetComponent<Image>();
+            image.color = Color.clear;
+            image.raycastTarget = false;
+            return image;
+        }
+
+        /// <summary>按当前玩家列表重填所有格子的名字/道具/颜色。</summary>
         private void RefreshSlots()
         {
             var manager = CharacterManager.Instance;
@@ -141,17 +184,21 @@ namespace DiceTale
             for (int i = 0; i < slots.Count; i++)
             {
                 var player = manager != null && i < manager.Players.Count ? manager.Players[i] : null;
+
+                // 名字：玩家区分色（与地图精灵一致）
                 nameTexts[i].text = player != null ? player.DisplayName : string.Empty;
+                nameTexts[i].color = player != null ? CharacterManager.GetPlayerColor(i) : Color.white;
 
                 var itemsText = player != null ? BuildItemsText(player) : string.Empty;
                 itemTexts[i].text = itemsText;
+                itemTexts[i].color = m_ItemsColor;
                 cachedItemStrings[i] = itemsText;
             }
 
             RefreshHighlight();
         }
 
-        /// <summary>刷新格子背景高亮与可用状态（空格子变暗且不拦截点击）。</summary>
+        /// <summary>刷新格子背景高亮、色条与可用状态（空格子变暗且不拦截点击）。</summary>
         private void RefreshHighlight()
         {
             var manager = CharacterManager.Instance;
@@ -165,6 +212,7 @@ namespace DiceTale
                 image.color = isEmpty
                     ? m_EmptyColor
                     : (i == manager.CurrentPlayerIndex ? m_CurrentColor : m_NormalColor);
+                accents[i].color = isEmpty ? Color.clear : CharacterManager.GetPlayerColor(i);
             }
         }
 
@@ -183,7 +231,7 @@ namespace DiceTale
             }
         }
 
-        /// <summary>玩家拥有的道具：按道具名分组，同名合并为「道具名 ×数量」，逐行显示。</summary>
+        /// <summary>玩家拥有的道具：按道具名分组，同名合并为「道具名 ×数量」，逐行「· 」前缀显示。</summary>
         private static string BuildItemsText(Player player)
         {
             var items = player.Items;
@@ -219,7 +267,7 @@ namespace DiceTale
                 }
 
                 first = false;
-                sb.Append(pair.Key);
+                sb.Append("· ").Append(pair.Key);
                 if (pair.Value > 1)
                 {
                     sb.Append(" ×").Append(pair.Value);
