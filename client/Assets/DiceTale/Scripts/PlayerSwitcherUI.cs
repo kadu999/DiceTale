@@ -8,7 +8,7 @@ namespace DiceTale
     /// <summary>
     /// 玩家信息面板（挂在 Resources/PlayerPanel 预制体根节点上，由 Game 实例化加载）：
     /// 左侧 240px 宽、满高，从上到下 4 等分格子，每格显示玩家名字与拥有的道具；
-    /// 点击格子切换当前玩家，当前玩家高亮。
+    /// 点击格子切换当前玩家，当前玩家格子边缘描边高亮（背景不变色）。
     ///
     /// 美化：
     /// - 每格做成卡片（四周留缝，面板底色透出作为分隔）；
@@ -32,8 +32,11 @@ namespace DiceTale
         [SerializeField, Tooltip("普通格子背景色")]
         private Color m_NormalColor = new Color(0f, 0f, 0f, 0.45f);
 
-        [SerializeField, Tooltip("当前玩家格子高亮色")]
+        [SerializeField, Tooltip("当前玩家格子边缘高亮色（描边，不再整格变色）")]
         private Color m_CurrentColor = new Color(0.85f, 0.7f, 0.15f, 0.75f);
+
+        [SerializeField, Tooltip("当前玩家格子描边宽度（px）")]
+        private float m_CurrentBorderWidth = 2.5f;
 
         [SerializeField, Tooltip("空格子背景色（玩家不足时）")]
         private Color m_EmptyColor = new Color(0f, 0f, 0f, 0.2f);
@@ -51,6 +54,7 @@ namespace DiceTale
         private readonly List<Text> nameTexts = new List<Text>();
         private readonly List<Text> itemTexts = new List<Text>();
         private readonly List<Image> accents = new List<Image>();
+        private readonly List<Image[]> borderStrips = new List<Image[]>();
         private readonly List<string> cachedItemStrings = new List<string>();
         private int lastPlayerCount = -1;
         private int lastCurrentIndex = -1;
@@ -122,13 +126,18 @@ namespace DiceTale
                 rt.offsetMin = new Vector2(m_SlotInset.x, m_SlotInset.y);
                 rt.offsetMax = new Vector2(-m_SlotInset.x, -m_SlotInset.y);
 
-                // 左侧玩家区分色条（纯装饰，不拦截点击）
+                // 当前玩家边缘描边条：4 条实心色条（上下左右），仅当前玩家时启用，不参与背景叠色
+                var strips = CreateBorderStrips(slot);
+
+                // 左侧玩家区分色条（纯装饰，不拦截点击），渲染在描边条之上、文字之下
                 var accent = CreateAccentBar(slot);
+                accent.transform.SetSiblingIndex(4);
 
                 slots.Add(rt);
                 nameTexts.Add(nameText.GetComponent<Text>());
                 itemTexts.Add(itemText.GetComponent<Text>());
                 accents.Add(accent);
+                borderStrips.Add(strips);
                 cachedItemStrings.Add(string.Empty);
 
                 // 点击格子切换当前玩家
@@ -174,6 +183,40 @@ namespace DiceTale
             return image;
         }
 
+        /// <summary>创建当前玩家边缘描边条：上下左右 4 条实心色条（内贴格子边缘），默认关闭。</summary>
+        private Image[] CreateBorderStrips(Transform slot)
+        {
+            float b = m_CurrentBorderWidth;
+            var strips = new Image[4];
+            strips[0] = CreateBorderStrip(slot, "BorderTop", new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, b));
+            strips[1] = CreateBorderStrip(slot, "BorderBottom", new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, b));
+            strips[2] = CreateBorderStrip(slot, "BorderLeft", new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(b, 0f));
+            strips[3] = CreateBorderStrip(slot, "BorderRight", new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(1f, 0.5f), new Vector2(b, 0f));
+            return strips;
+        }
+
+        /// <summary>创建单条描边色条：锚在格子边缘线上、向内侧延伸，渲染在文字之下。</summary>
+        private Image CreateBorderStrip(Transform slot, string name,
+            Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 size)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(slot, false);
+            go.transform.SetSiblingIndex(0); // 依次插到最底：4 条描边在文字/色条之下
+
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = anchorMin;
+            rt.anchorMax = anchorMax;
+            rt.pivot = pivot;
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = size;
+
+            var image = go.GetComponent<Image>();
+            image.color = m_CurrentColor;
+            image.raycastTarget = false;
+            image.enabled = false; // 仅当前玩家时启用
+            return image;
+        }
+
         /// <summary>按当前玩家列表重填所有格子的名字/道具/颜色。</summary>
         private void RefreshSlots()
         {
@@ -198,20 +241,26 @@ namespace DiceTale
             RefreshHighlight();
         }
 
-        /// <summary>刷新格子背景高亮、色条与可用状态（空格子变暗且不拦截点击）。</summary>
+        /// <summary>刷新格子背景、当前玩家边缘描边条、色条与可用状态（空格子变暗且不拦截点击）。</summary>
         private void RefreshHighlight()
         {
             var manager = CharacterManager.Instance;
             for (int i = 0; i < slots.Count; i++)
             {
                 var isEmpty = manager == null || i >= manager.Players.Count;
+                var isCurrent = !isEmpty && i == manager.CurrentPlayerIndex;
                 var image = slots[i].GetComponent<Image>();
                 var button = slots[i].GetComponent<Button>();
                 button.interactable = !isEmpty;
                 image.raycastTarget = !isEmpty;
-                image.color = isEmpty
-                    ? m_EmptyColor
-                    : (i == manager.CurrentPlayerIndex ? m_CurrentColor : m_NormalColor);
+                image.color = isEmpty ? m_EmptyColor : m_NormalColor;
+
+                // 仅当前玩家显示边缘描边条（背景保持普通色，不整格变色）
+                foreach (var strip in borderStrips[i])
+                {
+                    strip.enabled = isCurrent;
+                }
+
                 accents[i].color = isEmpty ? Color.clear : CharacterManager.GetPlayerColor(i);
             }
         }
