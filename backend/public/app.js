@@ -2,7 +2,6 @@ const wsUrl = `ws://${location.host}/gm`;
 let ws;
 let state = null;
 let selectedMap = null;
-let lastManualMapPick = 0;
 let apiMaps = []; // GET /api/maps 返回的所有可观看地图 [{name, image}]
 let selectedObjectId = null; // 当前选中的目标（对象 ID）
 
@@ -97,7 +96,6 @@ function renderMapTabs() {
     btn.className = map === effectiveMap() ? 'active' : '';
     btn.onclick = () => {
       selectedMap = map;
-      lastManualMapPick = Date.now();
       renderMapTabs();
       renderMap();
     };
@@ -124,10 +122,7 @@ function selectObject(objectId) {
 }
 
 function renderMap() {
-  // 跟随玩家当前地图：除非用户在 5 秒内手动选择了其他地图
-  if (selectedMap && Date.now() - lastManualMapPick > 5000 && state.currentMap !== selectedMap) {
-    selectedMap = state.currentMap;
-  }
+  // 不自动跟随客户端切图：显示的哪个地图只由手动切换决定（首次默认客户端当前地图）
   if (!selectedMap) selectedMap = state.currentMap;
 
   const map = effectiveMap();
