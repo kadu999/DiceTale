@@ -161,34 +161,33 @@ main.layout {
 }
 
 /* ---- 地图视图 ---- */
-/* 地图选择器：悬浮贴在地图框顶边内侧的半透明胶囊条，不占布局高度 */
-.map-tabs {
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 5;
+/* 地图选择面板（最左侧容器）：按钮从上到下竖排；窄屏时内部横向滚动 */
+.map-selector {
   display: flex;
-  gap: 0.3rem;
-  max-width: calc(100% - 16px);
+  flex-direction: column;
+  padding: 0.75rem;
+}
+
+.map-tabs {
+  display: flex;
+  flex-direction: row;
+  gap: 0.4rem;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  padding: 0.25rem 0.3rem;
-  border-radius: 999px;
-  background: rgba(11, 18, 32, 0.78);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .map-tabs button {
   flex: 0 0 auto;
-  padding: 0.22rem 0.75rem;
-  border: 1px solid transparent;
-  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid #334155;
+  border-radius: 8px;
   background: transparent;
   color: #cbd5e1;
   cursor: pointer;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   touch-action: manipulation;
   white-space: nowrap;
 }
@@ -656,11 +655,11 @@ main.layout {
   }
 }
 
-/* 横屏且宽度足够（手机横屏 / 平板横屏）：地图与属性面板同网格，顶对齐、等高拉伸 */
+/* 横屏且宽度足够（手机横屏 / 平板横屏）：地图选择 | 地图 | 属性 三列同网格，顶对齐、等高拉伸 */
 @media (orientation: landscape) and (min-width: 640px) {
   .map-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 220px;
+    grid-template-columns: 140px minmax(0, 1fr) 220px;
     gap: 0.75rem;
     align-items: stretch;
   }
@@ -669,12 +668,27 @@ main.layout {
     min-width: 0;
   }
 
+  /* 地图选择面板与地图/属性等高，按钮竖排（从上到下） */
+  .map-selector,
   .property-panel {
     max-width: none;
     margin: 0;
     display: flex;
     flex-direction: column;
     min-height: 0;
+  }
+
+  .map-tabs {
+    flex-direction: column;
+    overflow-x: visible;
+    overflow-y: auto;
+  }
+
+  .map-tabs button {
+    width: 100%;
+    flex: 0 0 auto;
+    padding: 0.5rem 0.25rem;
+    text-align: center;
   }
 
   /* 属性内容超高时面板内滚动，保持与地图框等高 */

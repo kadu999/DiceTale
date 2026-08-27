@@ -24,9 +24,12 @@
     <!-- 地图页：地图查看 + 目标属性 -->
     <section id="pageMap" class="page active">
       <div class="map-grid">
+        <section class="panel map-selector">
+          <div class="property-title">地图</div>
+          <div id="mapTabs" class="map-tabs"></div>
+        </section>
         <div class="map-cell">
           <div id="mapContainer" class="map-container">
-            <div id="mapTabs" class="map-tabs"></div>
             <img id="mapImage" alt="地图" draggable="false">
             <div id="overlayLayer" class="overlay-layer"></div>
           </div>
