@@ -14,7 +14,7 @@ namespace DiceTale
         private bool useServer = true;
 
         [SerializeField]
-        private string serverUrl = "ws://localhost:8080/client";
+        private string serverUrl = "ws://localhost:8088/client";
 
         private void Awake()
         {

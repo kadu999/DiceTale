@@ -36,13 +36,14 @@ npm run dev
 Windows 也可以用一键脚本（`backend/` 目录下）：
 
 ```bat
-build.bat   :: 安装依赖并编译 TypeScript（产出 dist/）
-start.bat   :: 启动后台（缺编译产物时自动先 build）
+build.bat      :: 安装依赖并编译 TypeScript（产出 dist/）
+start.bat      :: 启动后台（缺编译产物时自动先 build）
+open-port.bat  :: 放行后台端口防火墙（局域网客户端/Android 查看器连接时需要；需管理员，自动提权）
 ```
 
-- GM 控制台：<http://localhost:8080/>
-- 客户端 WebSocket：`ws://localhost:8080/client`
-- GM WebSocket：`ws://localhost:8080/gm`
+- GM 控制台：<http://localhost:8088/>
+- 客户端 WebSocket：`ws://localhost:8088/client`
+- GM WebSocket：`ws://localhost:8088/gm`
 - 状态存档：`backend/data/gamestate.json`（后台记录，重启后自动恢复）
 
 ## 地图资源配置
@@ -55,7 +56,7 @@ start.bat   :: 启动后台（缺编译产物时自动先 build）
 
 1. 环境变量 `PORT`、`MAPS_DIR`（`mapsDir` 支持绝对路径或相对 `backend/` 的路径）；
 2. `backend/config.json`（`port`、`mapsDir`；可用环境变量 `DICETALE_CONFIG` 指定其它配置文件）；
-3. 内置默认值（`8080`、`maps`）。
+3. 内置默认值（`8088`、`maps`）。
 
 客户端新增地图后，同步到后台（客户端资源目录可用环境变量 `DICETALE_CLIENT_ASSETS` 覆盖）：
 
@@ -86,13 +87,17 @@ npm test        # jest：游戏状态、持久化、WebSocket 协议流程
 
 1. 用 Unity 6（6000.3.x）打开 `client/`。
 2. 为场景中需要后台控制的物体添加 `SceneObject` 组件（继承 `BackendObject` 通信基类），并配置显示名称、物体 ID 与状态列表（后台可用 `set_object_state` 按名称切换）；
-3. 先启动后台再运行游戏，`BackendManager` 会自动连接 `ws://localhost:8080/client`，
+3. 先启动后台再运行游戏，`BackendManager` 会自动连接 `ws://localhost:8088/client`，
    加载地图后自动上报出生点与后台物体（含位置）、玩家名单；玩家移动时自动上报位置。
 4. 想离线运行：取消勾选 `BackendManager` 上的 `Use Server`（走本地 Mock）。
 
 ## 通信协议
 
 所有消息均为 JSON，通过 WebSocket 传输。
+
+- 后台 → GM 控制台的 `gm_update` 携带 `clientConnected`（客户端在线状态，单客户端架构断开即无客户端）；
+- GM 操作失败（客户端未连接、超出道具库存等）时，后台返回 `gm_error` 提示原因；
+- 后台对所有连接做心跳保活：GM 页面（浏览器）走 ws 级 ping/pong，Unity 客户端走应用层 `heartbeat` 消息（约 15s 上报），半开连接会被自动清理。
 
 ## License
 

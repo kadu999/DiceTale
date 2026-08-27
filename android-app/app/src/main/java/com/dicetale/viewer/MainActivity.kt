@@ -50,7 +50,7 @@ class MainActivity : Activity() {
 
         AlertDialog.Builder(this)
             .setTitle("服务器地址")
-            .setMessage("输入后台地址（含 http://），例如 192.168.1.33:8080")
+            .setMessage("输入后台地址（含 http://），例如 192.168.1.33:8088")
             .setView(input)
             .setPositiveButton("连接") { _, _ ->
                 var url = input.text.toString().trim()
@@ -92,6 +92,6 @@ class MainActivity : Activity() {
     }
 
     companion object {
-        private const val DEFAULT_URL = "http://192.168.1.33:8080/"
+        private const val DEFAULT_URL = "http://192.168.1.33:8088/"
     }
 }
