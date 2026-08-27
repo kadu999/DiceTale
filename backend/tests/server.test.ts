@@ -451,4 +451,19 @@ describe('WebSocket server', () => {
     const map001 = res.body.maps.find((m: any) => m.name === 'Map001');
     expect(map001.image).toBe('/maps/Map001.png');
   });
+
+  test('GET /maps/{name} serves map images from configured maps dir', async () => {
+    const png = await httpGet('/maps/Map001.png');
+    expect(png.status).toBe(200);
+  });
+
+  test('GET /maps/Missing.png returns 404', async () => {
+    const res = await httpGet('/maps/Missing.png');
+    expect(res.status).toBe(404);
+  });
+
+  test('path traversal outside public/maps is rejected', async () => {
+    const res = await httpGet('/../config.json');
+    expect(res.status).toBe(403);
+  });
 });

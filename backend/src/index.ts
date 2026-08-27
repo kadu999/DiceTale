@@ -6,16 +6,13 @@ import { ClientSession } from './ClientSession';
 import { GmSession } from './GmSession';
 import { gameState } from './GameState';
 import { broadcastGmUpdate } from './commands/clientCommands';
+import { config, BACKEND_ROOT } from './config';
+import { listMaps, resolveMapAsset } from './mapAssets';
 
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
-const PUBLIC_DIR = path.join(__dirname, '..', 'public');
-const CLIENT_ASSETS_DIR = path.join(__dirname, '..', '..', 'client', 'Assets', 'DiceTale');
-
-/** 客户端地图资源目录：图片在 Res/Textures，网格数据在 Resources */
-const MAP_SOURCE_DIRS = [
-  path.join(CLIENT_ASSETS_DIR, 'Res', 'Textures'),
-  path.join(CLIENT_ASSETS_DIR, 'Resources'),
-];
+const PORT = config.port;
+/** 地图贴图目录（后台自持副本）：*.png，见 backend/config.json */
+const MAPS_DIR = config.mapsDir;
+const PUBLIC_DIR = path.join(BACKEND_ROOT, 'public');
 
 const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html',
@@ -25,7 +22,6 @@ const CONTENT_TYPES: Record<string, string> = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
-  '.bytes': 'application/octet-stream',
 };
 
 function serveFile(res: http.ServerResponse, filePath: string) {
@@ -39,40 +35,24 @@ function sendJson(res: http.ServerResponse, status: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
-/** 扫描客户端图片目录，列出可观看的地图（只读，供 GM 浏览所有地图）。过滤美术素材包遗留。 */
-function listMaps(): Array<{ name: string; image: string }> {
-  const texturesDir = path.join(CLIENT_ASSETS_DIR, 'Res', 'Textures');
-  if (!fs.existsSync(texturesDir)) return [];
-
-  return fs
-    .readdirSync(texturesDir)
-    .filter((f) => /\.png$/i.test(f))
-    .filter((f) => !/^(ACT|FX|Room)/i.test(f) && !/^Carriage/i.test(f) && !/__v\d/i.test(f))
-    .sort()
-    .map((f) => ({ name: f.replace(/\.png$/i, ''), image: `/maps/${f}` }));
-}
-
 /** 只读 API：GET /api/maps -> 所有可观看的地图图片列表 */
 function handleApi(req: http.IncomingMessage, res: http.ServerResponse): boolean {
   if (req.url === '/api/maps' && req.method === 'GET') {
-    sendJson(res, 200, { maps: listMaps() });
+    sendJson(res, 200, { maps: listMaps(MAPS_DIR) });
     return true;
   }
   return false;
 }
 
-/** /maps/Map001.png -> 客户端 Res/Textures；/maps/Map001.bytes -> 客户端 Resources */
+/** /maps/{name}.png -> 后台地图贴图目录（MAPS_DIR，见 backend/config.json） */
 function serveMapAsset(req: http.IncomingMessage, res: http.ServerResponse): boolean {
   const match = /^\/maps\/([A-Za-z0-9_.-]+)$/.exec(req.url || '');
   if (!match) return false;
 
-  const fileName = match[1];
-  for (const dir of MAP_SOURCE_DIRS) {
-    const candidate = path.join(dir, fileName);
-    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
-      serveFile(res, candidate);
-      return true;
-    }
+  const candidate = resolveMapAsset(MAPS_DIR, match[1]);
+  if (candidate) {
+    serveFile(res, candidate);
+    return true;
   }
 
   res.writeHead(404, { 'Content-Type': 'text/plain' });
@@ -89,7 +69,16 @@ function serveStatic(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
-  let filePath = path.join(PUBLIC_DIR, req.url === '/' ? 'index.html' : req.url || '');
+  const urlPath = req.url && req.url !== '/' ? req.url : '/';
+  // 只允许 public 目录内的静态文件；拒绝 .. 越权路径（如 /../config.json）
+  const resolvedPath = path.resolve(PUBLIC_DIR, '.' + urlPath);
+  if (resolvedPath !== PUBLIC_DIR && !resolvedPath.startsWith(PUBLIC_DIR + path.sep)) {
+    res.writeHead(403, { 'Content-Type': 'text/plain' });
+    res.end('Forbidden');
+    return;
+  }
+
+  let filePath = resolvedPath;
   if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     filePath = path.join(PUBLIC_DIR, 'index.html');
   }
@@ -148,6 +137,9 @@ wss.on('connection', (ws, req) => {
 });
 
 if (require.main === module) {
+  // 地图目录不存在时自动创建，保证 /api/maps 与 /maps/* 可用
+  fs.mkdirSync(MAPS_DIR, { recursive: true });
+
   server.listen(PORT, () => {
     console.log(`DiceTale backend listening on http://localhost:${PORT}`);
     console.log(`  Client WS: ws://localhost:${PORT}/client`);
@@ -155,5 +147,6 @@ if (require.main === module) {
     console.log(`  GM page:   http://localhost:${PORT}/`);
     console.log(`  Maps:      http://localhost:${PORT}/maps/Map001.png`);
     console.log(`  Maps API:  http://localhost:${PORT}/api/maps`);
+    console.log(`  Maps dir:  ${MAPS_DIR} (backend/config.json 或环境变量 MAPS_DIR)`);
   });
 }

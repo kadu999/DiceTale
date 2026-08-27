@@ -15,8 +15,11 @@ DiceTale/
 │       ├── BackendManager.cs     # 后端入口（默认连后台，可切本地 Mock）
 │       └── ...
 ├── backend/                      # Node.js 客户端后台（TypeScript + ws）
-│   ├── src/                      # 后台源码（状态、会话、处理器）
+│   ├── src/                      # 后台源码（状态、会话、处理器、配置）
 │   ├── public/                   # GM 控制台网页（Pad/手机友好）
+│   ├── maps/                     # 地图贴图副本（*.png）
+│   ├── config.json               # 后台配置（端口、地图目录）
+│   ├── scripts/syncMaps.ts       # 从客户端同步地图到 maps/ 的辅助脚本
 │   ├── data/                     # 状态存档（gamestate.json）
 │   └── tests/                    # jest 测试
 └── docs/                         # 设计与实现文档
@@ -42,6 +45,25 @@ start.bat   :: 启动后台（缺编译产物时自动先 build）
 - GM WebSocket：`ws://localhost:8080/gm`
 - 状态存档：`backend/data/gamestate.json`（后台记录，重启后自动恢复）
 
+## 地图资源配置
+
+后台**自持地图贴图副本**（不再直接读取客户端目录），默认目录 `backend/maps/`：
+
+- `*.png`：地图贴图（GM 控制台显示用）。
+
+配置优先级（高 → 低）：
+
+1. 环境变量 `PORT`、`MAPS_DIR`（`mapsDir` 支持绝对路径或相对 `backend/` 的路径）；
+2. `backend/config.json`（`port`、`mapsDir`；可用环境变量 `DICETALE_CONFIG` 指定其它配置文件）；
+3. 内置默认值（`8080`、`maps`）。
+
+客户端新增地图后，同步到后台（客户端资源目录可用环境变量 `DICETALE_CLIENT_ASSETS` 覆盖）：
+
+```bash
+cd backend
+npm run sync:maps
+```
+
 ## 数据流（客户端主导）
 
 客户端（Unity）是地图与物体的主导者，后台被动接收并展示：
@@ -51,7 +73,7 @@ start.bat   :: 启动后台（缺编译产物时自动先 build）
 - 后台记录这些信息，推送给 GM 控制台显示；
 - 后台只负责**触发控制**：GM 传送、切换物体状态时向客户端下发命令执行。
 
-GM 控制台显示的地图图片由后台静态提供（`/maps/{mapName}.png`），物体标记位置、玩家位置全部来自客户端上报。
+GM 控制台显示的地图图片由后台静态提供（`/maps/{mapName}.png`，图片存于后台自己的 `backend/maps/` 目录），物体标记位置、玩家位置全部来自客户端上报。
 
 ## 运行测试
 
