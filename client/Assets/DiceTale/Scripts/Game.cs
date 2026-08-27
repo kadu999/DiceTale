@@ -39,8 +39,24 @@ namespace DiceTale
                 CharacterManager.CreatePlayers(playerCount);
             }
 
-            // 玩家切换按钮 UI（Canvas 上生成，当前玩家高亮）
-            gameObject.AddComponent<PlayerSwitcherUI>();
+            // 玩家信息面板（左侧 240px 宽 4 等分列表）：加载 Resources/PlayerPanel 预制体到 Canvas 下
+            var canvas = Object.FindFirstObjectByType<Canvas>();
+            if (canvas != null)
+            {
+                var panelPrefab = Resources.Load<GameObject>("PlayerPanel");
+                if (panelPrefab != null)
+                {
+                    Instantiate(panelPrefab, canvas.transform, false);
+                }
+                else
+                {
+                    Debug.LogWarning("[Game] PlayerPanel prefab not found in Resources, player panel skipped.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[Game] Canvas not found, player panel skipped.");
+            }
 
             // 等一帧，确保 MapManager.Start（LoadMap 创建地图与出生点）已执行，
             // 再统一把玩家定位到出生点（避免 Start 执行顺序导致出生点定位失效）
