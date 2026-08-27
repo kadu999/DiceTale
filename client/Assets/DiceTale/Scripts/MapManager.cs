@@ -201,6 +201,67 @@ namespace DiceTale
             }
         }
 
+        /// <summary>
+        /// 把指定玩家传送到指定地图的指定世界位置。
+        /// 目标地图与当前地图不同时先切图（切图后其他玩家停在出生点，本玩家落到目标位置）；
+        /// 同图传送不重载地图。
+        /// </summary>
+        public void TeleportPlayer(Player player, string mapName, Vector3 position)
+        {
+            if (CurrentMapName != mapName)
+            {
+                LoadMap(mapName, null);
+            }
+
+            if (player != null)
+            {
+                player.transform.position = position;
+                player.ReportPosition(); // 传送落点：上报位置
+            }
+        }
+
+        /// <summary>
+        /// 把指定玩家传送到指定地图上位置标记（<see cref="MapMarker"/>）所在的位置。
+        /// 先切到目标地图（同图不重载），再按标记 ID 定位。
+        /// </summary>
+        /// <returns>标记找到并传送成功返回 true；标记不存在返回 false。</returns>
+        public bool TeleportPlayer(Player player, string mapName, string markerId)
+        {
+            if (CurrentMapName != mapName)
+            {
+                LoadMap(mapName, null);
+            }
+
+            var marker = FindMarker(markerId);
+            if (marker == null)
+            {
+                Debug.LogWarning($"[MapManager] Map marker not found: {markerId} (map={CurrentMapName})");
+                return false;
+            }
+
+            TeleportPlayer(player, mapName, marker.Position);
+            return true;
+        }
+
+        /// <summary>在当前地图上按 ID 查找位置标记（忽略大小写）；找不到返回 null。</summary>
+        public MapMarker FindMarker(string markerId)
+        {
+            if (CurrentMap == null || string.IsNullOrEmpty(markerId))
+            {
+                return null;
+            }
+
+            foreach (var marker in CurrentMap.GetComponentsInChildren<MapMarker>())
+            {
+                if (string.Equals(marker.Id, markerId, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return marker;
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>切换地图前把玩家从当前地图节点摘下来（挂到 MapRoot），避免随旧地图销毁。</summary>
         private void DetachPlayersFromMap()
         {

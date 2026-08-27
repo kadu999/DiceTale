@@ -40,7 +40,17 @@ namespace DiceTale
 
         private void Awake()
         {
+            EnsureCellGrid();
             UpdateCellSize();
+        }
+
+        /// <summary>确保 cellGrid 已初始化（默认全空格子），数据未加载（如缺少 .bytes）时也不会 NRE。</summary>
+        private void EnsureCellGrid()
+        {
+            if (cellGrid == null)
+            {
+                cellGrid = new GridCellType[gridSize.x, gridSize.y];
+            }
         }
 
         public void UpdateCellSize()
@@ -95,6 +105,8 @@ namespace DiceTale
 
         public void SaveData(string fileName = null)
         {
+            EnsureCellGrid(); // 编辑器未加载数据时也能安全保存（全空格子）
+
             var data = new GridMapData
             {
                 gridSizeX = gridSize.x,
@@ -190,7 +202,7 @@ namespace DiceTale
 
         public void SetCellType(Vector2Int gridPos, GridCellType type)
         {
-            if (!IsInside(gridPos))
+            if (cellGrid == null || !IsInside(gridPos))
             {
                 return;
             }
@@ -200,7 +212,7 @@ namespace DiceTale
 
         public GridCellType GetCellType(Vector2Int gridPos)
         {
-            if (!IsInside(gridPos))
+            if (cellGrid == null || !IsInside(gridPos))
             {
                 return GridCellType.Empty;
             }

@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 7865490019946216524}
   - component: {fileID: 5380705975816317989}
   m_Layer: 0
-  m_Name: Square
+  m_Name: Obstacle Action
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -302,7 +302,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7952393538782929469}
-  - component: {fileID: 3953641852189811613}
   - component: {fileID: 3615305867695832250}
   m_Layer: 0
   m_Name: Door
@@ -323,55 +322,10 @@ Transform:
   m_LocalPosition: {x: 5.83, y: 0.26, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 5796399747589728500}
   m_Father: {fileID: 6586617523669123881}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!61 &3953641852189811613
-BoxCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3483525914648463662}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 1
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0, y: 0}
-    oldSize: {x: 0, y: 0}
-    newSize: {x: 0, y: 0}
-    adaptiveTilingThreshold: 0
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Size: {x: 1, y: 1}
-  m_EdgeRadius: 0
 --- !u!114 &3615305867695832250
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -387,21 +341,14 @@ MonoBehaviour:
   displayName: "\u53E4\u5821\u7684\u5927\u95E8"
   states:
   - name: "\u672A\u89E3\u9501"
-    onEnter:
-      m_PersistentCalls:
-        m_Calls: []
-    statefulActions: []
   - name: "\u89E3\u9501"
-    onEnter:
-      m_PersistentCalls:
-        m_Calls: []
-    statefulActions: []
   - name: "\u8FDB\u5165"
-    onEnter:
-      m_PersistentCalls:
-        m_Calls: []
-    statefulActions: []
   currentState: 0
+  onStateEnter:
+    m_PersistentCalls:
+      m_Calls: []
+  statefulActions:
+  - {fileID: 90111590232480573}
 --- !u!1 &3890056362384748944
 GameObject:
   m_ObjectHideFlags: 0
@@ -450,18 +397,13 @@ MonoBehaviour:
   displayName: "\u7834\u6865"
   states:
   - name: "\u6BC1\u574F"
-    onEnter:
-      m_PersistentCalls:
-        m_Calls: []
-    statefulActions:
-    - {fileID: 7865490019946216524}
   - name: "\u4FEE\u590D"
-    onEnter:
-      m_PersistentCalls:
-        m_Calls: []
-    statefulActions:
-    - {fileID: 7865490019946216524}
   currentState: 0
+  onStateEnter:
+    m_PersistentCalls:
+      m_Calls: []
+  statefulActions:
+  - {fileID: 7865490019946216524}
 --- !u!1 &4029669799040524807
 GameObject:
   m_ObjectHideFlags: 0
@@ -595,6 +537,54 @@ MonoBehaviour:
   checkInterval: 0.2
   allowRightClickErase: 1
   blurPasses: 2
+--- !u!1 &4617079849250111924
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5796399747589728500}
+  - component: {fileID: 90111590232480573}
+  m_Layer: 0
+  m_Name: Teleport Action
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5796399747589728500
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4617079849250111924}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7952393538782929469}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &90111590232480573
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4617079849250111924}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7af5b7f75a0b46cebdddd8e642cfbd74, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.TeleportAction
+  range: 1
+  targetMapName: Map002
+  targetMarkerId: 001
+  triggerStateName: "\u8FDB\u5165"
 --- !u!1 &4634471694792598124
 GameObject:
   m_ObjectHideFlags: 0

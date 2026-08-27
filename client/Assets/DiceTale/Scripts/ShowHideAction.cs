@@ -6,7 +6,7 @@ namespace DiceTale
     /// 显示/隐藏动作：继承 <see cref="StatefulAction"/>。
     /// 状态进入时（初始状态 Start 与后台 set_object_state 切换）按状态名控制目标 GameObject：
     /// 进入名称与 <see cref="activeStateName"/> 匹配的状态时显示/激活目标，进入其他状态时隐藏/停用。
-    /// 目标为空时作用于自身。同一个动作可挂到多个状态上复用（随状态自动显隐）。
+    /// 目标为空时作用于自身。挂到 SceneObject 的「状态动作列表」即可，任意状态切换都会重新评估显隐。
     /// </summary>
     public class ShowHideAction : StatefulAction
     {

@@ -15,11 +15,17 @@ namespace DiceTale
         [SerializeField, Tooltip("显示名称（GM 页面展示用，标明这个物体是什么）；为空时回退到对象 ID")]
         private string displayName;
 
-        [SerializeField, Tooltip("状态列表（名称 + 进入时触发的 Action）；后台可用 set_object_state 按名称切换")]
+        [SerializeField, Tooltip("状态列表（仅状态名称）；后台可用 set_object_state 按名称切换")]
         private List<SceneObjectState> states = new List<SceneObjectState>();
 
         [SerializeField, Tooltip("当前状态索引（对应状态列表中的位置，从 0 开始；越界时回退到第 0 个状态）")]
         private int currentState;
+
+        [SerializeField, Tooltip("状态进入事件：进入任意状态时触发，携带进入的状态（SceneObjectState）")]
+        private UnityEvent<SceneObjectState> onStateEnter;
+
+        [SerializeField, Tooltip("状态动作列表：进入任意状态时依次调用每个动作的指定函数 OnStateEnter（可挂在任意物体上）")]
+        private List<StatefulAction> statefulActions = new List<StatefulAction>();
 
         private readonly List<string> items = new List<string>();
 
@@ -145,14 +151,14 @@ namespace DiceTale
             return false;
         }
 
-        /// <summary>进入指定状态：触发配置的 UnityEvent（onEnter）与状态动作列表的指定函数。</summary>
+        /// <summary>进入指定状态：触发 onStateEnter（携带进入的状态）与状态动作列表（所有状态进入都会触发）。</summary>
         private void EnterState(int index)
         {
             currentState = index;
             var state = states[index];
-            state.OnEnter?.Invoke();
+            onStateEnter?.Invoke(state);
 
-            foreach (var action in state.StatefulActions)
+            foreach (var action in statefulActions)
             {
                 action?.OnStateEnter(state);
             }
@@ -160,9 +166,9 @@ namespace DiceTale
     }
 
     /// <summary>
-    /// 场景物体的一个状态：包含状态名称、进入时触发的 Action（UnityEvent）
-    /// 与可选的状态动作列表（进入状态时依次调用每个动作的指定函数）。
-    /// 后台服务器通过 set_object_state 命令按名称切换对象状态。
+    /// 场景物体的一个状态：只包含状态名称（供后台 set_object_state 按名称切换）。
+    /// 进入状态的 onStateEnter 事件与状态动作（<see cref="StatefulAction"/>）
+    /// 在 SceneObject 上统一配置，进入任意状态都会触发（并携带该状态）。
     /// </summary>
     [System.Serializable]
     public class SceneObjectState
@@ -170,16 +176,6 @@ namespace DiceTale
         [SerializeField, Tooltip("状态名称（后台服务器切换状态时使用的名称）")]
         private string name;
 
-        [SerializeField, Tooltip("进入该状态时触发的 Action")]
-        private UnityEvent onEnter;
-
-        [SerializeField, Tooltip("状态动作列表：进入状态时依次调用每个动作的指定函数 OnStateEnter（可选，可挂在任意物体上）")]
-        private List<StatefulAction> statefulActions = new List<StatefulAction>();
-
         public string Name => name;
-
-        public UnityEvent OnEnter => onEnter;
-
-        public List<StatefulAction> StatefulActions => statefulActions;
     }
 }
