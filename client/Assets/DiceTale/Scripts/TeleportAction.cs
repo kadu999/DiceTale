@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DiceTale
@@ -5,8 +6,9 @@ namespace DiceTale
     /// <summary>
     /// 传送动作：继承 <see cref="StatefulAction"/>。
     /// 后台触发传送：状态进入（OnStateEnter：初始状态 Start 或后台 set_object_state 切换）时，
-    /// 立即把以自身为中心、<see cref="range"/> 半径范围内的所有玩家
-    /// 传送到目标地图上 <see cref="MapMarker"/> 标记的位置（targetMapName + targetMarkerId）。
+    /// 把目标玩家传送到目标地图上 <see cref="MapMarker"/> 标记的位置（targetMapName + targetMarkerId）。
+    /// 目标玩家默认是 <see cref="range"/> 半径范围内（以自身为中心）的玩家；
+    /// 勾选 <see cref="teleportAllPlayers"/> 时忽略半径，传送当前地图上的所有玩家。
     /// 挂到 SceneObject 的「状态动作列表」即可，进入任意状态都会触发；
     /// <see cref="triggerStateName"/> 非空时仅在该名称的状态下触发。
     /// 若要后台开/关传送区域（开启后玩家进入才传送），用 <see cref="TeleportZoneAction"/>。
@@ -15,6 +17,9 @@ namespace DiceTale
     {
         [SerializeField, Tooltip("传送范围半径（世界单位），以自身为中心")]
         private float range = 1f;
+
+        [SerializeField, Tooltip("是否传送当前地图上的所有玩家（忽略范围半径）；不勾选则只传送半径范围内的玩家")]
+        private bool teleportAllPlayers = false;
 
         [SerializeField, Tooltip("目标地图名（如 Map002）")]
         private string targetMapName;
@@ -45,7 +50,9 @@ namespace DiceTale
             Gizmos.DrawWireSphere(transform.position, range);
         }
 
-        /// <summary>把半径范围内的所有玩家传送到目标地图的目标标记位置。</summary>
+        /// <summary>把目标玩家传送到目标地图的目标标记位置。
+        /// 先按当前状态收集目标再逐个传送：首名玩家传送可能切换地图，后续玩家的位置已被重定位，
+        /// 边遍历边判定距离会得到错误结果。</summary>
         private void TeleportNearbyPlayers()
         {
             if (string.IsNullOrEmpty(targetMapName) || string.IsNullOrEmpty(targetMarkerId))
@@ -60,8 +67,9 @@ namespace DiceTale
                 return;
             }
 
+            // 目标集合：全部玩家（忽略半径）或半径范围内的玩家
             var center = transform.position;
-
+            var targets = new List<Player>();
             foreach (var player in characterManager.Players)
             {
                 if (player == null)
@@ -69,10 +77,22 @@ namespace DiceTale
                     continue;
                 }
 
-                if (Vector3.Distance(player.transform.position, center) <= range)
+                if (teleportAllPlayers || Vector3.Distance(player.transform.position, center) <= range)
                 {
-                    mapManager.TeleportPlayer(player, targetMapName, targetMarkerId);
+                    targets.Add(player);
                 }
+            }
+
+            if (targets.Count == 0)
+            {
+                return;
+            }
+
+            // 逐个传送；多人时 2×2 错开站位，避免全部叠在标记点上
+            for (int i = 0; i < targets.Count; i++)
+            {
+                var offset = new Vector3((i % 2) * 0.5f, (i / 2) * 0.5f, 0f);
+                mapManager.TeleportPlayer(targets[i], targetMapName, targetMarkerId, offset);
             }
         }
     }

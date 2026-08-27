@@ -183,14 +183,32 @@ namespace DiceTale
                 }
             }
 
+            Vector3? target = null;
+            string targetDesc;
+
             var spawn = FindSpawn(spawnId);
-            if (spawn == null)
+            if (spawn != null)
             {
-                Debug.LogWarning($"[MapManager] Spawn point not found: {spawnId ?? "(default)"} (map={CurrentMapName})");
-                return;
+                target = spawn.Position;
+                targetDesc = $"spawn '{spawn.Id}'";
+            }
+            else
+            {
+                // 无 SpawnPoint 时回退到当前地图第一个 MapMarker（部分地图用标记作为出生点，如 Map002）
+                var marker = FindFirstMarkerOnCurrentMap();
+                if (marker != null)
+                {
+                    target = marker.Position;
+                    targetDesc = $"marker '{marker.Id}' (no spawn point)";
+                }
+                else
+                {
+                    Debug.LogWarning($"[MapManager] Spawn point not found: {spawnId ?? "(default)"} (map={CurrentMapName})");
+                    return;
+                }
             }
 
-            Debug.Log($"[MapManager] Moving {characterManager.Players.Count} player(s) to spawn '{spawn.Id}' at {spawn.Position} (map={CurrentMapName})");
+            Debug.Log($"[MapManager] Moving {characterManager.Players.Count} player(s) to {targetDesc} at {target.Value} (map={CurrentMapName})");
             for (int i = 0; i < characterManager.Players.Count; i++)
             {
                 var player = characterManager.Players[i];
@@ -198,7 +216,7 @@ namespace DiceTale
                 {
                     // 多玩家时错开站位（2×2 排列），避免完全重叠难以区分
                     var offset = new Vector3((i % 2) * 0.5f, (i / 2) * 0.5f, 0f);
-                    player.transform.position = spawn.Position + offset;
+                    player.transform.position = target.Value + offset;
                     player.ReportPosition(); // 传送/出生落点：上报位置
                 }
             }
@@ -225,10 +243,10 @@ namespace DiceTale
 
         /// <summary>
         /// 把指定玩家传送到指定地图上位置标记（<see cref="MapMarker"/>）所在的位置。
-        /// 先切到目标地图（同图不重载），再按标记 ID 定位。
+        /// 先切到目标地图（同图不重载），再按标记 ID 定位；<paramref name="offset"/> 用于多人传送时错开站位。
         /// </summary>
         /// <returns>标记找到并传送成功返回 true；标记不存在返回 false。</returns>
-        public bool TeleportPlayer(Player player, string mapName, string markerId)
+        public bool TeleportPlayer(Player player, string mapName, string markerId, Vector3 offset = default)
         {
             if (CurrentMapName != mapName)
             {
@@ -242,7 +260,7 @@ namespace DiceTale
                 return false;
             }
 
-            TeleportPlayer(player, mapName, marker.Position);
+            TeleportPlayer(player, mapName, marker.Position + offset);
             return true;
         }
 
@@ -309,9 +327,16 @@ namespace DiceTale
             }
         }
 
+        /// <summary>只在当前地图上按 ID 查找出生点（忽略大小写）；找不到时回退到第一个出生点，没有则返回 null。
+        /// 注意只搜当前地图：切图时旧地图虽已 Destroy 但销毁延迟到帧末，全局搜索会拿到旧地图的出生点。</summary>
         private SpawnPoint FindSpawn(string spawnId)
         {
-            var spawns = mapRoot.GetComponentsInChildren<SpawnPoint>();
+            if (CurrentMap == null)
+            {
+                return null;
+            }
+
+            var spawns = CurrentMap.GetComponentsInChildren<SpawnPoint>();
 
             foreach (var spawn in spawns)
             {
@@ -322,6 +347,18 @@ namespace DiceTale
             }
 
             return spawns.Length > 0 ? spawns[0] : null;
+        }
+
+        /// <summary>当前地图上第一个位置标记（无 SpawnPoint 时的出生点回退）。</summary>
+        private MapMarker FindFirstMarkerOnCurrentMap()
+        {
+            if (CurrentMap == null)
+            {
+                return null;
+            }
+
+            var markers = CurrentMap.GetComponentsInChildren<MapMarker>();
+            return markers.Length > 0 ? markers[0] : null;
         }
 
         private void UnloadCurrentMap()
