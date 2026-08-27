@@ -50,6 +50,34 @@ describe('GameState', () => {
     expect(state.setObjectState('Missing', 'on')).toBe(false);
   });
 
+  test('registerObjects stores itemName/quantity when provided, omits otherwise', () => {
+    state.registerObjects('Map001', [
+      { id: 'Item_1', kind: 'ItemObject', name: '铁剑 ×3', itemName: '铁剑', quantity: 3 },
+      { id: 'Door_1', kind: 'Door' },
+    ]);
+
+    expect(state.objects['Item_1'].itemName).toBe('铁剑');
+    expect(state.objects['Item_1'].quantity).toBe(3);
+    expect(state.objects['Door_1'].itemName).toBeUndefined();
+    expect(state.objects['Door_1'].quantity).toBeUndefined();
+  });
+
+  test('registerObjects replaces previous objects and honors client mapName (no cross-map bleed)', () => {
+    state.registerObjects('Map001', [
+      { id: 'Door', name: '大门', kind: 'Door', mapName: 'Map001' },
+    ]);
+
+    // 切到 Map002：同 ID 对象带上客户端上报的 mapName，未再上报的旧对象被整体替换移除
+    state.registerObjects('Map002', [
+      { id: 'Door', name: '大门', kind: 'Door', mapName: 'Map002' },
+      { id: 'Chest', name: '宝箱', kind: 'Chest', mapName: 'Map002' },
+    ]);
+
+    expect(state.objects['Door'].mapName).toBe('Map002');
+    expect(state.objects['Chest'].mapName).toBe('Map002');
+    expect(Object.keys(state.objects).sort()).toEqual(['Chest', 'Door']); // 旧地图对象已移除
+  });
+
   test('registerObjects keeps items and setObjectItems updates them', () => {
     state.registerObjects('Map001', [{ id: 'Lever_1', kind: 'Lever', items: ['小刀'] }]);
     expect(state.objects['Lever_1'].items).toEqual(['小刀']);

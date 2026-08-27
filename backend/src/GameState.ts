@@ -15,6 +15,8 @@ export interface ObjectInfo {
   kind: string;
   currentState: string | null;
   states: string[];
+  itemName?: string;
+  quantity?: number;
   mapName: string;
   position: { x: number; y: number } | null;
   items: string[];
@@ -66,23 +68,31 @@ export class GameState {
     this.spawnPoints[mapName] = spawnPoints;
   }
 
-  /** 注册/更新通用后台对象状态信息（按 objectId 合并，保留未上报字段）。 */
+  /**
+   * 注册/更新通用后台对象状态信息。
+   * 客户端每次上报的是当前世界的完整对象集合：整体替换（未再上报的对象视为已销毁，直接移除），
+   * 避免旧地图残留对象（幽灵）或跨图串图；mapName 以客户端上报为准（缺省用消息地图名）。
+   */
   registerObjects(
     mapName: string,
     objects: Array<Partial<ObjectInfo> & { id: string }>
   ) {
+    const next: Record<string, ObjectInfo> = {};
     for (const obj of objects) {
       const existing = this.objects[obj.id];
-      this.objects[obj.id] = {
+      next[obj.id] = {
         name: obj.name ?? existing?.name ?? obj.id,
         kind: obj.kind ?? existing?.kind ?? 'object',
         currentState: obj.currentState ?? existing?.currentState ?? null,
         states: obj.states ?? existing?.states ?? [],
-        mapName: obj.mapName ?? existing?.mapName ?? mapName,
+        itemName: obj.itemName ?? existing?.itemName,
+        quantity: obj.quantity ?? existing?.quantity,
+        mapName: obj.mapName ?? mapName,
         position: obj.position ?? existing?.position ?? null,
         items: obj.items ?? existing?.items ?? [],
       };
     }
+    this.objects = next;
   }
 
   /** 更新通用后台对象当前状态（客户端 report_object_state 回执）。 */

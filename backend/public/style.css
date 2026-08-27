@@ -309,6 +309,53 @@ main.layout {
   min-width: 0;
 }
 
+/* ---- 道具分配区：标题一行 + 每玩家一行 [-][玩家名][数量][+] ---- */
+.property-distribute-title {
+  margin-top: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.property-distribute-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0.35rem;
+  padding: 0.3rem 0.5rem;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.property-distribute-count {
+  flex: 0 0 auto;
+  min-width: 24px;
+  text-align: center;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* [+] 靠右：推到本行最右端 */
+.property-distribute-plus {
+  margin-left: auto;
+}
+
+/* 玩家名固定宽度（长度不固定，过长由 JS 缩小字号保持一行） */
+.property-distribute-name {
+  flex: 0 0 84px;
+  width: 84px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #1f2937;
+}
+
 .property-item-chips {
   display: flex;
   flex-wrap: wrap;
@@ -429,6 +476,11 @@ main.layout {
   background: #2563eb;
   color: #fff;
   border-color: #2563eb;
+}
+
+.state-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* ---- 手机竖屏时的横屏引导 ---- */

@@ -12,6 +12,10 @@ export type ClientMessage =
         kind?: string;
         currentState?: string | null;
         states?: string[];
+        /** 道具名（道具对象上报，供 GM 页面分配道具） */
+        itemName?: string;
+        /** 道具总数量（道具对象固定库存） */
+        quantity?: number;
         /** 归一化位置 [0,1]，y 向下（用于在地图上定位目标） */
         position?: { x: number; y: number } | null;
         /** 物品列表（字符串） */
@@ -66,6 +70,10 @@ export interface ObjectStateSnapshot {
   currentState: string | null;
   /** 全部可选状态名称 */
   states: string[];
+  /** 道具名（道具对象上报，供 GM 页面分配道具；非道具对象不设置） */
+  itemName?: string;
+  /** 道具总数量（道具对象固定库存） */
+  quantity?: number;
   /** 对象所在的地图 */
   mapName: string;
   /** 归一化位置 [0,1]，y 向下；未上报时为 null */

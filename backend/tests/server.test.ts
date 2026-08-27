@@ -399,6 +399,49 @@ describe('WebSocket server', () => {
     gm.ws.close();
   });
 
+  test('item stock: gm_set_object_items updates player items, item quantity stays total, over-stock rejected', async () => {
+    const client = await connect('/client');
+    openSockets.push(client.ws);
+    send(client.ws, { type: 'request_join' });
+    await client.next(); // sync_state
+
+    send(client.ws, {
+      type: 'register_map_objects',
+      mapName: 'Map001',
+      spawnPoints: [],
+      objects: [
+        { id: 'Item_1', name: '铁剑', kind: 'ItemObject', itemName: '铁剑', quantity: 4, position: { x: 0.5, y: 0.5 } },
+        { id: 'Player_1', name: '小明', kind: 'Player', items: [] },
+      ],
+    });
+
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    const initial = await gm.next();
+    expect(initial.state.objects['Item_1'].quantity).toBe(4); // 总数
+    expect(initial.state.objects['Player_1'].items).toEqual([]);
+
+    // GM 分配 1 个给 Player_1：玩家物品立即更新，道具总数不变（GM 页面推导剩余 = 4 - 1）
+    send(gm.ws, { type: 'gm_set_object_items', objectId: 'Player_1', items: ['铁剑'] });
+    const after1 = await gm.next();
+    expect(after1.state.objects['Player_1'].items).toEqual(['铁剑']);
+    expect(after1.state.objects['Item_1'].quantity).toBe(4);
+
+    // 连续分配到 4 个（库存上限）
+    for (let i = 2; i <= 4; i++) {
+      send(gm.ws, { type: 'gm_set_object_items', objectId: 'Player_1', items: Array(i).fill('铁剑') });
+      await gm.next();
+    }
+
+    // 第 5 个超过库存：应被拒绝，玩家仍只有 4 个
+    send(gm.ws, { type: 'gm_set_object_items', objectId: 'Player_1', items: ['铁剑', '铁剑', '铁剑', '铁剑', '铁剑'] });
+    const rejected = await gm.next();
+    expect(rejected.state.objects['Player_1'].items).toEqual(['铁剑', '铁剑', '铁剑', '铁剑']);
+
+    gm.ws.close();
+    client.ws.close();
+  });
+
   test('GET /api/maps lists all viewable maps', async () => {
     const res = await httpGet('/api/maps');
     expect(res.status).toBe(200);

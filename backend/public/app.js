@@ -152,7 +152,8 @@ function renderMap() {
 
     const label = document.createElement('span');
     label.className = 'object-marker-label';
-    label.textContent = obj.name || objectId;
+    const remaining = itemRemaining(obj);
+    label.textContent = remaining != null ? `${obj.itemName} ×${remaining}` : (obj.name || objectId);
 
     marker.appendChild(dot);
     marker.appendChild(label);
@@ -233,11 +234,118 @@ function renderPropertyPanelInto(id) {
   addPropertyRow(container, 'ID', selectedObjectId);
   addPropertyRow(container, '位置', fmtPos(obj.position));
 
-  // 物品列表（SceneObject 通用能力，与后台同步：可添加 / 移除）
-  renderObjectItems(container, selectedObjectId, obj.items || []);
+  // 道具对象：显示玩家分配列表（[-][数量]玩家[+]），替代自身的物品编辑
+  if (obj.kind === 'ItemObject' || obj.itemName) {
+    renderItemDistribution(container, obj);
+  } else {
+    // 物品列表（SceneObject 通用能力，与后台同步：可添加 / 移除）
+    renderObjectItems(container, selectedObjectId, obj.items || []);
+  }
 
   // 状态切换（点击即发送 gm_set_object_state）
   renderObjectStates(container, selectedObjectId, obj);
+}
+
+/** 道具对象当前剩余数量 = 上报的总数 - 所有玩家已持有该道具的数量；非道具对象返回 null。后台乐观更新后即时重算。 */
+function itemRemaining(obj) {
+  if (!obj || !obj.itemName) return null;
+  const total = obj.quantity || 0;
+  let held = 0;
+  for (const playerId of Object.keys(state.players || {})) {
+    const items = (state.objects[playerId] && state.objects[playerId].items) || [];
+    for (const it of items) {
+      if (it === obj.itemName) held++;
+    }
+  }
+  return Math.max(0, total - held);
+}
+
+/** 道具分配区：标题「分配道具（剩余 N）」单独一行，之后每个玩家一行 [-][玩家名][数量][+]（走 gm_set_object_items）。 */
+function renderItemDistribution(container, obj) {
+  const itemName = obj.itemName;
+  const remaining = itemRemaining(obj);
+
+  // 标题单独一行
+  const title = document.createElement('div');
+  title.className = 'property-distribute-title';
+  title.textContent = remaining != null ? `分配道具（剩余 ${remaining}）` : '分配道具';
+  container.appendChild(title);
+
+  if (!itemName) {
+    const hint = document.createElement('div');
+    hint.className = 'property-hint';
+    hint.textContent = '道具未配置名称（在客户端 Inspector 的 Item Name 里填写）';
+    container.appendChild(hint);
+    return;
+  }
+
+  const players = Object.entries(state.players || {});
+  if (players.length === 0) {
+    const hint = document.createElement('div');
+    hint.className = 'property-hint';
+    hint.textContent = '暂无玩家';
+    container.appendChild(hint);
+    return;
+  }
+
+  for (const [playerId, player] of players) {
+    const playerItems = (state.objects[playerId] && state.objects[playerId].items) || [];
+    const count = playerItems.filter((i) => i === itemName).length;
+
+    const line = document.createElement('div');
+    line.className = 'property-distribute-line';
+
+    const minus = document.createElement('button');
+    minus.className = 'state-btn';
+    minus.title = '收回一个';
+    minus.textContent = '−';
+    minus.onclick = () => {
+      const next = playerItems.slice();
+      const idx = next.indexOf(itemName);
+      if (idx >= 0) next.splice(idx, 1);
+      send({ type: 'gm_set_object_items', objectId: playerId, items: next });
+    };
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'property-distribute-name';
+    nameEl.title = player.name || playerId;
+    nameEl.textContent = player.name || playerId;
+
+    const countEl = document.createElement('span');
+    countEl.className = 'property-distribute-count';
+    countEl.textContent = count;
+
+    const plus = document.createElement('button');
+    plus.className = 'state-btn property-distribute-plus';
+    plus.title = '分配一个';
+    plus.textContent = '+';
+    plus.disabled = remaining != null && remaining <= 0; // 库存不足不可分配
+    plus.onclick = () => {
+      send({ type: 'gm_set_object_items', objectId: playerId, items: playerItems.concat([itemName]) });
+    };
+
+    line.appendChild(minus);
+    line.appendChild(nameEl);
+    line.appendChild(countEl);
+    line.appendChild(plus);
+    container.appendChild(line);
+
+    // 玩家名固定宽度放不下时缩小字号，保持一行
+    fitDistributeName(nameEl);
+  }
+}
+
+/** 玩家名在固定宽度内自动缩小字号：太长时缩小，保持一行不换行。 */
+function fitDistributeName(el) {
+  var size = 13;
+  el.style.fontSize = size + 'px';
+  var maxWidth = el.clientWidth - 4;
+  var range = document.createRange();
+  range.selectNodeContents(el);
+  while (range.getBoundingClientRect().width > maxWidth && size > 7) {
+    size -= 1;
+    el.style.fontSize = size + 'px';
+  }
 }
 
 /** 渲染状态切换区（属性面板与玩家卡片共用）。 */
@@ -317,7 +425,31 @@ function renderPlayerList() {
   }
 }
 
-/** 渲染对象物品列表：标签 + 移除按钮 + 输入框添加，变更即发送 gm_set_object_items 同步。 */
+/** 道具名总库存：所有同名道具对象的 quantity 之和；没有对应道具对象返回 0（不限制）。 */
+function itemNameStock(name) {
+  let stock = 0;
+  for (const obj of Object.values(state.objects || {})) {
+    if (obj.itemName === name) stock += obj.quantity || 0;
+  }
+  return stock;
+}
+
+/** 是否还能给玩家添加一个该道具（各玩家已持有总数 < 总库存时允许）。 */
+function canAddItem(name) {
+  const stock = itemNameStock(name);
+  if (stock <= 0) return true;
+
+  let held = 0;
+  for (const playerId of Object.keys(state.players || {})) {
+    const items = (state.objects[playerId] && state.objects[playerId].items) || [];
+    for (const it of items) {
+      if (it === name) held++;
+    }
+  }
+  return held < stock;
+}
+
+/** 渲染对象物品列表：按道具名分组显示「道具名 ×数量」，移除按钮每次移除一个，输入框添加；变更即发送 gm_set_object_items 同步。 */
 function renderObjectItems(container, objectId, items) {
   const row = document.createElement('div');
   row.className = 'property-row';
@@ -329,29 +461,36 @@ function renderObjectItems(container, objectId, items) {
 
   const chips = document.createElement('div');
   chips.className = 'property-item-chips';
-  if (items.length === 0) {
+
+  // 按道具名分组统计数量：['铁剑','铁剑','草药'] → 铁剑 ×2、草药 ×1
+  const counts = {};
+  for (const item of items) {
+    counts[item] = (counts[item] || 0) + 1;
+  }
+  const grouped = Object.entries(counts);
+
+  if (grouped.length === 0) {
     const empty = document.createElement('span');
     empty.className = 'property-hint';
     empty.textContent = '暂无物品';
     chips.appendChild(empty);
   } else {
-    for (const item of items) {
+    for (const [name, count] of grouped) {
       const chip = document.createElement('span');
       chip.className = 'property-item-chip';
 
       const text = document.createElement('span');
-      text.textContent = item;
+      text.textContent = `${name} ×${count}`;
 
       const remove = document.createElement('button');
       remove.className = 'property-item-remove';
-      remove.title = '移除';
+      remove.title = '移除一个';
       remove.textContent = '×';
       remove.onclick = () => {
-        send({
-          type: 'gm_set_object_items',
-          objectId,
-          items: items.filter((i) => i !== item),
-        });
+        const next = items.slice();
+        const idx = next.indexOf(name);
+        if (idx >= 0) next.splice(idx, 1); // 每次只移除一个该道具
+        send({ type: 'gm_set_object_items', objectId, items: next });
       };
 
       chip.appendChild(text);
@@ -372,12 +511,15 @@ function renderObjectItems(container, objectId, items) {
   addBtn.onclick = () => {
     const value = input.value.trim();
     if (!value) return;
+    input.value = '';
+    if (!canAddItem(value)) {
+      return; // 该道具已分配完（库存不足），不添加
+    }
     send({
       type: 'gm_set_object_items',
       objectId,
       items: items.concat([value]),
     });
-    input.value = '';
   };
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') addBtn.click();

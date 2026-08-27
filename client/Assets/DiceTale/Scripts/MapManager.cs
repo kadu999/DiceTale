@@ -191,11 +191,14 @@ namespace DiceTale
             }
 
             Debug.Log($"[MapManager] Moving {characterManager.Players.Count} player(s) to spawn '{spawn.Id}' at {spawn.Position} (map={CurrentMapName})");
-            foreach (var player in characterManager.Players)
+            for (int i = 0; i < characterManager.Players.Count; i++)
             {
+                var player = characterManager.Players[i];
                 if (player != null)
                 {
-                    player.transform.position = spawn.Position;
+                    // 多玩家时错开站位（2×2 排列），避免完全重叠难以区分
+                    var offset = new Vector3((i % 2) * 0.5f, (i / 2) * 0.5f, 0f);
+                    player.transform.position = spawn.Position + offset;
                     player.ReportPosition(); // 传送/出生落点：上报位置
                 }
             }
@@ -260,6 +263,32 @@ namespace DiceTale
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// 判断物体是否属于其他地图（切图时旧地图销毁前的残留物体）。
+        /// 沿父链向上找 MapRoot 的直接子物体：若是带 GridMap 的地图实例且不是当前地图 → 属于旧地图；
+        /// 不在任何地图下的物体（如过渡期挂在 MapRoot/场景根的玩家）返回 false，照常上报。
+        /// </summary>
+        public bool IsFromOtherMap(Transform t)
+        {
+            if (t == null || CurrentMap == null || mapRoot == null)
+            {
+                return false;
+            }
+
+            var current = t;
+            while (current != null)
+            {
+                if (current.parent == mapRoot)
+                {
+                    return current != CurrentMap.transform && current.GetComponent<GridMap>() != null;
+                }
+
+                current = current.parent;
+            }
+
+            return false;
         }
 
         /// <summary>切换地图前把玩家从当前地图节点摘下来（挂到 MapRoot），避免随旧地图销毁。</summary>

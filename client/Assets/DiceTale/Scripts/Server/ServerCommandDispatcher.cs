@@ -96,6 +96,9 @@ namespace DiceTale.Server
 
             obj.SetItems(items);
             Debug.Log($"[ServerCommandDispatcher] {objectId} ({obj.DisplayName}): items set ({items.Count})");
+
+            // 玩家物品变化后刷新道具剩余数量并重报（GM 页面「剩余」随之更新）
+            ItemObject.RefreshAllQuantities();
         }
 
         private void HandleTeleportPlayer(Dictionary<string, object> msg)

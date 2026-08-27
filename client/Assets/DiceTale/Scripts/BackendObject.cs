@@ -40,6 +40,12 @@ namespace DiceTale
         /// <summary>物品列表（只读视图）；子类覆写。</summary>
         public virtual IReadOnlyList<string> Items => EmptyItems;
 
+        /// <summary>道具名（道具类对象覆写，GM 页面据此展示分配界面）；非道具对象返回 null。</summary>
+        public virtual string ItemName => null;
+
+        /// <summary>道具总数量（道具类对象覆写，固定库存；非道具对象返回 0）。</summary>
+        public virtual int ItemQuantity => 0;
+
         protected virtual void OnEnable()
         {
             BackendRegistry.Instance.Register(this);

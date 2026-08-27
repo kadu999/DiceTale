@@ -36,6 +36,15 @@ namespace DiceTale
             instance = this;
         }
 
+        /// <summary>多玩家区分色板（红/蓝/绿/黄，按序号循环取色）。</summary>
+        private static readonly Color[] PlayerPalette =
+        {
+            new Color(0.85f, 0.3f, 0.3f, 1f),  // 红
+            new Color(0.3f, 0.55f, 0.9f, 1f),  // 蓝
+            new Color(0.3f, 0.8f, 0.4f, 1f),   // 绿
+            new Color(0.95f, 0.8f, 0.2f, 1f),  // 黄
+        };
+
         public void CreatePlayers(int count)
         {
             ClearPlayers();
@@ -50,6 +59,13 @@ namespace DiceTale
             for (int i = 0; i < count; i++)
             {
                 var playerGo = Instantiate(playerPrefab);
+
+                // 每个玩家不同颜色，便于区分（也便于 GM 页面/地图上辨认）
+                var renderer = playerGo.GetComponent<SpriteRenderer>();
+                if (renderer != null)
+                {
+                    renderer.color = PlayerPalette[i % PlayerPalette.Length];
+                }
 
                 if (playerGo.GetComponent<Collider2D>() == null)
                 {

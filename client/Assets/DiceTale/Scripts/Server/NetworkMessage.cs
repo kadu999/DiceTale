@@ -41,6 +41,12 @@ namespace DiceTale.Server
         public string kind;
         public string currentState;
         public List<string> states = new List<string>();
+        /// <summary>对象所属地图名（客户端按对象实际所在的地图上报，避免跨图串图）。</summary>
+        public string mapName;
+        /// <summary>道具名（道具对象上报，供 GM 页面分配道具使用；非道具对象为空）。</summary>
+        public string itemName;
+        /// <summary>道具总数量（道具对象固定库存，供 GM 页面计算剩余）。</summary>
+        public int quantity;
         /// <summary>对象在地图图片上的归一化位置 [0,1]，y 向下（左上角为原点）。</summary>
         public Position position;
         /// <summary>物品列表（字符串），与后台同步。</summary>

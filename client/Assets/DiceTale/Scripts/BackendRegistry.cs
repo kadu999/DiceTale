@@ -76,9 +76,10 @@ namespace DiceTale
             }
 
             var mapManager = Object.FindFirstObjectByType<MapManager>();
+            var mapName = mapManager != null ? mapManager.CurrentMapName : null;
             var mapMsg = new Server.RegisterMapObjectsMessage
             {
-                mapName = mapManager != null ? mapManager.CurrentMapName : null
+                mapName = mapName
             };
             var playerMsg = new Server.RegisterPlayersMessage();
 
@@ -89,9 +90,17 @@ namespace DiceTale
                     continue;
                 }
 
+                // 只上报当前世界的物体：切图时旧地图物体在帧末才销毁（Destroy 延迟），
+                // 残留物体会把旧地图的对象混进上报，造成后台跨图串图
+                if (mapManager != null && mapManager.IsFromOtherMap(obj.transform))
+                {
+                    continue;
+                }
+
                 obj.AppendToReport(mapMsg, playerMsg);
 
-                // 通用对象状态信息：所有 BackendObject 统一上报，供 GM 页面展示与切换状态
+                // 通用对象状态信息：所有 BackendObject 统一上报，供 GM 页面展示与切换状态；
+                // 每个对象带上所属地图名，后台按此归属展示
                 mapMsg.objects.Add(new Server.ServerObjectInfo
                 {
                     id = obj.ObjectId,
@@ -99,6 +108,9 @@ namespace DiceTale
                     kind = obj.ObjectKind,
                     currentState = obj.CurrentStateName,
                     states = obj.StateNames,
+                    mapName = mapName,
+                    itemName = obj.ItemName,
+                    quantity = obj.ItemQuantity,
                     position = obj.GetNormalizedPosition(),
                     items = new List<string>(obj.Items)
                 });

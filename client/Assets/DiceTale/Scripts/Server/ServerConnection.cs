@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -37,6 +38,20 @@ namespace DiceTale.Server
         private CancellationTokenSource cts;
         private bool closing;
         private bool reconnecting;
+
+        /// <summary>
+        /// 收到的原始消息队列：接收循环在后台线程入队，Update 在主线程统一分发
+        /// （命令处理里全是 Unity API，必须在主线程执行，否则会静默失败）。
+        /// </summary>
+        private readonly ConcurrentQueue<string> pendingMessages = new ConcurrentQueue<string>();
+
+        private void Update()
+        {
+            while (pendingMessages.TryDequeue(out var json))
+            {
+                OnMessage?.Invoke(json);
+            }
+        }
 
         private void Awake()
         {
@@ -81,6 +96,9 @@ namespace DiceTale.Server
             }
         }
 
+        /// <summary>串行发送链：ClientWebSocket 不允许并发 SendAsync，排队逐个发送，避免后续消息被丢弃。</summary>
+        private Task sendChain = Task.CompletedTask;
+
         public void Send<T>(T message) where T : class
         {
             if (!IsConnected) return;
@@ -88,14 +106,26 @@ namespace DiceTale.Server
             var json = JsonUtility.ToJson(message);
             var bytes = Encoding.UTF8.GetBytes(json);
             var segment = new ArraySegment<byte>(bytes);
-            _ = SendAsync(segment);
+
+            sendChain = sendChain.ContinueWith(
+                _ => SendAsyncInternal(segment),
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
         }
 
-        private async Task SendAsync(ArraySegment<byte> segment)
+        private async Task SendAsyncInternal(ArraySegment<byte> segment)
         {
             try
             {
-                await webSocket.SendAsync(segment, WebSocketMessageType.Text, true, cts.Token);
+                if (webSocket != null && webSocket.State == WebSocketState.Open)
+                {
+                    await webSocket.SendAsync(segment, WebSocketMessageType.Text, true, cts.Token);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // 主动关闭，忽略
             }
             catch (Exception ex)
             {
@@ -128,7 +158,7 @@ namespace DiceTale.Server
                     }
 
                     var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                    OnMessage?.Invoke(json);
+                    pendingMessages.Enqueue(json); // 入队，由主线程 Update 分发 OnMessage
                 }
             }
             catch (OperationCanceledException)

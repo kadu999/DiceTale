@@ -404,6 +404,53 @@ MonoBehaviour:
       m_Calls: []
   statefulActions:
   - {fileID: 7865490019946216524}
+--- !u!1 &3944054351576381290
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7005999888087101817}
+  - component: {fileID: 3859959988492472982}
+  m_Layer: 0
+  m_Name: Item
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7005999888087101817
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3944054351576381290}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -6.203, y: 0.279, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6586617523669123881}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3859959988492472982
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3944054351576381290}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e27285285179494fa5990940f6797a75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.ItemObject
+  itemName: "\u7EF4\u4FEE\u5DE5\u5177"
+  quantity: 4
+  remaining: 0
 --- !u!1 &4029669799040524807
 GameObject:
   m_ObjectHideFlags: 0
@@ -444,6 +491,7 @@ Transform:
   - {fileID: 8355405998213480709}
   - {fileID: 5552941982991616821}
   - {fileID: 7952393538782929469}
+  - {fileID: 7005999888087101817}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &6632200961286778942
@@ -993,4 +1041,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01af866d823304341933690c436325f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.SpawnPoint
+  displayName: "\u51FA\u751F\u70B9"
+  states: []
+  currentState: 0
+  onStateEnter:
+    m_PersistentCalls:
+      m_Calls: []
+  statefulActions: []
   id: Map001_001

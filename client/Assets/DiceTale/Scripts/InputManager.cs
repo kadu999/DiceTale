@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 namespace DiceTale
@@ -21,6 +22,12 @@ namespace DiceTale
 
             var mouse = Mouse.current;
             if (mouse == null || !mouse.leftButton.wasPressedThisFrame)
+            {
+                return;
+            }
+
+            // 点击 UI（玩家切换按钮等）时不移动玩家
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
             {
                 return;
             }
