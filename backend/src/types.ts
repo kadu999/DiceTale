@@ -35,7 +35,9 @@ export type ClientMessage =
   /** 客户端后台物体状态变化后的回执，保持 GM 页面同步 */
   | { type: 'report_object_state'; objectId: string; state: string }
   /** 对象物品列表（字符串）变化后的回执 */
-  | { type: 'report_object_items'; objectId: string; items: string[] };
+  | { type: 'report_object_items'; objectId: string; items: string[] }
+  /** 应用层心跳：客户端周期上报，供后台检测连接是否半开 */
+  | { type: 'heartbeat' };
 
 export type ServerMessage =
   | { type: 'sync_state'; state: GameStateSnapshot }
@@ -49,8 +51,7 @@ export type ServerMessage =
 export type GmMessage =
   | { type: 'gm_teleport_player'; mapName: string; spawnId: string }
   | { type: 'gm_set_object_state'; objectId: string; state: string }
-  | { type: 'gm_set_object_items'; objectId: string; items: string[] }
-  | { type: 'gm_refresh' };
+  | { type: 'gm_set_object_items'; objectId: string; items: string[] };
 
 export interface PlayerStateSnapshot {
   name: string;
@@ -94,4 +95,12 @@ export interface GameStateSnapshot {
 export type GmUpdateMessage = {
   type: 'gm_update';
   state: GameStateSnapshot;
+  /** 客户端是否在线（单客户端架构：断开即无客户端，页面据此显示状态） */
+  clientConnected: boolean;
 };
+
+/** 后台 → GM 控制台的消息 */
+export type GmServerMessage =
+  | GmUpdateMessage
+  | { type: 'gm_error'; reason: string }
+  | { type: 'sync_state'; state: GameStateSnapshot };

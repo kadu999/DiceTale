@@ -5,12 +5,8 @@ import { ClientMessage } from './types';
 export class ClientSession {
   private handler: ClientHandler;
 
-  constructor(
-    private ws: WebSocket,
-    gmSockets: Set<WebSocket>,
-    broadcast: () => void
-  ) {
-    this.handler = new ClientHandler(ws, gmSockets, broadcast);
+  constructor(private ws: WebSocket, broadcast: () => void) {
+    this.handler = new ClientHandler(ws, broadcast);
 
     ws.on('message', (raw) => {
       try {

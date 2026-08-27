@@ -5,7 +5,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { ClientSession } from './ClientSession';
 import { GmSession } from './GmSession';
 import { gameState } from './GameState';
-import { broadcastGmUpdate } from './commands/clientCommands';
+import { broadcastGmUpdate, send } from './commands/clientCommands';
 import { config, BACKEND_ROOT } from './config';
 import { listMaps, resolveMapAsset } from './mapAssets';
 
@@ -95,11 +95,54 @@ const wss = new WebSocketServer({ server });
 let clientSocket: WebSocket | null = null;
 const gmSockets = new Set<WebSocket>();
 
+// 存活检测分两套（Unity 客户端的 WebSocketMessageType 无 Pong，不能依赖 ws 级 pong）：
+// 1) GM 等浏览器连接：ws 级 ping/pong（浏览器自动应答 pong）；
+// 2) Unity 客户端：应用层 heartbeat 消息（客户端约每 15s 上报，任意消息即视为存活），
+//    超时未上报则 terminate，确保半开连接能被清理。
+const HEARTBEAT_INTERVAL_MS = 30_000;
+const CLIENT_IDLE_TIMEOUT_MS = 45_000;
+let clientLastSeen = 0;
+const isAlive = new WeakSet<WebSocket>();
+
+function setupHeartbeat(ws: WebSocket) {
+  isAlive.add(ws);
+  ws.on('pong', () => {
+    isAlive.add(ws);
+  });
+}
+
+const heartbeatTimer = setInterval(() => {
+  for (const ws of wss.clients) {
+    if (ws === clientSocket) continue; // Unity 客户端走应用层心跳
+    if (!isAlive.has(ws)) {
+      console.log('[Server] Heartbeat timeout, terminating connection');
+      ws.terminate();
+      continue;
+    }
+    isAlive.delete(ws);
+    ws.ping();
+  }
+
+  if (clientSocket && Date.now() - clientLastSeen > CLIENT_IDLE_TIMEOUT_MS) {
+    console.log('[Server] Client heartbeat timeout, terminating connection');
+    clientSocket.terminate(); // close 处理器负责清空数据并广播
+  }
+}, HEARTBEAT_INTERVAL_MS);
+// 不阻止进程退出（测试场景下 jest 需要进程能正常结束）
+heartbeatTimer.unref();
+server.on('close', () => clearInterval(heartbeatTimer));
+
 function broadcastToGm() {
-  broadcastGmUpdate(gmSockets);
+  broadcastGmUpdate(gmSockets, undefined, !!clientSocket);
 }
 
 wss.on('connection', (ws, req) => {
+  // 必须挂 error 监听：ws 协议/发送错误会 emit('error')，无监听器时 EventEmitter 会抛出导致进程崩溃
+  ws.on('error', (err) => {
+    console.error('[Server] WebSocket error:', err.message);
+  });
+  setupHeartbeat(ws);
+
   const url = req.url ?? '';
 
   if (url.startsWith('/client')) {
@@ -108,7 +151,13 @@ wss.on('connection', (ws, req) => {
       clientSocket.close();
     }
     clientSocket = ws;
-    new ClientSession(ws, gmSockets, broadcastToGm);
+    clientLastSeen = Date.now();
+    // 任意客户端消息都视为存活（应用层心跳的兜底）
+    ws.on('message', () => {
+      clientLastSeen = Date.now();
+    });
+    new ClientSession(ws, broadcastToGm);
+    broadcastToGm(); // 让 GM 页面立即感知客户端在线（clientConnected = true）
 
     ws.on('close', () => {
       if (clientSocket === ws) {
@@ -124,7 +173,7 @@ wss.on('connection', (ws, req) => {
 
   if (url.startsWith('/gm')) {
     gmSockets.add(ws);
-    ws.send(JSON.stringify({ type: 'gm_update', state: gameState.getSnapshot() }));
+    send(ws, { type: 'gm_update', state: gameState.getSnapshot(), clientConnected: !!clientSocket });
     new GmSession(ws, () => clientSocket, broadcastToGm);
 
     ws.on('close', () => {

@@ -4,6 +4,7 @@ let state = null;
 let selectedMap = null;
 let apiMaps = []; // GET /api/maps 返回的所有可观看地图 [{name, image}]
 let selectedObjectId = null; // 当前选中的目标（对象 ID）
+let clientConnected = false; // 客户端（Unity）是否在线，来自 gm_update.clientConnected
 
 // 加载时获取服务器可提供的地图列表（浏览所有地图）
 fetch('/api/maps')
@@ -23,6 +24,7 @@ function connect() {
 
   ws.onclose = () => {
     setStatus(false);
+    setClientStatus(false); // 断线期间不显示过期的"客户端在线"
     setTimeout(connect, 2000);
   };
 
@@ -30,11 +32,39 @@ function connect() {
 
   ws.onmessage = (ev) => {
     const msg = JSON.parse(ev.data);
+    if (msg.type === 'gm_error') {
+      showToast(msg.reason || '操作失败');
+      return;
+    }
     if (msg.type === 'gm_update' || msg.type === 'sync_state') {
       state = msg.state;
+      if (msg.type === 'gm_update' && typeof msg.clientConnected === 'boolean') {
+        clientConnected = msg.clientConnected;
+        setClientStatus(clientConnected);
+      }
       render();
     }
   };
+}
+
+/** 客户端（Unity）在线状态灯。 */
+function setClientStatus(connected) {
+  const el = document.getElementById('clientStatus');
+  if (!el) return;
+  el.className = `status ${connected ? 'connected' : 'disconnected'}`;
+  el.textContent = connected ? '客户端已连接' : '客户端未连接';
+}
+
+/** 底部轻提示（操作失败等原因）。 */
+function showToast(text) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => {
+    el.classList.remove('show');
+  }, 3000);
 }
 
 function setStatus(connected) {

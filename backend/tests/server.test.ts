@@ -466,4 +466,98 @@ describe('WebSocket server', () => {
     const res = await httpGet('/../config.json');
     expect(res.status).toBe(403);
   });
+
+  test('gm action without client returns gm_error', async () => {
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    await gm.next(); // initial gm_update
+
+    send(gm.ws, { type: 'gm_teleport_player', mapName: 'Map002', spawnId: 'North' });
+    const msg = await gm.next();
+    expect(msg.type).toBe('gm_error');
+    expect(msg.reason).toContain('客户端未连接');
+
+    gm.ws.close();
+  });
+
+  test('gm_set_object_state updates snapshot optimistically and forwards to client', async () => {
+    const client = await connect('/client');
+    openSockets.push(client.ws);
+    send(client.ws, { type: 'request_join' });
+    await client.next(); // sync_state
+    send(client.ws, {
+      type: 'register_map_objects',
+      mapName: 'Map001',
+      spawnPoints: [],
+      objects: [{ id: 'Lever_1', kind: 'Lever', currentState: 'off', states: ['off', 'on'] }],
+    });
+
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    await gm.next(); // initial gm_update（已包含 Lever_1）
+
+    send(gm.ws, { type: 'gm_set_object_state', objectId: 'Lever_1', state: 'on' });
+
+    // GM 页面立即看到乐观更新（不等客户端回执）
+    const update = await gm.next();
+    expect(update.type).toBe('gm_update');
+    expect(update.state.objects['Lever_1'].currentState).toBe('on');
+
+    // 客户端收到转发命令
+    const cmd = await client.next();
+    expect(cmd.type).toBe('set_object_state');
+    expect(cmd.objectId).toBe('Lever_1');
+    expect(cmd.state).toBe('on');
+
+    gm.ws.close();
+    client.ws.close();
+  });
+
+  test('gm_update carries clientConnected and toggles with client connect/disconnect', async () => {
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    const initial = await gm.next();
+    expect(initial.type).toBe('gm_update');
+    expect(initial.clientConnected).toBe(false);
+
+    const client = await connect('/client');
+    openSockets.push(client.ws);
+    send(client.ws, { type: 'request_join' });
+    await client.next(); // sync_state
+
+    const connected = await gm.next(); // 客户端连接后立即广播
+    expect(connected.type).toBe('gm_update');
+    expect(connected.clientConnected).toBe(true);
+
+    client.ws.close();
+    const disconnected = await gm.next(); // 客户端断开后广播（含清空数据）
+    expect(disconnected.type).toBe('gm_update');
+    expect(disconnected.clientConnected).toBe(false);
+
+    gm.ws.close();
+  });
+
+  test('client heartbeat message is accepted as no-op (no broadcast)', async () => {
+    const client = await connect('/client');
+    openSockets.push(client.ws);
+    send(client.ws, { type: 'request_join' });
+    await client.next(); // sync_state
+
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    await gm.next(); // initial gm_update
+
+    send(client.ws, { type: 'heartbeat' });
+
+    // 心跳不应触发广播/状态变化
+    let received = false;
+    gm.ws.on('message', () => {
+      received = true;
+    });
+    await new Promise((r) => setTimeout(r, 200));
+    expect(received).toBe(false);
+
+    gm.ws.close();
+    client.ws.close();
+  });
 });

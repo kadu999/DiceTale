@@ -14,7 +14,10 @@
       <button id="pageBtnMap" class="page-tab active" onclick="switchPage('map')">地图</button>
       <button id="pageBtnPlayers" class="page-tab" onclick="switchPage('players')">玩家</button>
     </nav>
-    <span id="connectionStatus" class="status disconnected">未连接</span>
+    <div class="status-group">
+      <span id="clientStatus" class="status disconnected">客户端未连接</span>
+      <span id="connectionStatus" class="status disconnected">未连接</span>
+    </div>
   </header>
 
   <main class="layout">
@@ -48,6 +51,9 @@
     <div class="rotate-icon">🔄</div>
     <p>请将手机横屏<br>以显示地图</p>
   </div>
+
+  <!-- 操作失败提示（如客户端未连接、超出库存） -->
+  <div id="toast" class="toast"></div>
 
   <script src="app.js"></script>
 </body>

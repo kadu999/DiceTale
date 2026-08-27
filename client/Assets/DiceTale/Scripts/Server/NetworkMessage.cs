@@ -102,6 +102,13 @@ namespace DiceTale.Server
         public string spawnId;
     }
 
+    /// <summary>应用层心跳：周期上报，供后台判断连接是否半开（后台据此清理死连接）。</summary>
+    [Serializable]
+    public class HeartbeatMessage
+    {
+        public string type = "heartbeat";
+    }
+
     [Serializable]
     public class Position
     {

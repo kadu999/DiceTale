@@ -42,6 +42,36 @@ header h1 {
 .status.connected { background: #22c55e; }
 .status.disconnected { background: #ef4444; }
 
+.status-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* 操作失败提示（客户端未连接、超出库存等） */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 2rem;
+  transform: translateX(-50%) translateY(1rem);
+  background: rgba(17, 17, 17, 0.92);
+  color: #fff;
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 100;
+  max-width: 90vw;
+  text-align: center;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 main {
   padding: 0.75rem;
 }

@@ -4,11 +4,7 @@ import { gameState } from '../GameState';
 import * as commands from '../commands/clientCommands';
 
 export class ClientHandler {
-  constructor(
-    private ws: WebSocket,
-    private gmSockets: Set<WebSocket>,
-    private broadcast: () => void
-  ) {}
+  constructor(private ws: WebSocket, private broadcast: () => void) {}
 
   handle(message: ClientMessage) {
     switch (message.type) {
@@ -43,6 +39,9 @@ export class ClientHandler {
         if (gameState.setObjectItems(message.objectId, message.items)) {
           this.broadcast();
         }
+        break;
+      case 'heartbeat':
+        // 应用层心跳：仅用于存活检测（index.ts 的 lastSeen），无状态变更
         break;
       default:
         console.warn('[ClientHandler] Unknown message:', (message as any).type);

@@ -18,7 +18,7 @@ namespace DiceTale.Server
         public static ServerConnection Instance { get; private set; }
 
         [Tooltip("服务器 WebSocket 地址（客户端通道）")]
-        public string DefaultUrl = "ws://localhost:8080/client";
+        public string DefaultUrl = "ws://localhost:8088/client";
 
         [Tooltip("断线后是否自动重连")]
         public bool AutoReconnect = true;
@@ -86,6 +86,7 @@ namespace DiceTale.Server
 
                 _ = ReceiveLoop();
                 SendJoin();
+                StartCoroutine(HeartbeatCoroutine()); // 应用层心跳，供后台存活检测
                 OnConnected?.Invoke();
             }
             catch (Exception ex)
@@ -133,6 +134,20 @@ namespace DiceTale.Server
             }
         }
 
+        /// <summary>应用层心跳间隔（秒）：后台据此判断连接是否半开并清理死连接。</summary>
+        private const float HeartbeatInterval = 15f;
+
+        private IEnumerator HeartbeatCoroutine()
+        {
+            var wait = new WaitForSeconds(HeartbeatInterval);
+            // 断线后自动退出；重连时 Connect() 会重新启动一个协程
+            while (IsConnected)
+            {
+                yield return wait;
+                Send(new HeartbeatMessage());
+            }
+        }
+
         public void Close()
         {
             closing = true;
@@ -157,6 +172,8 @@ namespace DiceTale.Server
                         break;
                     }
 
+                    // 服务器不做 ws 级 ping（Unity 的 WebSocketMessageType 无 Pong，框架行为各平台不一），
+                    // 存活检测走应用层 heartbeat（见 HeartbeatCoroutine）。
                     var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
                     pendingMessages.Enqueue(json); // 入队，由主线程 Update 分发 OnMessage
                 }
