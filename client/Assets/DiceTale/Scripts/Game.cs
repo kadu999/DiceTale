@@ -72,8 +72,8 @@ namespace DiceTale
                 return manager;
             }
 
+            // 管理器作为根节点创建：DontDestroyOnLoad 只对根节点生效（ServerConnection 依赖此行为）
             var go = new GameObject(typeof(T).Name);
-            go.transform.SetParent(transform, false);
             return go.AddComponent<T>();
         }
 

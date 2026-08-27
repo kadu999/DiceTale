@@ -162,11 +162,11 @@ describe('WebSocket server', () => {
     const gm = await connect('/gm');
     openSockets.push(gm.ws);
     await gm.next(); // initial gm_update
-    send(gm.ws, { type: 'gm_set_object_state', objectId: 'Door_1', state: 'open' });
+    send(gm.ws, { type: 'gm_set_object_state', objectId: 'Chest_1', state: 'open' });
 
     const msg = await client.next();
     expect(msg.type).toBe('set_object_state');
-    expect(msg.objectId).toBe('Door_1');
+    expect(msg.objectId).toBe('Chest_1');
     expect(msg.state).toBe('open');
   });
 
@@ -182,7 +182,7 @@ describe('WebSocket server', () => {
       spawnPoints: [{ id: 'Default' }],
       objects: [
         { id: 'Lever_1', name: '大厅拉杆', kind: 'Lever', currentState: 'off', states: ['off', 'on'], position: { x: 0.4, y: 0.3 } },
-        { id: 'Door_2', name: '东侧门', kind: 'Door', currentState: 'closed', states: ['closed', 'open'], position: { x: 0.7, y: 0.5 } },
+        { id: 'Chest_2', name: '东侧宝箱', kind: 'Chest', currentState: 'closed', states: ['closed', 'open'], position: { x: 0.7, y: 0.5 } },
       ],
     });
 
@@ -199,10 +199,10 @@ describe('WebSocket server', () => {
       position: { x: 0.4, y: 0.3 },
       items: [],
     });
-    expect(update.state.objects['Door_2'].name).toBe('东侧门');
-    expect(update.state.objects['Door_2'].currentState).toBe('closed');
-    expect(update.state.objects['Door_2'].states).toEqual(['closed', 'open']);
-    expect(update.state.objects['Door_2'].position).toEqual({ x: 0.7, y: 0.5 });
+    expect(update.state.objects['Chest_2'].name).toBe('东侧宝箱');
+    expect(update.state.objects['Chest_2'].currentState).toBe('closed');
+    expect(update.state.objects['Chest_2'].states).toEqual(['closed', 'open']);
+    expect(update.state.objects['Chest_2'].position).toEqual({ x: 0.7, y: 0.5 });
   });
 
   test('report_object_state updates snapshot and broadcasts gm_update', async () => {

@@ -5,19 +5,23 @@ namespace DiceTale
 {
     /// <summary>
     /// 后台对象注册表：收集场景中所有 <see cref="BackendObject"/>，
-    /// 在后台连接建立/地图变化时统一组装并上报（门、出生点、玩家名单）。
+    /// 在后台连接建立/地图变化时统一组装并上报（物体、出生点、玩家名单）。
     /// </summary>
     public class BackendRegistry : MonoBehaviour
     {
         private static BackendRegistry instance;
+        /// <summary>是否已创建过注册表（销毁后不再重建，避免场景关闭时从 OnDisable/OnDestroy 泄漏新对象）。</summary>
+        private static bool created;
 
         public static BackendRegistry Instance
         {
             get
             {
-                if (instance == null)
+                if (instance == null && !created)
                 {
+                    created = true;
                     var go = new GameObject(nameof(BackendRegistry));
+                    DontDestroyOnLoad(go); // 常驻单例：与 ServerConnection 一致，不随场景关闭重建
                     instance = go.AddComponent<BackendRegistry>();
                 }
 
@@ -61,7 +65,7 @@ namespace DiceTale
 
         /// <summary>
         /// 统一向后台上报所有已注册对象：
-        /// 门/出生点 → register_map_objects，玩家 → register_players。
+        /// 物体/出生点 → register_map_objects，玩家 → register_players。
         /// </summary>
         public void ReportAll()
         {

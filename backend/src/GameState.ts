@@ -24,7 +24,7 @@ export class GameState {
   currentMap = 'Map001';
   players: Record<string, PlayerInfo> = {};
   spawnPoints: Record<string, SpawnPointInfo[]> = {};
-  /** 通用后台对象（BackendObject）：objectId -> 状态信息（对象本体由客户端主导，不持久化） */
+  /** 通用后台物体（SceneObject）：objectId -> 状态信息（对象本体由客户端主导，不持久化） */
   objects: Record<string, ObjectInfo> = {};
 
   setMap(mapName: string, _spawnId?: string) {

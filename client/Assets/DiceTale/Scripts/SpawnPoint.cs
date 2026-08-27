@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace DiceTale
 {
-    /// <summary>出生点：继承 <see cref="BackendObject"/>，自动上报到后台。</summary>
+    /// <summary>出生点：继承 <see cref="BackendObject"/>（纯后台通信基类），自动上报到后台。</summary>
     public class SpawnPoint : BackendObject
     {
         [SerializeField]

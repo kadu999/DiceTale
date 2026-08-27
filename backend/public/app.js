@@ -115,13 +115,6 @@ function num(v, fallback) {
   return v === undefined || v === null ? fallback : v;
 }
 
-// ---- 物体图标（内联 SVG，白色，兼容旧 WebView）----
-const ICON_PLAYER =
-  '<svg viewBox="0 0 24 24" width="16" height="16" fill="#fff">' +
-  '<circle cx="12" cy="7.5" r="3.5"/>' +
-  '<path d="M4.5 21c0-4.1 3.4-7 7.5-7s7.5 2.9 7.5 7"/>' +
-  '</svg>';
-
 /** 选中目标：地图标记与玩家列表同步高亮，属性面板显示属性。 */
 function selectObject(objectId) {
   selectedObjectId = objectId;
@@ -191,19 +184,25 @@ function renderMap() {
     marker.style.left = `${num(player.position && player.position.x, 0.5) * 100}%`;
     marker.style.top = `${num(player.position && player.position.y, 0.5) * 100}%`;
 
-    const icon = document.createElement('span');
-    icon.innerHTML = ICON_PLAYER;
-
-    const nameEl = document.createElement('span');
-    nameEl.className = 'player-marker-name';
-    nameEl.textContent = player.name || playerId;
-
-    marker.appendChild(icon);
-    marker.appendChild(nameEl);
+    marker.textContent = player.name || playerId;
     marker.onclick = () => {
       if (state.objects && state.objects[playerId]) selectObject(playerId);
     };
     layer.appendChild(marker);
+    fitPlayerName(marker);
+  }
+}
+
+/** 玩家名字自动缩放：保持一行不换行，字号从 13px 起逐级缩小直到放得进圆内。 */
+function fitPlayerName(el) {
+  var size = 13;
+  el.style.fontSize = size + 'px';
+  var maxWidth = el.clientWidth - 6; // 圆内可用宽度（减去左右 padding）
+  var range = document.createRange();
+  range.selectNodeContents(el);
+  while (range.getBoundingClientRect().width > maxWidth && size > 8) {
+    size -= 1;
+    el.style.fontSize = size + 'px';
   }
 }
 
@@ -239,7 +238,7 @@ function renderPropertyPanelInto(id) {
   addPropertyRow(container, 'ID', selectedObjectId);
   addPropertyRow(container, '位置', fmtPos(obj.position));
 
-  // 物品列表（BackendObject 通用能力，与后台同步：可添加 / 移除）
+  // 物品列表（SceneObject 通用能力，与后台同步：可添加 / 移除）
   renderObjectItems(container, selectedObjectId, obj.items || []);
 
   // 状态切换（点击即发送 gm_set_object_state）
@@ -260,7 +259,7 @@ function renderObjectStates(container, objectId, obj) {
   if (states.length === 0) {
     const hint = document.createElement('div');
     hint.className = 'property-hint';
-    hint.textContent = '该对象未配置状态列表（在客户端 Inspector 的 BackendObject 状态列表里配置）';
+    hint.textContent = '该对象未配置状态列表（在客户端 Inspector 的 SceneObject 状态列表里配置）';
     statesBox.appendChild(hint);
   } else {
     for (const stateName of states) {

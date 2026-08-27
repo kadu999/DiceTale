@@ -4,7 +4,7 @@ export type ClientMessage =
       type: 'register_map_objects';
       mapName: string;
       spawnPoints: Array<{ id: string }>;
-      /** 所有 BackendObject 的通用状态信息（GM 页面展示与切换状态） */
+      /** 所有后台物体的通用状态信息（GM 页面展示与切换状态） */
       objects?: Array<{
         id: string;
         /** 显示名称（GM 页面标明这是什么物体） */
@@ -28,7 +28,7 @@ export type ClientMessage =
       /** 玩家当前所在的地图 */
       mapName: string;
     }
-  /** 客户端 BackendObject 状态变化后的回执，保持 GM 页面同步 */
+  /** 客户端后台物体状态变化后的回执，保持 GM 页面同步 */
   | { type: 'report_object_state'; objectId: string; state: string }
   /** 对象物品列表（字符串）变化后的回执 */
   | { type: 'report_object_items'; objectId: string; items: string[] };
@@ -56,11 +56,11 @@ export interface PlayerStateSnapshot {
   mapName: string;
 }
 
-/** 通用后台对象（BackendObject）状态快照 */
+/** 通用后台物体（SceneObject）状态快照 */
 export interface ObjectStateSnapshot {
   /** 显示名称（GM 页面标明这是什么物体）；未上报时回退为对象 id */
   name: string;
-  /** 对象类型显示名（Door / SpawnPoint / Player ...） */
+  /** 对象类型显示名（SpawnPoint / Player ...） */
   kind: string;
   /** 当前状态名称；未配置状态时为 null */
   currentState: string | null;

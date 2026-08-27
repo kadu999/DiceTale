@@ -4,7 +4,7 @@ namespace DiceTale
 {
     /// <summary>
     /// 后端入口：创建到权威服务器的连接与命令分发（WebSocket）。
-    /// 对象状态由 BackendObject 通用状态机制统一上报与控制，无需本地服务层。
+    /// 对象状态由 SceneObject 通用状态机制（经 BackendObject 通信层）统一上报与控制，无需本地服务层。
     /// </summary>
     public class BackendManager : MonoBehaviour
     {

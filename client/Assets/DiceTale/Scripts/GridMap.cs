@@ -43,21 +43,6 @@ namespace DiceTale
             UpdateCellSize();
         }
 
-        private void OnEnable()
-        {
-            RefreshDoorObstacles();
-        }
-
-        private void RefreshDoorObstacles()
-        {
-            ClearDynamicObstacles();
-            var doors = Object.FindObjectsByType<Door>(FindObjectsSortMode.None);
-            foreach (var door in doors)
-            {
-                door.RefreshBlocking();
-            }
-        }
-
         public void UpdateCellSize()
         {
 

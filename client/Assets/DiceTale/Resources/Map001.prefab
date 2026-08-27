@@ -215,9 +215,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 3483525914648463662}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bd0ce7c7e6ad5764797b0e0c574e3c03, type: 3}
+  m_Script: {fileID: 11500000, guid: a5f079cd2b5b47898ac2228c012d11de, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.BackendObject
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.SceneObject
   displayName: "\u53E4\u5821\u7684\u5927\u95E8"
   states:
   - name: "\u672A\u89E3\u9501"
@@ -321,9 +321,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 3890056362384748944}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bd0ce7c7e6ad5764797b0e0c574e3c03, type: 3}
+  m_Script: {fileID: 11500000, guid: a5f079cd2b5b47898ac2228c012d11de, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.BackendObject
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.SceneObject
   displayName: "\u7834\u6865"
   states:
   - name: "\u6BC1\u574F"

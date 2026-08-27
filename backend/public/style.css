@@ -158,38 +158,41 @@ main.layout {
   pointer-events: none;
 }
 
+/* 玩家标记：圆形令牌，玩家名居中显示（无图标） */
 .player-marker {
   position: absolute;
   transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 9px;
-  border-radius: 999px;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 3px;
+  border-radius: 50%;
   background: #3b82f6;
   border: 2px solid #fff;
-  box-shadow: 0 1px 5px rgba(0,0,0,0.6);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.6);
   color: #fff;
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 1.15;
+  text-align: center;
   white-space: nowrap;
+  overflow: hidden;
   cursor: pointer;
   pointer-events: auto;
   touch-action: manipulation;
 }
 
-.player-marker-name {
-  line-height: 1;
-}
-
 .player-marker.selected {
-  box-shadow: 0 0 0 3px rgba(255,255,255,0.9), 0 1px 6px rgba(0,0,0,0.6);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 1px 6px rgba(0, 0, 0, 0.6);
 }
 
+/* 圆形脉冲圈：绕令牌扩散 */
 .player-marker::after {
   content: '';
   position: absolute;
   inset: -8px;
-  border-radius: 999px;
+  border-radius: 50%;
   border: 2px solid rgba(59, 130, 246, 0.5);
   animation: player-pulse 1.6s ease-out infinite;
 }
@@ -224,8 +227,8 @@ main.layout {
   transform: translate(-50%, -50%) scale(1.1);
 }
 
-.object-marker.kind-Door { background: #f59e0b; }
 .object-marker.kind-SpawnPoint { background: #10b981; }
+.object-marker.kind-SceneObject { background: #f59e0b; }
 
 .object-marker.selected {
   box-shadow: 0 0 0 3px rgba(255,255,255,0.9), 0 1px 6px rgba(0,0,0,0.5);

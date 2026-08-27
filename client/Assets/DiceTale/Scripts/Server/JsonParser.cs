@@ -7,7 +7,7 @@ namespace DiceTale.Server
 {
     /// <summary>
     /// 轻量 JSON 解析器。Unity 的 JsonUtility 不支持字典反序列化
-    /// （服务器 sync_state 的 doors 是 doorId -> 状态的映射），因此接收消息统一用它解析。
+    /// （服务器 sync_state 的 objects 是 objectId -> 状态的映射），因此接收消息统一用它解析。
     /// 支持：对象、数组、字符串、数字、布尔、null。
     /// </summary>
     public static class JsonParser

@@ -87,7 +87,7 @@ namespace DiceTale.Server
         public string state;
     }
 
-    /// <summary>请求后台下发 teleport_player 命令切换地图（传送门使用）。</summary>
+    /// <summary>请求后台下发 teleport_player 命令切换地图。</summary>
     [Serializable]
     public class RequestTeleportMessage
     {

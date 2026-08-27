@@ -46,7 +46,11 @@ namespace DiceTale
             var connection = Server.ServerConnection.Instance;
             if (connection != null)
             {
-                connection.OnConnected -= BackendRegistry.Instance.ReportAll;
+                var registry = BackendRegistry.Instance;
+                if (registry != null)
+                {
+                    connection.OnConnected -= registry.ReportAll;
+                }
             }
         }
 
