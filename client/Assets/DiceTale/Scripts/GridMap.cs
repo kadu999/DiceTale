@@ -236,6 +236,15 @@ namespace DiceTale
             dynamicObstacles.Clear();
         }
 
+        /// <summary>网格数据/尺寸变化后，让所有动态阻挡重新计算占用格子（网格加载完成后调用）。</summary>
+        public void RefreshDynamicObstacles()
+        {
+            foreach (var obstacle in Object.FindObjectsByType<DynamicObstacle>(FindObjectsSortMode.None))
+            {
+                obstacle.RefreshBlocking();
+            }
+        }
+
         public Vector2Int WorldToGrid(Vector3 worldPosition)
         {
             var localPosition = worldPosition - GridOrigin;

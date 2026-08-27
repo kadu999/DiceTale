@@ -5,8 +5,8 @@ using UnityEngine.Events;
 namespace DiceTale
 {
     /// <summary>
-    /// 通用场景物体：继承 <see cref="BackendObject"/>，在后台通信之上提供玩法通用能力：
-    /// 显示名称、状态机（Inspector 状态列表，进入状态时触发 Action）与物品列表（与后台同步）。
+    /// 通用场景物体：继承 <see cref="BackendObject"/>（后台通信），
+    /// 提供状态机（Inspector 状态列表）、显示名称与物品列表（与后台同步）。
     /// 场景中需要后台控制、又有本地行为的物体（门、机关、宝箱等）直接挂这个组件或继承它。
     /// 后台服务器用 set_object_state / set_object_items 按 ObjectId 控制。
     /// </summary>
@@ -50,7 +50,7 @@ namespace DiceTale
 
         protected virtual void Start()
         {
-            // 进入当前状态（按索引对应状态列表；越界时回退到第 0 个），触发其 Action
+            // 进入当前状态（按索引对应状态列表；越界时回退到第 0 个），触发其 Action 与状态动作
             if (states.Count > 0)
             {
                 if (currentState < 0 || currentState >= states.Count)
@@ -59,7 +59,7 @@ namespace DiceTale
                     currentState = 0;
                 }
 
-                states[currentState].OnEnter?.Invoke();
+                EnterState(currentState);
             }
         }
 
@@ -118,8 +118,7 @@ namespace DiceTale
                     return true;
                 }
 
-                currentState = i;
-                states[i].OnEnter?.Invoke();
+                EnterState(i);
                 ReportStateChanged();
                 return true;
             }
@@ -145,10 +144,24 @@ namespace DiceTale
 
             return false;
         }
+
+        /// <summary>进入指定状态：触发配置的 UnityEvent（onEnter）与状态动作列表的指定函数。</summary>
+        private void EnterState(int index)
+        {
+            currentState = index;
+            var state = states[index];
+            state.OnEnter?.Invoke();
+
+            foreach (var action in state.StatefulActions)
+            {
+                action?.OnStateEnter(state);
+            }
+        }
     }
 
     /// <summary>
-    /// 场景物体的一个状态：包含状态名称与进入该状态时触发的 Action。
+    /// 场景物体的一个状态：包含状态名称、进入时触发的 Action（UnityEvent）
+    /// 与可选的状态动作列表（进入状态时依次调用每个动作的指定函数）。
     /// 后台服务器通过 set_object_state 命令按名称切换对象状态。
     /// </summary>
     [System.Serializable]
@@ -160,8 +173,13 @@ namespace DiceTale
         [SerializeField, Tooltip("进入该状态时触发的 Action")]
         private UnityEvent onEnter;
 
+        [SerializeField, Tooltip("状态动作列表：进入状态时依次调用每个动作的指定函数 OnStateEnter（可选，可挂在任意物体上）")]
+        private List<StatefulAction> statefulActions = new List<StatefulAction>();
+
         public string Name => name;
 
         public UnityEvent OnEnter => onEnter;
+
+        public List<StatefulAction> StatefulActions => statefulActions;
     }
 }

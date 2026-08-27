@@ -3,7 +3,7 @@ using UnityEngine;
 namespace DiceTale
 {
     /// <summary>
-    /// 玩家：继承 <see cref="SceneObject"/>（后台通信 + 通用状态/物品能力），自动注册到后台。
+    /// 玩家：继承 <see cref="SceneObject"/>（后台通信 + 状态机 + 物品能力），自动注册到后台。
     /// 位置上报在瞬移/传送落点时触发（由 InputManager / MapManager 调用）；
     /// 物品列表为 SceneObject 通用能力（与后台同步），玩家直接继承使用。
     /// </summary>

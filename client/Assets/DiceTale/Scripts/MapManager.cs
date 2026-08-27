@@ -136,6 +136,8 @@ namespace DiceTale
                 {
                     gridMap.LoadData(mapName);
                     gridMap.UpdateCellSize();
+                    // 网格尺寸被 .bytes 覆盖后，重新计算动态阻挡占用的格子
+                    gridMap.RefreshDynamicObstacles();
                 }
 
                 return go;
