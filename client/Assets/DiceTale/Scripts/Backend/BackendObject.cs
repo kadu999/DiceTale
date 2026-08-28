@@ -17,7 +17,7 @@ namespace DiceTale
     /// - 启用/销毁时注册/注销到 <see cref="BackendRegistry"/>；
     /// - 提供统一的对象 ID（ObjectId：角色组件优先，其次自定义 ID（隐藏字段），默认自动生成唯一 ID）与类型显示名（ObjectKind）；
     /// - 提供向后台发送消息、世界坐标转图片归一化坐标的工具；
-    /// - 聚合能力组件的信息统一上报（状态/物品/道具/遮罩/角色名单）；
+    /// - 收集能力组件的数据统一上报（各能力组件经 <see cref="IBackendComponentData"/> 自己填充状态/物品/道具/遮罩字段）；
     /// - 转发后台命令到对应能力组件（TrySetState → ISceneStateMachine、SetItems → IItemInventory、
     ///   ApplyMaskImage/ApplyEraseStroke → IMaskSource）。
     ///
@@ -28,7 +28,6 @@ namespace DiceTale
     [DisallowMultipleComponent]
     public class BackendObject : MonoBehaviour
     {
-        private static readonly List<string> EmptyStates = new List<string>();
         private static readonly List<string> EmptyItems = new List<string>();
 
         [SerializeField, Tooltip("后台对象类型（GM 页面分类展示用；新增类型在 BackendObjectKind 末尾追加）")]
@@ -101,40 +100,8 @@ namespace DiceTale
             }
         }
 
-        /// <summary>当前状态名称（无状态机组件时为 null）。</summary>
-        public string CurrentStateName => FindComponent<ISceneStateMachine>()?.CurrentStateName;
-
-        /// <summary>全部可选状态名称（上报给 GM 页面展示与切换；无状态机组件时为空列表）。</summary>
-        public List<string> StateNames
-        {
-            get
-            {
-                var stateMachine = FindComponent<ISceneStateMachine>();
-                return stateMachine != null ? stateMachine.StateNames : EmptyStates;
-            }
-        }
-
-        /// <summary>物品列表（只读视图；无物品组件时为空列表）。</summary>
-        public IReadOnlyList<string> Items
-        {
-            get
-            {
-                var inventory = FindComponent<IItemInventory>();
-                return inventory != null ? inventory.Items : EmptyItems;
-            }
-        }
-
-        /// <summary>道具名（有道具货源组件时才有，GM 页面据此展示分配界面；非道具对象返回 null）。</summary>
-        public string ItemName => FindComponent<IItemStock>()?.ItemName;
-
-        /// <summary>道具总数量（有道具货源组件时才有，固定库存；非道具对象返回 0）。</summary>
-        public int ItemQuantity => FindComponent<IItemStock>()?.ItemQuantity ?? 0;
-
-        /// <summary>遮罩纹理宽度（有遮罩组件时才有，GM 页面据此生成/编辑遮罩；非遮罩对象返回 0）。</summary>
-        public int MaskWidth => FindComponent<IMaskSource>()?.MaskWidth ?? 0;
-
-        /// <summary>遮罩纹理高度（有遮罩组件时才有，GM 页面据此生成/编辑遮罩；非遮罩对象返回 0）。</summary>
-        public int MaskHeight => FindComponent<IMaskSource>()?.MaskHeight ?? 0;
+        /// <summary>主体上的能力组件（只读视图；数据由各组件自己持有并上报）。</summary>
+        public IReadOnlyList<MonoBehaviour> CapabilityComponents => capabilityComponents;
 
         /// <summary>
         /// 可编辑能力清单（上报给 GM 页面，据此渲染属性控件；与客户端组件类同名）：
@@ -291,7 +258,8 @@ namespace DiceTale
         /// <summary>状态切换后上报给后台，使 GM 页面同步显示当前状态（状态机组件切换状态后调用）。</summary>
         public void ReportStateChanged()
         {
-            var stateName = CurrentStateName;
+            var stateMachine = FindComponent<ISceneStateMachine>();
+            var stateName = stateMachine != null ? stateMachine.CurrentStateName : null;
             if (string.IsNullOrEmpty(stateName))
             {
                 return;
@@ -307,10 +275,12 @@ namespace DiceTale
         /// <summary>物品列表变化后上报给后台（物品组件在增删物品后调用）。</summary>
         public void ReportItems()
         {
+            var inventory = FindComponent<IItemInventory>();
+            var items = inventory != null ? inventory.Items : (IReadOnlyList<string>)EmptyItems;
             SendToBackend(new Server.ReportObjectItemsMessage
             {
                 objectId = ObjectId,
-                items = new List<string>(Items)
+                items = new List<string>(items)
             });
         }
 

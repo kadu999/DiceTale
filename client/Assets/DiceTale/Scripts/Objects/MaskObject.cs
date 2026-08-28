@@ -16,7 +16,7 @@ namespace DiceTale
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(BackendObject))]
-    public class MaskObject : MonoBehaviour, IMaskSource
+    public class MaskObject : MonoBehaviour, IMaskSource, IBackendComponentData
     {
         [SerializeField, Tooltip("遮罩纹理宽度（像素），GM 页面据此生成编辑画布")]
         private int maskWidth = 960;
@@ -41,6 +41,13 @@ namespace DiceTale
 
         /// <summary>遮罩纹理高度（上报给 GM 页面）。</summary>
         public int MaskHeight => maskHeight;
+
+        /// <summary>组件数据上报：遮罩尺寸（GM 属性面板的遮罩编辑区）。</summary>
+        public void AppendToInfo(Server.ServerObjectInfo info)
+        {
+            info.maskWidth = maskWidth;
+            info.maskHeight = maskHeight;
+        }
 
         /// <summary>稳定输出遮罩纹理（Texture2D，初始全黑；外部持有引用始终有效）。由外部渲染组件读取。</summary>
         public Texture2D MaskTexture => outputTexture;

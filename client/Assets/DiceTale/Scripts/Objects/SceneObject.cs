@@ -15,7 +15,7 @@ namespace DiceTale
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(BackendObject))]
-    public class SceneObject : MonoBehaviour, ISceneStateMachine
+    public class SceneObject : MonoBehaviour, ISceneStateMachine, IBackendComponentData
     {
         [SerializeField, Tooltip("状态列表（仅状态名称）；后台可用 set_object_state 按名称切换")]
         private List<SceneObjectState> states = new List<SceneObjectState>();
@@ -46,6 +46,13 @@ namespace DiceTale
 
                 return names;
             }
+        }
+
+        /// <summary>组件数据上报：状态列表与当前状态（GM 属性面板的状态单选组）。</summary>
+        public void AppendToInfo(Server.ServerObjectInfo info)
+        {
+            info.currentState = CurrentStateName;
+            info.states = StateNames;
         }
 
         private void OnValidate()

@@ -10,7 +10,7 @@ namespace DiceTale
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(BackendObject))]
-    public class ItemInventory : MonoBehaviour, IItemInventory
+    public class ItemInventory : MonoBehaviour, IItemInventory, IBackendComponentData
     {
         private readonly List<string> items = new List<string>();
 
@@ -28,6 +28,12 @@ namespace DiceTale
 
         /// <summary>物品列表（只读视图；修改用 AddItem/RemoveItem/SetItems，与后台同步）。</summary>
         public IReadOnlyList<string> Items => items;
+
+        /// <summary>组件数据上报：物品列表（GM 属性面板的物品编辑区）。</summary>
+        public void AppendToInfo(Server.ServerObjectInfo info)
+        {
+            info.items = new List<string>(items);
+        }
 
         /// <summary>添加物品（重复添加忽略；与后台同步）。</summary>
         public void AddItem(string item)

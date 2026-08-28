@@ -11,7 +11,7 @@ namespace DiceTale
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(BackendObject))]
-    public class ItemObject : MonoBehaviour, IItemStock, IBackendDisplayName
+    public class ItemObject : MonoBehaviour, IItemStock, IBackendDisplayName, IBackendComponentData
     {
         [SerializeField, Tooltip("道具名（GM 页面显示名，也是分配给玩家的物品名）")]
         private string itemName;
@@ -27,6 +27,13 @@ namespace DiceTale
 
         /// <summary>道具总数（固定库存），上报给 GM 页面；GM 页面据此推导剩余 = 总数 − 玩家持有数。</summary>
         public int ItemQuantity => quantity;
+
+        /// <summary>组件数据上报：道具名与固定库存（GM 属性面板的道具分配区）。</summary>
+        public void AppendToInfo(Server.ServerObjectInfo info)
+        {
+            info.itemName = itemName;
+            info.quantity = quantity;
+        }
 
         /// <summary>GM 页面动态显示名：道具名（剩余大于 1 时带 ×剩余）；道具名为空返回 null。
         /// 枢纽未配置静态显示名时以此作为对象名（IBackendDisplayName）。</summary>

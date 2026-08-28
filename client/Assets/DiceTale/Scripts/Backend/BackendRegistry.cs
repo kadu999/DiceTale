@@ -99,24 +99,27 @@ namespace DiceTale
 
                 obj.AppendToReport(mapMsg, playerMsg);
 
-                // 通用对象状态信息：所有 BackendObject 统一上报，供 GM 页面展示与切换状态；
-                // 每个对象带上所属地图名，后台按此归属展示
-                mapMsg.objects.Add(new Server.ServerObjectInfo
+                // 通用对象状态信息：枢纽只填身份/位置/组件清单；
+                // 能力数据（状态/物品/道具/遮罩）由各能力组件自己填充（IBackendComponentData）
+                var info = new Server.ServerObjectInfo
                 {
                     id = obj.ObjectId,
                     name = obj.DisplayName,
                     kind = obj.ObjectKind,
-                    currentState = obj.CurrentStateName,
-                    states = obj.StateNames,
                     mapName = mapName,
-                    itemName = obj.ItemName,
-                    quantity = obj.ItemQuantity,
-                    maskWidth = obj.MaskWidth,
-                    maskHeight = obj.MaskHeight,
                     position = obj.GetNormalizedPosition(),
-                    items = new List<string>(obj.Items),
                     components = obj.Components
-                });
+                };
+
+                foreach (var comp in obj.CapabilityComponents)
+                {
+                    if (comp is IBackendComponentData data)
+                    {
+                        data.AppendToInfo(info);
+                    }
+                }
+
+                mapMsg.objects.Add(info);
             }
 
             if (!string.IsNullOrEmpty(mapMsg.mapName))

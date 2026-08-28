@@ -37,6 +37,17 @@ namespace DiceTale
     }
 
     /// <summary>
+    /// 组件数据上报能力：组件把自己的参数（数据）填充到 GM 上报信息 <see cref="Server.ServerObjectInfo"/>。
+    /// 数据归组件所有——每个能力组件实现本接口，由枢纽在 BackendRegistry.ReportAll 时对列表中的每个组件调用，
+    /// 只填自己负责的字段（SceneObject 填状态、ItemInventory 填物品、ItemObject 填道具、MaskObject 填遮罩）。
+    /// </summary>
+    public interface IBackendComponentData
+    {
+        /// <summary>把本组件的参数填充到上报信息（只填自己负责的字段，其余保持默认）。</summary>
+        void AppendToInfo(Server.ServerObjectInfo info);
+    }
+
+    /// <summary>
     /// 状态机能力：提供状态列表、当前状态与按名称切换状态（后台 set_object_state 命令）。
     /// 实现者：<see cref="SceneObject"/>。
     /// </summary>
