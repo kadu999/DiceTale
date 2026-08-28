@@ -55,7 +55,7 @@ namespace DiceTale
 
             currentPathIndex = 0;
             isMoving = true;
-            player?.ReportPosition(); // 移动开始：上报起点
+            hub?.ReportPosition(); // 移动开始：上报起点
         }
 
         public void Stop()
