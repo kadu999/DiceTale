@@ -10,7 +10,7 @@ const componentRenderers = {
     renderObjectStates(propertySection(container, '状态'), objectId, obj, null),
   Backpack: (container, objectId, obj) =>
     renderObjectItems(propertySection(container), objectId, (obj && obj.items) || [], '物品'),
-  ItemObject: (container, objectId, obj) =>
+  ItemExchange: (container, objectId, obj) =>
     renderItemDistribution(propertySection(container), obj),
   MaskObject: (container, objectId) =>
     renderMaskControl(propertySection(container, '遮罩'), objectId),
@@ -21,7 +21,7 @@ function inferComponents(obj) {
   if (!obj) return list;
   if ((obj.states || []).length > 0) list.push('StateMachine');
   if (obj.maskWidth > 0 && obj.maskHeight > 0) list.push('MaskObject');
-  if (obj.itemName) list.push('ItemObject');
+  if (obj.itemName) list.push('ItemExchange');
   else if ((obj.items || []).length > 0) list.push('Backpack');
   return list;
 }

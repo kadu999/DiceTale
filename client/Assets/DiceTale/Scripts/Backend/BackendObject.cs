@@ -75,7 +75,7 @@ namespace DiceTale
             displayName = name;
         }
 
-        /// <summary>GM 页面显示的名称：优先静态显示名（本枢纽），其次道具动态显示名（ItemObject「道具名 ×剩余」），回退对象 ID。</summary>
+        /// <summary>GM 页面显示的名称：优先静态显示名（本枢纽），其次道具动态显示名（ItemExchange「道具名 ×剩余」），回退对象 ID。</summary>
         public string DisplayName
         {
             get

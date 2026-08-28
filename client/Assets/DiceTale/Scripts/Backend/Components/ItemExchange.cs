@@ -3,16 +3,16 @@ using UnityEngine;
 namespace DiceTale
 {
     /// <summary>
-    /// 道具货源组件（组件模型下的能力组件，原 ItemObject 的道具部分）：
-    /// 场景中代表一个道具（道具名 + 固定总数）：经 <see cref="BackendObject"/> 枢纽自动上报到 GM 页面，
+    /// 道具交换组件：场景中的道具货源（道具名 + 固定总数），GM 从这里把道具分配给玩家（也可收回）。
+    /// 经 <see cref="BackendObject"/> 枢纽自动上报到 GM 页面：
     /// 上报的「数量」是固定总数，剩余（总数 − 玩家持有数）由 GM 页面即时推导；
     /// 客户端本地也维护剩余（remaining），GM 分配/收回命令（set_object_items）到达时刷新。
     /// 对象 ID 由枢纽统一提供（默认自动生成唯一 ID）。
     /// </summary>
-    public class ItemObject : BackendComponent, IBackendDisplayName
+    public class ItemExchange : BackendComponent, IBackendDisplayName
     {
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染道具分配区）。</summary>
-        public override string ComponentId => "ItemObject";
+        public override string ComponentId => "ItemExchange";
 
         [SerializeField, Tooltip("道具名（GM 页面显示名，也是分配给玩家的物品名）")]
         private string itemName;
@@ -92,10 +92,10 @@ namespace DiceTale
             remaining = Mathf.Max(0, quantity - held);
         }
 
-        /// <summary>刷新场景中所有道具的剩余数量并重新上报（玩家物品列表变化后调用）。</summary>
+        /// <summary>刷新场景中所有道具交换组件的剩余数量并重新上报（玩家物品列表变化后调用）。</summary>
         public static void RefreshAllQuantities()
         {
-            foreach (var item in Object.FindObjectsByType<ItemObject>(FindObjectsSortMode.None))
+            foreach (var item in Object.FindObjectsByType<ItemExchange>(FindObjectsSortMode.None))
             {
                 item.RefreshQuantity();
             }

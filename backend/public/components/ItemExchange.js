@@ -1,3 +1,5 @@
+// 组件渲染器：ItemExchange（道具交换）——与客户端组件类同名，属性面板按 components 清单调用。
+// 控件：道具分配列表（剩余数量 + 每玩家 −/+，走 gm_set_object_items）。
 function itemRemaining(obj) {
   if (!obj || !obj.itemName) return null;
   const total = obj.quantity || 0;

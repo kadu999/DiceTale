@@ -4,7 +4,7 @@ using UnityEngine;
 namespace DiceTale
 {
     /// <summary>
-    /// 后台能力组件基类：所有能力组件（StateMachine 状态机 / Backpack 背包 / ItemObject 道具货源 /
+    /// 后台能力组件基类：所有能力组件（StateMachine 状态机 / Backpack 背包 / ItemExchange 道具交换 /
     /// MaskObject 遮罩）的统一基类。
     ///
     /// 基类已实现组件公共契约，子类只需声明自己的能力接口：
@@ -24,7 +24,7 @@ namespace DiceTale
     [RequireComponent(typeof(BackendObject))]
     public abstract class BackendComponent : MonoBehaviour, IBackendComponentData, IBackendCommandHandler
     {
-        /// <summary>组件 ID（与客户端组件类同名，如 StateMachine / Backpack / ItemObject / MaskObject）。</summary>
+        /// <summary>组件 ID（与客户端组件类同名，如 StateMachine / Backpack / ItemExchange / MaskObject）。</summary>
         public abstract string ComponentId { get; }
 
         /// <summary>GM 属性面板是否渲染该组件的编辑控件（默认 true；角色组件覆写为 false）。</summary>
@@ -41,7 +41,7 @@ namespace DiceTale
 
         // ---------- IBackendComponentData（默认空实现，有数据要上报的子类覆写） ----------
 
-        /// <summary>把本组件的参数填充到上报信息（默认空实现；StateMachine/Backpack/ItemObject/MaskObject 覆写）。</summary>
+        /// <summary>把本组件的参数填充到上报信息（默认空实现；StateMachine/Backpack/ItemExchange/MaskObject 覆写）。</summary>
         public virtual void AppendToInfo(Server.ServerObjectInfo info)
         {
         }

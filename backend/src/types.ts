@@ -20,7 +20,7 @@ export type ClientMessage =
         position?: { x: number; y: number } | null;
         /** 物品列表（字符串） */
         items?: string[];
-        /** 能力组件清单（与客户端组件类同名：StateMachine/Backpack/ItemObject/MaskObject），GM 页面据此渲染属性控件 */
+        /** 能力组件清单（与客户端组件类同名：StateMachine/Backpack/ItemExchange/MaskObject），GM 页面据此渲染属性控件 */
         components?: string[];
       }>;
     }

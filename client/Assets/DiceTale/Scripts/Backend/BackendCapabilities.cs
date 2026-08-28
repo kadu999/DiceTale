@@ -13,7 +13,7 @@ namespace DiceTale
     /// <summary>
     /// 动态显示名称能力：提供 GM 页面展示的名称；返回 null/空串时由枢纽继续回退。
     /// 静态显示名已收口到枢纽（BackendObject.displayName），本接口仅用于需要动态生成显示名的对象。
-    /// 实现者：<see cref="ItemObject"/>（道具名 ×剩余）。
+    /// 实现者：<see cref="ItemExchange"/>（道具名 ×剩余）。
     /// </summary>
     public interface IBackendDisplayName
     {
@@ -24,7 +24,7 @@ namespace DiceTale
     /// <summary>
     /// 组件数据上报能力：组件把自己的参数（数据）填充到 GM 上报信息 <see cref="Server.ServerObjectInfo"/>。
     /// 由 <see cref="BackendComponent"/> 基类实现（默认空实现），有数据要上报的子类覆写，
-    /// 只填自己负责的字段（StateMachine 填状态、Backpack 填道具、ItemObject 填货源、MaskObject 填遮罩）。
+    /// 只填自己负责的字段（StateMachine 填状态、Backpack 填道具、ItemExchange 填货源、MaskObject 填遮罩）。
     /// </summary>
     public interface IBackendComponentData
     {

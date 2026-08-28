@@ -12,7 +12,7 @@ namespace DiceTale
         /// <summary>玩家（枢纽 kind=Player，实体 = BackendObject + Backpack）。</summary>
         Player = 1,
 
-        /// <summary>道具（ItemObject 道具货源）。</summary>
+        /// <summary>道具（ItemExchange 道具交换组件）。</summary>
         Item = 2,
 
         /// <summary>事件（机关触发、遮罩等事件类对象；原 Mask 类别已并入）。</summary>
