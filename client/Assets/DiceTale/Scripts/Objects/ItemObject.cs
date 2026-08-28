@@ -28,7 +28,8 @@ namespace DiceTale
         /// <summary>道具总数（固定库存），上报给 GM 页面；GM 页面据此推导剩余 = 总数 − 玩家持有数。</summary>
         public int ItemQuantity => quantity;
 
-        /// <summary>GM 页面显示名：道具名（剩余大于 1 时带 ×剩余）；道具名为空返回 null（由枢纽回退对象 ID）。</summary>
+        /// <summary>GM 页面动态显示名：道具名（剩余大于 1 时带 ×剩余）；道具名为空返回 null。
+        /// 枢纽未配置静态显示名时以此作为对象名（IBackendDisplayName）。</summary>
         public string DisplayName
         {
             get

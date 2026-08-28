@@ -12,20 +12,17 @@ namespace DiceTale
     /// - 上报尺寸（maskWidth/maskHeight）给后台（经 <see cref="BackendObject"/> 枢纽聚合），GM 页面在弹框里用鼠标擦除黑色；
     /// - 擦除结果经 erase_mask 命令（笔画轨迹）同步回来：MaskEraseStamp shader 沿轨迹硬核打点（GPU），
     ///   输出纹理 ReadPixels 同步，外部直接看到结果。
-    /// 对象 ID 由枢纽统一提供（默认自动生成唯一 ID）。
+    /// 对象 ID 与显示名称由枢纽统一提供（默认自动生成唯一 ID；显示名在 BackendObject.displayName 配置）。
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(BackendObject))]
-    public class MaskObject : MonoBehaviour, IMaskSource, IBackendDisplayName
+    public class MaskObject : MonoBehaviour, IMaskSource
     {
         [SerializeField, Tooltip("遮罩纹理宽度（像素），GM 页面据此生成编辑画布")]
         private int maskWidth = 960;
 
         [SerializeField, Tooltip("遮罩纹理高度（像素），GM 页面据此生成编辑画布")]
         private int maskHeight = 540;
-
-        [SerializeField, Tooltip("显示名称（GM 页面展示用，标明这个遮罩是什么）；为空时回退到对象 ID")]
-        private string displayName;
 
         private Texture2D outputTexture; // 稳定输出纹理（MaskTexture，创建一次永不更换）
         private RenderTexture maskRT;    // 遮罩当前状态（GPU 擦除目标）
@@ -47,9 +44,6 @@ namespace DiceTale
 
         /// <summary>稳定输出遮罩纹理（Texture2D，初始全黑；外部持有引用始终有效）。由外部渲染组件读取。</summary>
         public Texture2D MaskTexture => outputTexture;
-
-        /// <summary>GM 页面显示的名称：优先用配置的显示名，为空回退物体名（保持旧行为，不显示唯一 ID）。</summary>
-        public string DisplayName => string.IsNullOrEmpty(displayName) ? name : displayName;
 
         private void OnEnable()
         {

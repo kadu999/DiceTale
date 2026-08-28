@@ -26,12 +26,13 @@ namespace DiceTale
     }
 
     /// <summary>
-    /// 显示名称能力：提供 GM 页面展示的名称；返回 null/空串时由枢纽回退到对象 ID。
-    /// 实现者：<see cref="SceneObject"/>（显示名字段）、<see cref="ItemObject"/>（道具名 ×剩余）、<see cref="MaskObject"/>（显示名字段）。
+    /// 动态显示名称能力：提供 GM 页面展示的名称；返回 null/空串时由枢纽继续回退。
+    /// 静态显示名已收口到枢纽（BackendObject.displayName），本接口仅用于需要动态生成显示名的对象。
+    /// 实现者：<see cref="ItemObject"/>（道具名 ×剩余）。
     /// </summary>
     public interface IBackendDisplayName
     {
-        /// <summary>GM 页面显示的名称（可为 null/空串，枢纽会回退到对象 ID）。</summary>
+        /// <summary>GM 页面显示的名称（可为 null/空串，枢纽会继续回退到对象 ID）。</summary>
         string DisplayName { get; }
     }
 

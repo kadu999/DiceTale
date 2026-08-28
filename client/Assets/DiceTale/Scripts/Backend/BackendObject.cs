@@ -30,6 +30,9 @@ namespace DiceTale
         [SerializeField, Tooltip("后台对象类型（GM 页面分类展示用；新增类型在 BackendObjectKind 末尾追加）")]
         private BackendObjectKind objectKind = BackendObjectKind.SceneObject;
 
+        [SerializeField, Tooltip("GM 页面显示的名称（后台看名字识别对象）；为空时回退道具动态显示名或对象 ID")]
+        private string displayName;
+
         [SerializeField, HideInInspector, Tooltip("自定义对象 ID 覆盖（高级用途：需要稳定/可读 ID 时设置，如 Debug 模式或代码里写入）；为空时自动生成唯一 ID；Player/SpawnPoint 用角色组件自己的 ID")]
         private string objectId;
 
@@ -63,18 +66,23 @@ namespace DiceTale
         /// <summary>对象类型显示名（GM 页面展示用）：序列化 BackendObjectKind 枚举的字符串形式。</summary>
         public string ObjectKind => objectKind.ToString();
 
-        /// <summary>GM 页面显示的名称：能力组件显示名（SceneObject/ItemObject/MaskObject）优先，回退对象 ID。</summary>
+        /// <summary>GM 页面显示的名称：优先静态显示名（本枢纽），其次道具动态显示名（ItemObject「道具名 ×剩余」），回退对象 ID。</summary>
         public string DisplayName
         {
             get
             {
+                if (!string.IsNullOrEmpty(displayName))
+                {
+                    return displayName;
+                }
+
                 var display = GetComponent<IBackendDisplayName>();
                 if (display != null)
                 {
-                    var displayName = display.DisplayName;
-                    if (!string.IsNullOrEmpty(displayName))
+                    var dynamicName = display.DisplayName;
+                    if (!string.IsNullOrEmpty(dynamicName))
                     {
-                        return displayName;
+                        return dynamicName;
                     }
                 }
 

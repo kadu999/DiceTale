@@ -10,16 +10,13 @@ namespace DiceTale
     /// 与 <see cref="BackendObject"/> 枢纽挂同一物体：
     /// - 状态列表/当前状态由枢纽聚合上报（ISceneStateMachine）；
     /// - set_object_state 命令由枢纽转发到 TrySetState，切换后经枢纽上报（ReportStateChanged）；
-    /// - 显示名称由枢纽聚合（IBackendDisplayName）；
+    /// - 显示名称在枢纽上配置（BackendObject.displayName，后台看名字识别对象）；
     /// - 物品列表已拆分到 <see cref="ItemInventory"/>（需要的物体另挂该组件）。
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(BackendObject))]
-    public class SceneObject : MonoBehaviour, ISceneStateMachine, IBackendDisplayName
+    public class SceneObject : MonoBehaviour, ISceneStateMachine
     {
-        [SerializeField, Tooltip("显示名称（GM 页面展示用，标明这个物体是什么）；为空时回退到对象 ID")]
-        private string displayName;
-
         [SerializeField, Tooltip("状态列表（仅状态名称）；后台可用 set_object_state 按名称切换")]
         private List<SceneObjectState> states = new List<SceneObjectState>();
 
@@ -31,9 +28,6 @@ namespace DiceTale
 
         [SerializeField, Tooltip("状态动作列表：进入任意状态时依次调用每个动作的指定函数 OnStateEnter（可挂在任意物体上）")]
         private List<StatefulAction> statefulActions = new List<StatefulAction>();
-
-        /// <summary>GM 页面显示的名称：优先取显示名称；为空返回 null（由枢纽回退到对象 ID）。</summary>
-        public string DisplayName => string.IsNullOrEmpty(displayName) ? null : displayName;
 
         /// <summary>当前状态名称；未配置状态或尚未启动时为 null。</summary>
         public string CurrentStateName =>
