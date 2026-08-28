@@ -303,7 +303,6 @@ main.layout {
   transform: translate(-50%, -50%) scale(1.1);
 }
 
-.object-marker.kind-SpawnPoint { background: #10b981; }
 .object-marker.kind-SceneObject { background: #f59e0b; }
 
 .object-marker.selected {

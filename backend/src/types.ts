@@ -16,6 +16,10 @@ export type ClientMessage =
         itemName?: string;
         /** 道具总数量（道具对象固定库存） */
         quantity?: number;
+        /** 遮罩纹理宽度（遮罩对象上报，GM 页面据此生成编辑画布；非遮罩对象不设置） */
+        maskWidth?: number;
+        /** 遮罩纹理高度（遮罩对象上报，GM 页面据此生成编辑画布；非遮罩对象不设置） */
+        maskHeight?: number;
         /** 归一化位置 [0,1]，y 向下（用于在地图上定位目标） */
         position?: { x: number; y: number } | null;
         /** 物品列表（字符串） */
