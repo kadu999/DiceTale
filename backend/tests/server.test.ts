@@ -205,49 +205,6 @@ describe('WebSocket server', () => {
     expect(update.state.objects['Chest_2'].position).toEqual({ x: 0.7, y: 0.5 });
   });
 
-  test('report_object_state updates snapshot and broadcasts gm_update', async () => {
-    const client = await connect('/client');
-    openSockets.push(client.ws);
-    send(client.ws, { type: 'request_join' });
-    await client.next(); // sync_state
-    send(client.ws, {
-      type: 'register_map_objects',
-      mapName: 'Map001',
-      spawnPoints: [],
-      objects: [{ id: 'Lever_1', kind: 'Lever', currentState: 'off', states: ['off', 'on'] }],
-    });
-
-    const gm = await connect('/gm');
-    openSockets.push(gm.ws);
-    await gm.next(); // 初始 gm_update（已包含注册的对象）
-
-    send(client.ws, { type: 'report_object_state', objectId: 'Lever_1', state: 'on' });
-
-    const update = await gm.next();
-    expect(update.type).toBe('gm_update');
-    expect(update.state.objects['Lever_1'].currentState).toBe('on');
-  });
-
-  test('report_object_state for unknown object is ignored', async () => {
-    const client = await connect('/client');
-    openSockets.push(client.ws);
-    send(client.ws, { type: 'request_join' });
-    await client.next(); // sync_state
-
-    const gm = await connect('/gm');
-    openSockets.push(gm.ws);
-    await gm.next(); // initial gm_update
-
-    send(client.ws, { type: 'report_object_state', objectId: 'Missing', state: 'on' });
-
-    let receivedUpdate = false;
-    gm.ws.on('message', () => {
-      receivedUpdate = true;
-    });
-    await new Promise((r) => setTimeout(r, 200));
-    expect(receivedUpdate).toBe(false);
-  });
-
   test('report_player_position updates gm snapshot', async () => {
     const client = await connect('/client');
     openSockets.push(client.ws);
@@ -326,29 +283,6 @@ describe('WebSocket server', () => {
 
     gm.ws.close();
     client.ws.close();
-  });
-
-  test('report_object_items updates snapshot and broadcasts gm_update', async () => {
-    const client = await connect('/client');
-    openSockets.push(client.ws);
-    send(client.ws, { type: 'request_join' });
-    await client.next(); // sync_state
-    send(client.ws, {
-      type: 'register_map_objects',
-      mapName: 'Map001',
-      spawnPoints: [],
-      objects: [{ id: 'Lever_1', name: '大厅拉杆', kind: 'Lever', items: [] }],
-    });
-
-    const gm = await connect('/gm');
-    openSockets.push(gm.ws);
-    await gm.next(); // 注册后广播
-
-    send(client.ws, { type: 'report_object_items', objectId: 'Lever_1', items: ['钥匙'] });
-
-    const update = await gm.next();
-    expect(update.type).toBe('gm_update');
-    expect(update.state.objects['Lever_1'].items).toEqual(['钥匙']);
   });
 
   test('gm_set_object_items pushes set_object_items to connected client', async () => {

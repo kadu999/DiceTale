@@ -26,7 +26,6 @@ namespace DiceTale
     [DisallowMultipleComponent]
     public class BackendObject : MonoBehaviour
     {
-        private static readonly List<string> EmptyItems = new List<string>();
 
         [SerializeField, Tooltip("后台对象类型（GM 页面分类展示用；新增类型在 BackendObjectKind 末尾追加）")]
         private BackendObjectKind objectKind = BackendObjectKind.SceneObject;
@@ -223,35 +222,6 @@ namespace DiceTale
             }
 
             return false;
-        }
-
-        /// <summary>状态切换后上报给后台，使 GM 页面同步显示当前状态（状态机组件切换状态后调用）。</summary>
-        public void ReportStateChanged()
-        {
-            var stateMachine = FindComponent<IStateMachine>();
-            var stateName = stateMachine != null ? stateMachine.CurrentStateName : null;
-            if (string.IsNullOrEmpty(stateName))
-            {
-                return;
-            }
-
-            SendToBackend(new Server.ReportObjectStateMessage
-            {
-                objectId = ObjectId,
-                state = stateName
-            });
-        }
-
-        /// <summary>物品列表变化后上报给后台（物品组件在增删物品后调用）。</summary>
-        public void ReportItems()
-        {
-            var inventory = FindComponent<IBackpack>();
-            var items = inventory != null ? inventory.Items : (IReadOnlyList<string>)EmptyItems;
-            SendToBackend(new Server.ReportObjectItemsMessage
-            {
-                objectId = ObjectId,
-                items = new List<string>(items)
-            });
         }
 
         /// <summary>向后台发送一条消息（JSON 自动序列化）。</summary>

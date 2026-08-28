@@ -102,7 +102,7 @@ export class GameState {
     this.objects = next;
   }
 
-  /** 更新通用后台对象当前状态（客户端 report_object_state 回执）。 */
+  /** 更新通用后台对象当前状态（GM 下发 set_object_state 时的乐观更新；客户端不回执）。 */
   setObjectState(objectId: string, state: string): boolean {
     const obj = this.objects[objectId];
     if (!obj) return false;
@@ -110,7 +110,7 @@ export class GameState {
     return true;
   }
 
-  /** 更新通用后台对象物品列表（客户端 report_object_items 回执）。 */
+  /** 更新通用后台对象物品列表（GM 下发 set_object_items 时的乐观更新；客户端不回执）。 */
   setObjectItems(objectId: string, items: string[]): boolean {
     const obj = this.objects[objectId];
     if (!obj) return false;

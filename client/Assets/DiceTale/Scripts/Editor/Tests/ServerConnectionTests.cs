@@ -33,16 +33,6 @@ namespace DiceTale.Editor.Tests
         }
 
         [Test]
-        public void ReportObjectStateMessage_SerializesCorrectly()
-        {
-            var msg = new ReportObjectStateMessage { objectId = "Lever_1", state = "on" };
-            var json = JsonUtility.ToJson(msg);
-            Assert.IsTrue(json.Contains("\"type\":\"report_object_state\""));
-            Assert.IsTrue(json.Contains("\"objectId\":\"Lever_1\""));
-            Assert.IsTrue(json.Contains("\"state\":\"on\""));
-        }
-
-        [Test]
         public void RequestTeleportMessage_SerializesCorrectly()
         {
             var msg = new RequestTeleportMessage { mapName = "Map002", spawnId = "North" };
@@ -67,21 +57,6 @@ namespace DiceTale.Editor.Tests
             var json = JsonUtility.ToJson(msg);
             Assert.IsTrue(json.Contains("\"type\":\"register_map_objects\""));
             Assert.IsTrue(json.Contains("\"items\":[\"小刀\",\"草药\"]"));
-        }
-
-        [Test]
-        public void ReportObjectItemsMessage_SerializesCorrectly()
-        {
-            var msg = new ReportObjectItemsMessage
-            {
-                objectId = "Lever_1",
-                items = new List<string> { "钥匙" }
-            };
-
-            var json = JsonUtility.ToJson(msg);
-            Assert.IsTrue(json.Contains("\"type\":\"report_object_items\""));
-            Assert.IsTrue(json.Contains("\"objectId\":\"Lever_1\""));
-            Assert.IsTrue(json.Contains("\"items\":[\"钥匙\"]"));
         }
 
         [Test]

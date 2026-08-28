@@ -48,7 +48,7 @@ export class GmHandler {
     this.broadcast();
   }
 
-  /** 切换客户端对象状态：乐观更新快照并广播（与 setObjectItems 一致），再转发命令；客户端回执 report_object_state 会再次校正。 */
+  /** 切换客户端对象状态：乐观更新快照并广播，再转发命令（客户端不回执，后台快照为准）。 */
   private setObjectState(objectId: string, state: string) {
     const clientSocket = this.getClientSocket();
     if (!clientSocket) {

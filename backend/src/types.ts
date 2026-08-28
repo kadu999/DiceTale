@@ -34,10 +34,6 @@ export type ClientMessage =
       /** 玩家当前所在的地图 */
       mapName: string;
     }
-  /** 客户端后台物体状态变化后的回执，保持 GM 页面同步 */
-  | { type: 'report_object_state'; objectId: string; state: string }
-  /** 对象物品列表（字符串）变化后的回执 */
-  | { type: 'report_object_items'; objectId: string; items: string[] }
   /** 应用层心跳：客户端周期上报，供后台检测连接是否半开 */
   | { type: 'heartbeat' };
 

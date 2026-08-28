@@ -83,23 +83,6 @@ namespace DiceTale.Server
         public string mapName;
     }
 
-    /// <summary>物品列表变化后上报给后台（BackendObject 通用，与 GM 页面同步）。</summary>
-    [Serializable]
-    public class ReportObjectItemsMessage
-    {
-        public string type = "report_object_items";
-        public string objectId;
-        public List<string> items = new List<string>();
-    }
-
-    [Serializable]
-    public class ReportObjectStateMessage
-    {
-        public string type = "report_object_state";
-        public string objectId;
-        public string state;
-    }
-
     /// <summary>请求后台下发 teleport_player 命令切换地图。</summary>
     [Serializable]
     public class RequestTeleportMessage

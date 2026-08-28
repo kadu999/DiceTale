@@ -11,8 +11,8 @@ namespace DiceTale
     /// - <see cref="GmEditable"/>：GM 属性面板是否渲染该组件的编辑控件
     ///   （角色组件由玩家/出生点名单处理，不进入面板清单，覆写为 false）；
     /// - 激活时自动通知 <see cref="BackendObject"/> 枢纽刷新能力组件缓存（OnEnable 内置）；
-    /// - 上报触发：<see cref="ReportStateChanged"/> / <see cref="ReportItems"/> / <see cref="SendToBackend"/> /
-    ///   <see cref="NormalizePosition"/>——统一转发给主体枢纽，组件不直接接触通信层；
+    /// - 上报触发：<see cref="SendToBackend"/> / <see cref="NormalizePosition"/>——统一转发给主体枢纽，
+    ///   组件不直接接触通信层；数据修改由后台命令驱动，前端只在初始化上报；
     /// - 要求同物体必须有 BackendObject 枢纽（RequireComponent）。
     /// </summary>
     [DisallowMultipleComponent]
@@ -32,18 +32,6 @@ namespace DiceTale
         {
             // 通知枢纽刷新能力组件缓存（激活/动态挂载后保持同步）
             Hub?.RefreshCapabilityComponents();
-        }
-
-        /// <summary>状态切换后上报给后台（GM 页面同步显示当前状态；状态组件切换后调用）。</summary>
-        protected void ReportStateChanged()
-        {
-            Hub?.ReportStateChanged();
-        }
-
-        /// <summary>道具列表变化后上报给后台（GM 页面同步显示；背包组件增删道具后调用）。</summary>
-        protected void ReportItems()
-        {
-            Hub?.ReportItems();
         }
 
         /// <summary>向后台发送一条消息（JSON 自动序列化；统一经主体枢纽）。</summary>
