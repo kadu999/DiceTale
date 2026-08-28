@@ -6,7 +6,8 @@ namespace DiceTale.Server
 {
     /// <summary>
     /// 解析并执行服务器下发的命令：
-    /// sync_state / set_map / teleport_player / set_object_state / set_object_items。
+    /// sync_state / set_map / teleport_player / set_object_state / set_object_items / set_mask_image / erase_mask。
+    /// 对象命令按 ObjectId 定位枢纽后，由枢纽路由给对应能力组件处理（组件自己解析参数）。
     /// </summary>
     public class ServerCommandDispatcher : MonoBehaviour
     {
@@ -23,16 +24,10 @@ namespace DiceTale.Server
                 switch (JsonParser.GetString(msg, "type"))
                 {
                     case "set_object_state":
-                        HandleSetObjectState(msg);
-                        break;
                     case "set_object_items":
-                        HandleSetObjectItems(msg);
-                        break;
                     case "set_mask_image":
-                        HandleSetMaskImage(msg);
-                        break;
                     case "erase_mask":
-                        HandleEraseMask(msg);
+                        HandleObjectCommand(msg);
                         break;
                     case "teleport_player":
                         HandleTeleportPlayer(msg);
@@ -54,11 +49,13 @@ namespace DiceTale.Server
             }
         }
 
-        /// <summary>set_object_state：按 ObjectId 定位后台对象，按名称切换其状态，并打印结果。</summary>
-        private void HandleSetObjectState(Dictionary<string, object> msg)
+        /// <summary>
+        /// 对象命令（set_object_state / set_object_items / set_mask_image / erase_mask）：
+        /// 按 ObjectId 定位枢纽，由枢纽通用路由给能处理该命令的能力组件（组件自己解析参数并执行）。
+        /// </summary>
+        private void HandleObjectCommand(Dictionary<string, object> msg)
         {
             var objectId = JsonParser.GetString(msg, "objectId");
-            var stateName = JsonParser.GetString(msg, "state");
             var obj = FindBackendObject(objectId);
             if (obj == null)
             {
@@ -66,102 +63,21 @@ namespace DiceTale.Server
                 return;
             }
 
-            if (obj.TrySetState(stateName))
+            var type = JsonParser.GetString(msg, "type");
+            if (obj.DispatchCommand(type, msg))
             {
-                Debug.Log($"[ServerCommandDispatcher] {objectId} ({obj.DisplayName}): state -> '{stateName}' OK");
+                Debug.Log($"[ServerCommandDispatcher] {objectId} ({obj.DisplayName}): {type} OK");
             }
             else
             {
-                Debug.LogWarning($"[ServerCommandDispatcher] {objectId}: unknown state '{stateName}'");
+                Debug.LogWarning($"[ServerCommandDispatcher] {objectId}: no component handled command '{type}'");
             }
-        }
-
-        /// <summary>set_object_items：按 ObjectId 定位后台对象，整体设置物品列表（字符串），并打印结果。</summary>
-        private void HandleSetObjectItems(Dictionary<string, object> msg)
-        {
-            var objectId = JsonParser.GetString(msg, "objectId");
-            var obj = FindBackendObject(objectId);
-            if (obj == null)
-            {
-                Debug.LogWarning($"[ServerCommandDispatcher] BackendObject not found in scene: {objectId}");
-                return;
-            }
-
-            var items = new List<string>();
-            var rawItems = JsonParser.GetArray(msg, "items");
-            if (rawItems != null)
-            {
-                foreach (var raw in rawItems)
-                {
-                    if (raw is string s)
-                    {
-                        items.Add(s);
-                    }
-                }
-            }
-
-            obj.SetItems(items);
-            Debug.Log($"[ServerCommandDispatcher] {objectId} ({obj.DisplayName}): items set ({items.Count})");
 
             // 玩家物品变化后刷新道具剩余数量并重报（GM 页面「剩余」随之更新）
-            ItemObject.RefreshAllQuantities();
-        }
-
-        /// <summary>set_mask_image：按 ObjectId 定位后台对象，应用 GM 擦除后的遮罩图（base64 PNG）。</summary>
-        private void HandleSetMaskImage(Dictionary<string, object> msg)
-        {
-            var objectId = JsonParser.GetString(msg, "objectId");
-            var image = JsonParser.GetString(msg, "image");
-            var obj = FindBackendObject(objectId);
-            if (obj == null)
+            if (type == "set_object_items")
             {
-                Debug.LogWarning($"[ServerCommandDispatcher] BackendObject not found in scene: {objectId}");
-                return;
+                ItemObject.RefreshAllQuantities();
             }
-
-            obj.ApplyMaskImage(image);
-            Debug.Log($"[ServerCommandDispatcher] {objectId} ({obj.DisplayName}): mask image applied");
-        }
-
-        /// <summary>erase_mask：按 ObjectId 定位后台对象，应用 GM 擦除的笔画轨迹（客户端 shader 计算软边）。</summary>
-        private void HandleEraseMask(Dictionary<string, object> msg)
-        {
-            var objectId = JsonParser.GetString(msg, "objectId");
-            var stroke = JsonParser.GetObject(msg, "stroke");
-            if (stroke == null)
-            {
-                return;
-            }
-
-            var rawPoints = JsonParser.GetArray(stroke, "points");
-            if (rawPoints == null || rawPoints.Count < 2)
-            {
-                return; // 少于两个点没有线段，忽略
-            }
-
-            var points = new Vector2[rawPoints.Count];
-            for (int i = 0; i < rawPoints.Count; i++)
-            {
-                if (rawPoints[i] is Dictionary<string, object> p)
-                {
-                    points[i] = new Vector2(
-                        (float)JsonParser.GetNumber(p, "x"),
-                        (float)JsonParser.GetNumber(p, "y"));
-                }
-            }
-
-            var radius = (float)JsonParser.GetNumber(stroke, "radius");
-            var softness = (float)JsonParser.GetNumber(stroke, "softness");
-
-            var obj = FindBackendObject(objectId);
-            if (obj == null)
-            {
-                Debug.LogWarning($"[ServerCommandDispatcher] BackendObject not found in scene: {objectId}");
-                return;
-            }
-
-            obj.ApplyEraseStroke(points, radius, softness);
-            Debug.Log($"[ServerCommandDispatcher] {objectId} ({obj.DisplayName}): erase stroke ({points.Length} points)");
         }
 
         private void HandleTeleportPlayer(Dictionary<string, object> msg)

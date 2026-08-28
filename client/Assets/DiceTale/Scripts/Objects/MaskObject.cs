@@ -14,7 +14,7 @@ namespace DiceTale
     ///   输出纹理 ReadPixels 同步，外部直接看到结果。
     /// 对象 ID 与显示名称由枢纽统一提供（默认自动生成唯一 ID；显示名在 BackendObject.displayName 配置）。
     /// </summary>
-    public class MaskObject : BackendComponent, IMaskSource, IBackendComponentData
+    public class MaskObject : BackendComponent, IMaskSource, IBackendComponentData, IBackendCommandHandler
     {
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染遮罩编辑区）。</summary>
         public override string ComponentId => "MaskObject";
@@ -52,6 +52,58 @@ namespace DiceTale
 
         /// <summary>稳定输出遮罩纹理（Texture2D，初始全黑；外部持有引用始终有效）。由外部渲染组件读取。</summary>
         public Texture2D MaskTexture => outputTexture;
+
+        /// <summary>命令处理：set_mask_image / erase_mask（遮罩命令由本组件自己解析并执行，不再经枢纽转发）。</summary>
+        public bool CanHandle(string commandType) =>
+            commandType == "set_mask_image" || commandType == "erase_mask";
+
+        public bool HandleCommand(Dictionary<string, object> msg)
+        {
+            switch (Server.JsonParser.GetString(msg, "type"))
+            {
+                case "set_mask_image":
+                    ApplyMaskImage(Server.JsonParser.GetString(msg, "image"));
+                    return true;
+
+                case "erase_mask":
+                    return HandleEraseStroke(msg);
+
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>解析 GM 擦除笔画轨迹（归一化点 + 归一化半径 + 软边比例）并应用。少于两个点没有线段，忽略。</summary>
+        private bool HandleEraseStroke(Dictionary<string, object> msg)
+        {
+            var stroke = Server.JsonParser.GetObject(msg, "stroke");
+            if (stroke == null)
+            {
+                return false;
+            }
+
+            var rawPoints = Server.JsonParser.GetArray(stroke, "points");
+            if (rawPoints == null || rawPoints.Count < 2)
+            {
+                return false;
+            }
+
+            var points = new Vector2[rawPoints.Count];
+            for (int i = 0; i < rawPoints.Count; i++)
+            {
+                if (rawPoints[i] is Dictionary<string, object> p)
+                {
+                    points[i] = new Vector2(
+                        (float)Server.JsonParser.GetNumber(p, "x"),
+                        (float)Server.JsonParser.GetNumber(p, "y"));
+                }
+            }
+
+            var radius = (float)Server.JsonParser.GetNumber(stroke, "radius");
+            var softness = (float)Server.JsonParser.GetNumber(stroke, "softness");
+            ApplyEraseStroke(points, radius, softness);
+            return true;
+        }
 
         protected override void OnEnable()
         {

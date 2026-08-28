@@ -18,8 +18,7 @@ namespace DiceTale
     /// - 提供统一的对象 ID（ObjectId：角色组件优先，其次自定义 ID（隐藏字段），默认自动生成唯一 ID）与类型显示名（ObjectKind）；
     /// - 提供向后台发送消息、世界坐标转图片归一化坐标的工具；
     /// - 收集能力组件的数据统一上报（各能力组件经 <see cref="IBackendComponentData"/> 自己填充状态/物品/道具/遮罩字段）；
-    /// - 转发后台命令到对应能力组件（TrySetState → ISceneStateMachine、SetItems → IItemInventory、
-    ///   ApplyMaskImage/ApplyEraseStroke → IMaskSource）。
+    /// - 通用命令路由：后台命令按类型转发给能处理它的能力组件（组件实现 <see cref="IBackendCommandHandler"/> 自己解析并执行）；
     ///
     /// 用法：主体（GameObject）上挂枢纽 + 任意组合的能力组件（门=枢纽+状态机、道具=枢纽+道具货源、
     /// 玩家=枢纽+角色+物品、宝箱=枢纽+状态机+道具货源…）。
@@ -194,29 +193,35 @@ namespace DiceTale
             }
         }
 
-        /// <summary>后台命令入口：按名称切换状态（转发给状态机组件；无状态机时返回 false）。</summary>
-        public bool TrySetState(string stateName)
+        /// <summary>
+        /// 命令路由（通用）：把后台命令转发给能处理它的能力组件——组件实现
+        /// <see cref="IBackendCommandHandler"/>，自己解析参数并执行；本处不写任何具体命令逻辑，
+        /// 新增命令只需在对应组件实现接口，无需改动主体与分派器。
+        /// </summary>
+        /// <param name="commandType">后台消息 type（如 "set_object_state"）。</param>
+        /// <param name="msg">后台消息字典（组件自己解析参数）。</param>
+        /// <returns>有组件处理并执行成功返回 true；无组件处理返回 false。</returns>
+        public bool DispatchCommand(string commandType, Dictionary<string, object> msg)
         {
-            var stateMachine = FindComponent<ISceneStateMachine>();
-            return stateMachine != null && stateMachine.TrySetState(stateName);
-        }
+            if (string.IsNullOrEmpty(commandType) || msg == null)
+            {
+                return false;
+            }
 
-        /// <summary>后台命令入口：整体设置物品列表（转发给物品组件；无物品组件时无操作）。</summary>
-        public void SetItems(IEnumerable<string> newItems)
-        {
-            FindComponent<IItemInventory>()?.SetItems(newItems);
-        }
+            foreach (var comp in capabilityComponents)
+            {
+                if (comp == null || !(comp is IBackendCommandHandler handler))
+                {
+                    continue;
+                }
 
-        /// <summary>后台命令入口：应用遮罩图像（base64 PNG；转发给遮罩组件）。</summary>
-        public void ApplyMaskImage(string base64Png)
-        {
-            FindComponent<IMaskSource>()?.ApplyMaskImage(base64Png);
-        }
+                if (handler.CanHandle(commandType))
+                {
+                    return handler.HandleCommand(msg);
+                }
+            }
 
-        /// <summary>后台命令入口：应用 GM 擦除的笔画轨迹（归一化点 + 归一化半径 + 软边比例；转发给遮罩组件）。</summary>
-        public void ApplyEraseStroke(Vector2[] points, float radius, float softness)
-        {
-            FindComponent<IMaskSource>()?.ApplyEraseStroke(points, radius, softness);
+            return false;
         }
 
         /// <summary>状态切换后上报给后台，使 GM 页面同步显示当前状态（状态机组件切换状态后调用）。</summary>

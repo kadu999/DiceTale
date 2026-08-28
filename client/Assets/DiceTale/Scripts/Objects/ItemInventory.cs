@@ -9,7 +9,7 @@ namespace DiceTale
     /// 继承 <see cref="BackendComponent"/>，与 <see cref="BackendObject"/> 枢纽挂同一物体，
     /// 增删物品后经枢纽上报（ReportItems），物品列表由组件自己上报（IBackendComponentData）。
     /// </summary>
-    public class ItemInventory : BackendComponent, IItemInventory, IBackendComponentData
+    public class ItemInventory : BackendComponent, IItemInventory, IBackendComponentData, IBackendCommandHandler
     {
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染物品编辑区）。</summary>
         public override string ComponentId => "ItemInventory";
@@ -23,6 +23,28 @@ namespace DiceTale
         public void AppendToInfo(Server.ServerObjectInfo info)
         {
             info.items = new List<string>(items);
+        }
+
+        /// <summary>命令处理：set_object_items（物品列表由本组件自己解析并执行，不再经枢纽转发）。</summary>
+        public bool CanHandle(string commandType) => commandType == "set_object_items";
+
+        public bool HandleCommand(Dictionary<string, object> msg)
+        {
+            var rawItems = Server.JsonParser.GetArray(msg, "items");
+            var newItems = new List<string>();
+            if (rawItems != null)
+            {
+                foreach (var raw in rawItems)
+                {
+                    if (raw is string s)
+                    {
+                        newItems.Add(s);
+                    }
+                }
+            }
+
+            SetItems(newItems);
+            return true;
         }
 
         /// <summary>添加物品（重复添加忽略；与后台同步）。</summary>

@@ -48,6 +48,20 @@ namespace DiceTale
     }
 
     /// <summary>
+    /// 命令处理能力：组件自己处理对应后台命令（解析参数并执行），枢纽只做通用路由、分派器只做定位。
+    /// 实现者：<see cref="SceneObject"/>（set_object_state）、<see cref="ItemInventory"/>（set_object_items）、
+    /// <see cref="MaskObject"/>（set_mask_image / erase_mask）。
+    /// </summary>
+    public interface IBackendCommandHandler
+    {
+        /// <summary>是否处理该命令类型（后台消息 type，如 "set_object_state"）。</summary>
+        bool CanHandle(string commandType);
+
+        /// <summary>执行命令（msg 为后台消息字典，组件自己解析参数）；返回是否成功处理。</summary>
+        bool HandleCommand(Dictionary<string, object> msg);
+    }
+
+    /// <summary>
     /// 状态机能力：提供状态列表、当前状态与按名称切换状态（后台 set_object_state 命令）。
     /// 实现者：<see cref="SceneObject"/>。
     /// </summary>

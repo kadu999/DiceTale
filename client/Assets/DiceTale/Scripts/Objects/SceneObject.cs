@@ -13,7 +13,7 @@ namespace DiceTale
     /// - 显示名称在枢纽上配置（BackendObject.displayName，后台看名字识别对象）；
     /// - 物品列表已拆分到 <see cref="ItemInventory"/>（需要的物体另挂该组件）。
     /// </summary>
-    public class SceneObject : BackendComponent, ISceneStateMachine, IBackendComponentData
+    public class SceneObject : BackendComponent, ISceneStateMachine, IBackendComponentData, IBackendCommandHandler
     {
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染状态单选组）。</summary>
         public override string ComponentId => "SceneObject";
@@ -54,6 +54,15 @@ namespace DiceTale
         {
             info.currentState = CurrentStateName;
             info.states = StateNames;
+        }
+
+        /// <summary>命令处理：set_object_state（状态切换由本组件自己解析并执行，不再经枢纽转发）。</summary>
+        public bool CanHandle(string commandType) => commandType == "set_object_state";
+
+        public bool HandleCommand(Dictionary<string, object> msg)
+        {
+            var stateName = Server.JsonParser.GetString(msg, "state");
+            return TrySetState(stateName);
         }
 
         private void Start()
