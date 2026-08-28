@@ -5,7 +5,8 @@ namespace DiceTale
 {
     /// <summary>
     /// 角色管理：持有所有玩家主体（BackendObject 枢纽，kind=Player）并维护当前玩家。
-    /// 玩家实体形态：BackendObject + Backpack（Player 组件仅作身份桥接，分配 PlayerId）。
+    /// 玩家实体形态：BackendObject + Backpack——身份用枢纽 ObjectId（自动唯一），
+    /// 显示名在枢纽 displayName 设置，玩家登记由枢纽按 kind=Player 处理。
     /// </summary>
     public class CharacterManager : MonoBehaviour
     {
@@ -101,8 +102,9 @@ namespace DiceTale
                 var hub = playerGo.GetComponent<BackendObject>();
                 if (hub != null)
                 {
-                    // 身份桥接：Player 组件分配 PlayerId（后续改为纯 BackendObject+Backpack 时由枢纽分配）
-                    playerGo.GetComponent<Player>()?.SetPlayerId($"Player_{i + 1}");
+                    // 玩家主体：kind=Player（枢纽按此登记玩家名单），displayName 供 GM 页面显示
+                    hub.SetKind(BackendObjectKind.Player);
+                    hub.SetDisplayName($"Player_{i + 1}");
                     Players.Add(hub);
                 }
             }

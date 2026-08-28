@@ -33,7 +33,7 @@ namespace DiceTale
         [SerializeField, Tooltip("GM 页面显示的名称（后台看名字识别对象）；为空时回退道具动态显示名或对象 ID")]
         private string displayName;
 
-        [SerializeField, HideInInspector, Tooltip("自定义对象 ID 覆盖（高级用途：需要稳定/可读 ID 时设置，如 Debug 模式或代码里写入）；为空时自动生成唯一 ID；Player/SpawnPoint 用角色组件自己的 ID")]
+        [SerializeField, HideInInspector, Tooltip("自定义对象 ID 覆盖（高级用途：需要稳定/可读 ID 时设置，如 Debug 模式或代码里写入）；为空时自动生成唯一 ID；SpawnPoint 用角色组件自己的 ID")]
         private string objectId;
 
         private string generatedId;
@@ -41,7 +41,7 @@ namespace DiceTale
         /// <summary>主体上的能力组件缓存（初始化时扫描获取，不序列化不显示）；上报与命令路由以此列表为来源。</summary>
         private readonly List<BackendComponent> capabilityComponents = new List<BackendComponent>();
 
-        /// <summary>后台使用的唯一对象 ID：角色组件（Player/SpawnPoint）优先，其次自定义 ID（隐藏字段），默认自动生成唯一 ID。</summary>
+        /// <summary>后台使用的唯一对象 ID：角色组件（SpawnPoint）优先，其次自定义 ID（隐藏字段），默认自动生成唯一 ID。</summary>
         public string ObjectId
         {
             get
@@ -68,6 +68,18 @@ namespace DiceTale
 
         /// <summary>对象类型显示名（GM 页面展示用）：序列化 BackendObjectKind 枚举的字符串形式。</summary>
         public string ObjectKind => objectKind.ToString();
+
+        /// <summary>设置后台对象类型（玩家等由代码创建的枢纽在运行时设置，如 kind=Player）。</summary>
+        public void SetKind(BackendObjectKind kind)
+        {
+            objectKind = kind;
+        }
+
+        /// <summary>设置 GM 页面显示的名称（后台看名字识别对象）。</summary>
+        public void SetDisplayName(string name)
+        {
+            displayName = name;
+        }
 
         /// <summary>GM 页面显示的名称：优先静态显示名（本枢纽），其次道具动态显示名（ItemObject「道具名 ×剩余」），回退对象 ID。</summary>
         public string DisplayName
@@ -96,7 +108,7 @@ namespace DiceTale
         /// <summary>主体上的能力组件（只读视图；数据由各组件自己持有并上报）。</summary>
         /// <summary>
         /// 可编辑能力清单（上报给 GM 页面，据此渲染属性控件）：取每个能力组件自己的 ComponentId；
-        /// 角色组件（Player/SpawnPoint）GmEditable=false，不进入清单（按 kind 与 register_players/spawnPoints 名单处理）。
+        /// 角色组件（SpawnPoint）GmEditable=false，不进入清单（按 kind 与 spawnPoints 名单处理）。
         /// </summary>
         public List<string> Components
         {
@@ -179,7 +191,8 @@ namespace DiceTale
         }
 
         /// <summary>
-        /// 把自身信息追加到上报消息：角色组件（Player 玩家名单、SpawnPoint 出生点）追加专用字段，
+        /// 把自身信息追加到上报消息：角色组件（SpawnPoint 出生点）追加专用字段；
+        /// 无角色组件但 kind=Player 的主体登记为玩家（玩家实体 = BackendObject + Backpack，身份用 ObjectId、名字用 DisplayName）。
         /// 通用状态信息已由注册表统一加入 objects（本枢纽聚合各能力组件）。
         /// </summary>
         public void AppendToReport(
@@ -190,6 +203,16 @@ namespace DiceTale
             if (role != null)
             {
                 role.AppendToReport(mapObjects, players);
+                return;
+            }
+
+            if (ObjectKind == "Player")
+            {
+                players.players.Add(new Server.PlayerInfo
+                {
+                    id = ObjectId,
+                    name = DisplayName
+                });
             }
         }
 
@@ -254,7 +277,7 @@ namespace DiceTale
 
         /// <summary>
         /// 位置同步（所有主体通用）：上报自身当前位置（归一化图片坐标）。
-        /// 玩家主体（有 <see cref="IBackendRole"/>）走玩家位置消息（后台 players 名单）；
+        /// 玩家主体（有 <see cref="IBackendRole"/> 或 kind=Player）走玩家位置消息（后台 players 名单）；
         /// 普通主体走通用对象位置消息（后台 objects 位置更新）。
         /// </summary>
         public void ReportPosition()
@@ -262,7 +285,7 @@ namespace DiceTale
             var position = NormalizePosition(transform.position);
             var mapName = GetCurrentMapName();
 
-            if (FindComponent<IBackendRole>() != null)
+            if (FindComponent<IBackendRole>() != null || ObjectKind == "Player")
             {
                 SendToBackend(new Server.ReportPlayerPositionMessage
                 {

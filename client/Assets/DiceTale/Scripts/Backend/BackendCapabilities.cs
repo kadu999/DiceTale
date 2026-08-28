@@ -11,15 +11,15 @@ namespace DiceTale
     /// </summary>
 
     /// <summary>
-    /// 角色能力：提供对象 ID 覆盖与专用上报追加（玩家名单、出生点名单）。
-    /// 实现者：<see cref="Player"/>、<see cref="SpawnPoint"/>。
+    /// 角色能力：提供对象 ID 覆盖与专用上报追加（出生点名单）。
+    /// 实现者：<see cref="SpawnPoint"/>；玩家不实现本接口——身份用枢纽 ObjectId，登记由枢纽按 kind=Player 处理。
     /// </summary>
     public interface IBackendRole
     {
-        /// <summary>后台使用的对象 ID（覆盖枢纽的默认 ID，如 Player 用 PlayerId、SpawnPoint 用 id）。</summary>
+        /// <summary>后台使用的对象 ID（覆盖枢纽的默认 ID，如 SpawnPoint 用 id）。</summary>
         string ObjectId { get; }
 
-        /// <summary>把自身信息追加到上报消息（玩家加入玩家名单消息、出生点加入地图对象消息）。</summary>
+        /// <summary>把自身信息追加到上报消息（出生点加入地图对象消息）。</summary>
         void AppendToReport(
             Server.RegisterMapObjectsMessage mapObjects,
             Server.RegisterPlayersMessage players);

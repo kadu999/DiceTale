@@ -4,12 +4,14 @@ using UnityEngine;
 namespace DiceTale
 {
     /// <summary>
-    /// 玩家角色组件（组件模型下的能力组件，原 Player 的角色部分）：
-    /// 提供玩家唯一标识（PlayerId）、玩家名单上报与位置上报（IBackendRole）。
-    /// 继承 <see cref="BackendComponent"/>，与 <see cref="BackendObject"/> 枢纽挂同一物体；
-    /// 道具列表由同物体的 <see cref="Backpack"/> 提供。
+    /// 玩家标记组件（过渡态）：标识这个主体是玩家。
+    /// 玩家实体形态 = BackendObject（kind=Player）+ Backpack：
+    /// - 身份用枢纽 ObjectId（自动唯一，无需设置玩家 ID）；
+    /// - 显示名在枢纽 displayName 设置（GM 页面展示）；
+    /// - 玩家登记由枢纽 AppendToReport 按 kind=Player 处理。
+    /// 本组件保留仅为兼容既有 prefab 挂载；后续移除 Player 组件不影响任何功能。
     /// </summary>
-    public class Player : BackendComponent, IBackendRole
+    public class Player : BackendComponent
     {
         /// <summary>组件 ID（与客户端组件类同名；角色组件不进 GM 面板清单）。</summary>
         public override string ComponentId => "Player";
@@ -19,47 +21,20 @@ namespace DiceTale
 
         private static readonly List<string> EmptyItems = new List<string>();
 
-        /// <summary>玩家唯一标识（由 CharacterManager 分配，上报给后台）。</summary>
-        public string PlayerId { get; private set; } = "Player_1";
-
-        /// <summary>后台对象 ID：玩家使用自己的 PlayerId（IBackendRole）。</summary>
-        public string ObjectId => PlayerId;
-
-        /// <summary>GM 页面显示的名称：取枢纽显示名（默认回退 PlayerId）。</summary>
-        public string DisplayName => Hub?.DisplayName ?? PlayerId;
+        /// <summary>GM 页面显示的名称：取枢纽显示名（未设置时回退物体名）。</summary>
+        public string DisplayName => Hub != null ? Hub.DisplayName : name;
 
         /// <summary>道具列表（由同物体的 Backpack 提供；无背包组件时为空）。</summary>
         public IReadOnlyList<string> Items
         {
             get
             {
-                var inventory = GetComponent<Backpack>();
-                return inventory != null ? inventory.Items : EmptyItems;
+                var backpack = GetComponent<Backpack>();
+                return backpack != null ? backpack.Items : EmptyItems;
             }
         }
 
-        public void SetPlayerId(string playerId)
-        {
-            if (!string.IsNullOrEmpty(playerId))
-            {
-                PlayerId = playerId;
-            }
-        }
-
-        public void AppendToReport(Server.RegisterMapObjectsMessage mapObjects, Server.RegisterPlayersMessage players)
-        {
-            players.players.Add(new Server.PlayerInfo
-            {
-                id = PlayerId,
-                name = PlayerId
-            });
-        }
-
-        /// <summary>
-        /// 上报当前玩家位置（归一化图片坐标）。
-        /// 位置同步已统一收口到主体枢纽（所有主体通用），本方法只是便捷转发。
-        /// 由 InputManager 在瞬移后调用，传送落点由 MapManager 调用。
-        /// </summary>
+        /// <summary>上报当前玩家位置（位置同步在主体枢纽，本方法只是便捷转发）。</summary>
         public void ReportPosition()
         {
             Hub?.ReportPosition();
