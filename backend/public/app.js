@@ -213,11 +213,26 @@ function selectObject(objectId) {
   renderPropertyPanel();
 }
 
+let lastMapRenderKey = '';
+let playerMarkers = {}; // playerId -> 持久化的玩家标记元素（不随渲染重建，避免动画重启/其他玩家跳动）
+
 function renderMap() {
   // 不自动跟随客户端切图：显示的哪个地图只由手动切换决定（首次默认客户端当前地图）
   if (!selectedMap) selectedMap = state.currentMap;
 
   const map = effectiveMap();
+
+  // 变更守卫：地图/选中目标/对象/玩家位置都没变时跳过重建。
+  // 否则每次 gm_update（位置上报、心跳）都清空重绘全部标记，
+  // 会导致选中玩家的脉冲动画反复重启、其余玩家图标集体闪烁（看起来像都在播放动画）。
+  const renderKey =
+    map + '|' + (selectedObjectId || '') + '|' +
+    JSON.stringify(state.objects) + '|' + JSON.stringify(state.players);
+  if (renderKey === lastMapRenderKey) {
+    return;
+  }
+  lastMapRenderKey = renderKey;
+
   const image = document.getElementById('mapImage');
   if (image.src !== `/maps/${map}.png`) {
     image.src = `/maps/${map}.png`;
@@ -262,20 +277,50 @@ function renderMap() {
     layer.appendChild(marker);
   }
 
-  // 玩家标记（实时位置；点击选中玩家对象）
+  // 玩家标记（实时位置；点击选中玩家对象）——持久化元素，只更新位置/名字/选中态，不重建
+  renderPlayerMarkers();
+}
+
+/** 玩家标记持久化渲染：元素按 playerId 复用，仅更新位置、名字与选中态。
+ *  不复建 DOM → 点击切换选中时，其他玩家的图标和文字完全不动（不再因重建+重新适配字号而跳动）。 */
+function renderPlayerMarkers() {
+  const map = effectiveMap();
+  const playerLayer = document.getElementById('playerLayer');
+  if (!playerLayer) return;
+
+  const seen = {};
   for (const [playerId, player] of Object.entries(state.players || {})) {
     if (player.mapName !== map) continue;
 
-    const marker = document.createElement('button');
+    let marker = playerMarkers[playerId];
+    if (!marker) {
+      marker = document.createElement('button');
+      marker.onclick = () => selectObject(playerId);
+      playerLayer.appendChild(marker);
+      playerMarkers[playerId] = marker;
+    }
+
+    // 选中态：class 切换（元素复用 → width/height/font-size 过渡平滑，脉冲只出现在选中者上）
     marker.className = 'player-marker' + (playerId === selectedObjectId ? ' selected' : '');
     marker.title = player.name || playerId;
+
+    const name = player.name || playerId;
+    if (marker.textContent !== name) {
+      marker.textContent = name;
+      fitPlayerName(marker); // 仅名字真正变化时才重新适配字号
+    }
+
     marker.style.left = `${num(player.position && player.position.x, 0.5) * 100}%`;
     marker.style.top = `${num(player.position && player.position.y, 0.5) * 100}%`;
+    seen[playerId] = true;
+  }
 
-    marker.textContent = player.name || playerId;
-    marker.onclick = () => selectObject(playerId);
-    layer.appendChild(marker);
-    fitPlayerName(marker);
+  // 移除已不在当前地图/名单上的玩家标记
+  for (const pid of Object.keys(playerMarkers)) {
+    if (!seen[pid]) {
+      playerMarkers[pid].remove();
+      delete playerMarkers[pid];
+    }
   }
 }
 
@@ -304,7 +349,7 @@ function renderPropertyPanel() {
   renderPropertyPanelInto('propertyListMap');
 }
 
-/** 渲染选中目标的属性：基本信息 + 物品/道具 + 状态（分区展示，地图页右侧）。 */
+/** 渲染选中目标的属性：基本信息 + 状态（优先）+ 物品/道具（分区展示，地图页右侧）。 */
 function renderPropertyPanelInto(id) {
   const container = document.getElementById(id);
   if (!container) return;
@@ -329,22 +374,22 @@ function renderPropertyPanelInto(id) {
   addPropertyRow(info, '位置', fmtPos((obj && obj.position) || (player && player.position)));
   if (player) addPropertyRow(info, '地图', player.mapName || '-');
 
+  // 状态操作优先：放在物品/道具区之前（未配置状态列表时不显示整个区）
+  if (obj && ((obj.states) || []).length > 0) {
+    renderObjectStates(propertySection(container, '状态'), selectedObjectId, obj, null);
+  }
+
   const isPlayer = !!player || (obj && obj.kind === 'Player');
 
   if (isPlayer) {
-    // 玩家：显示身上的道具（chips 可删除 ×），「添加道具」走道具选择弹框（gm_set_object_items）
-    renderObjectItems(container, selectedObjectId, (obj && obj.items) || [], '物品');
+    // 玩家：显示身上的道具（分配样式 [-道具名 数量+]），「添加道具」走道具选择弹框（gm_set_object_items）
+    renderObjectItems(propertySection(container), selectedObjectId, (obj && obj.items) || [], '物品');
   } else if (obj.kind === 'ItemObject' || obj.itemName) {
     // 道具对象：玩家分配列表（内部自带「分配道具（剩余 N）」标题）
     renderItemDistribution(propertySection(container), obj);
   } else {
     // 普通对象：物品编辑
-    renderObjectItems(container, selectedObjectId, obj.items || [], '物品');
-  }
-
-  // 状态（未配置状态列表时不显示整个区）
-  if (((obj.states) || []).length > 0) {
-    renderObjectStates(propertySection(container, '状态'), selectedObjectId, obj, null);
+    renderObjectItems(propertySection(container), selectedObjectId, obj.items || [], '物品');
   }
 }
 
@@ -519,14 +564,14 @@ function renderPlayerList() {
     addPropertyRow(info, '地图', player.mapName || '-');
     addPropertyRow(info, '位置', fmtPos(player.position));
 
-    // 物品编辑（与地图页属性面板一致的物品区）
+    // 状态操作优先：放在物品区之前（未配置状态列表时不显示）
     const obj = state.objects && state.objects[playerId];
-    renderObjectItems(list, playerId, (obj && obj.items) || [], '物品');
-
-    // 状态切换（未配置状态列表时不显示）
-    if (((obj && obj.states) || []).length > 0) {
-      renderObjectStates(propertySection(list, '状态'), playerId, obj || {}, null);
+    if (obj && ((obj.states) || []).length > 0) {
+      renderObjectStates(propertySection(list, '状态'), playerId, obj, null);
     }
+
+    // 物品编辑（与地图页属性面板一致的物品区，section 包裹以带分隔线）
+    renderObjectItems(propertySection(list), playerId, (obj && obj.items) || [], '物品');
 
     container.appendChild(card);
   }

@@ -245,7 +245,6 @@ main.layout {
   line-height: 1.1;
   text-align: center;
   white-space: nowrap;
-  overflow: hidden;
   cursor: pointer;
   pointer-events: auto;
   touch-action: manipulation;
@@ -345,13 +344,13 @@ main.layout {
   padding: 0.25rem;
 }
 
-/* 分区：细分割线 + 小标题，取代一字段一盒子的旧样式 */
+/* 分区：细分隔线 + 小标题，取代一字段一盒子的旧样式 */
 .property-section {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
   padding: 0.55rem 0.15rem;
-  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  border-top: 1px solid rgba(148, 163, 184, 0.28);
 }
 
 .property-section:first-child {
