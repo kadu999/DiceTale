@@ -72,12 +72,6 @@ namespace DiceTale.Server
             {
                 Debug.LogWarning($"[ServerCommandDispatcher] {objectId}: no component handled command '{type}'");
             }
-
-            // 玩家物品变化后刷新道具剩余数量并重报（GM 页面「剩余」随之更新）
-            if (type == "set_object_items")
-            {
-                ItemObject.RefreshAllQuantities();
-            }
         }
 
         private void HandleTeleportPlayer(Dictionary<string, object> msg)
