@@ -12,20 +12,17 @@ namespace DiceTale
     ///      在 mesh 上采样 背景纹理（纹理1）/ 效果纹理（纹理2）/ 遮罩 直接渲染，无需额外合成 RT。
     ///   输出目标：
     ///     - 指定 outputRenderer（推荐）：把合成材质（自动实例化，不落盘）赋给它，每帧推送属性；
-    ///     - 或自动创建显示 quad（createDisplayQuad，与父物体同尺寸）显示合成结果；
-    ///     - 都不要则调用 Composite() 自己接 Blit 管线。
+    ///     - 或调用 Composite() 自己接 Blit 管线（输出到自定义 RenderTexture）。
     /// 用法：Inspector 的 boxSprites 列表拖入 SpriteRenderer，或代码里 AddBoxSprite / RemoveBoxSprite /
     ///       ClearBoxSprites；移动/缩放 sprite 即编辑框范围（Scene 视图有黄色框线预览）。
     /// 建议把脚本挂到背景 quad 或背景 SpriteRenderer 所在物体上（WorldToUV 以本物体渲染范围为基准）。
     /// </summary>
     public class BoxMaskEffect : MonoBehaviour
     {
-        [Header("纹理")]
+        [Header("输出")]
+        [Tooltip("合成结果输出到哪个 MeshRenderer（把合成材质赋给它，每帧推送属性）")]
         [SerializeField]
-        private Texture backgroundTexture; // 纹理1（背景）
-
-        [SerializeField]
-        private Texture effectTexture; // 纹理2（效果）
+        private MeshRenderer  meshRenderer;
 
         [Header("合成")]
         [Tooltip("框边缘羽化（UV 单位，0 = 硬边）")]
@@ -41,23 +38,8 @@ namespace DiceTale
         [SerializeField]
         private List<SpriteRenderer> boxSprites = new List<SpriteRenderer>();
 
-        [Header("输出")]
-        [Tooltip("合成结果输出到哪个 MeshRenderer（优先）；留空则用自动创建的显示 quad")]
-        [SerializeField]
-        private MeshRenderer outputRenderer;
-
-        [Tooltip("outputRenderer 为空时自动创建显示 quad（子物体）显示合成结果")]
-        [SerializeField]
-        private bool createDisplayQuad = true;
-
-        [SerializeField]
-        private int displaySortingOrder = 2;
-
         private Material maskMaterial;
-        private Material compositeMaterial;
-        private Material activeOutputMaterial; // 当前输出用的材质（外部 renderer 的实例或自动 quad 的）
         private RenderTexture maskRT;
-        private GameObject displayQuad;
 
         private bool maskDirty = true;
 
@@ -69,21 +51,17 @@ namespace DiceTale
         private static readonly int EdgeSoftnessId = Shader.PropertyToID("_EdgeSoftness");
 
         private const string MaskShaderName = "DiceTale/RectMask";
-        private const string CompositeShaderName = "DiceTale/BoxComposite";
-
-        private Shader compositeShader;
 
         /// <summary>当前框（sprite）的数量。</summary>
         public int BoxCount => boxSprites.Count;
 
-        private void Awake()
+        protected virtual void Awake()
         {
             CreateMaterials();
             CreateMaskRT();
-            SetupOutput();
         }
 
-        private void Update()
+        protected virtual void Update()
         {
             if (boxSprites.Count > 0)
             {
@@ -95,12 +73,9 @@ namespace DiceTale
             {
                 RebuildMask();
             }
-
-            // 把纹理推给输出材质（每帧一次，成本极低）
-            PushMaterialProperties();
         }
 
-        private void OnDestroy()
+        protected virtual void OnDestroy()
         {
             if (maskRT != null)
             {
@@ -110,16 +85,6 @@ namespace DiceTale
             if (maskMaterial != null)
             {
                 Destroy(maskMaterial);
-            }
-
-            if (compositeMaterial != null)
-            {
-                Destroy(compositeMaterial);
-            }
-
-            if (displayQuad != null)
-            {
-                Destroy(displayQuad);
             }
 
             // 注意：赋给外部 outputRenderer 的材质实例（activeOutputMaterial）不在这里销毁，
@@ -161,20 +126,6 @@ namespace DiceTale
             maskDirty = true;
         }
 
-        /// <summary>设置两张纹理：背景纹理（纹理1）、效果纹理（纹理2）。</summary>
-        public void SetTextures(Texture background, Texture effect)
-        {
-            backgroundTexture = background;
-            effectTexture = effect;
-        }
-
-        /// <summary>设置输出目标 MeshRenderer（合成结果直接渲染到它上面）。</summary>
-        public void SetOutputRenderer(MeshRenderer renderer)
-        {
-            outputRenderer = renderer;
-            SetupOutput();
-        }
-
         /// <summary>重建遮罩 RT（清空 + 每个 sprite 框一次 Blit）。列表变化或 sprite 移动后会自动调用，一般无需手动。</summary>
         public void RebuildMask()
         {
@@ -214,19 +165,6 @@ namespace DiceTale
             maskMaterial.SetVector(RectCenterId, center);
             maskMaterial.SetVector(RectSizeId, size);
             Graphics.Blit(null, maskRT, maskMaterial);
-        }
-
-        /// <summary>按 mask 把 source（背景纹理）与效果纹理 Blit 合成到 destination（可选接管线用）。</summary>
-        public void Composite(Texture source, RenderTexture destination)
-        {
-            if (compositeMaterial == null || maskRT == null || destination == null)
-            {
-                return;
-            }
-
-            compositeMaterial.SetTexture(EffectTexId, effectTexture);
-            compositeMaterial.SetTexture(MaskTexId, maskRT);
-            Graphics.Blit(source, destination, compositeMaterial);
         }
 
         /// <summary>
@@ -305,16 +243,14 @@ namespace DiceTale
         private void CreateMaterials()
         {
             var maskShader = Shader.Find(MaskShaderName);
-            compositeShader = Shader.Find(CompositeShaderName);
-            if (maskShader == null || compositeShader == null)
+            if (maskShader == null)
             {
-                Debug.LogError($"[BoxMaskEffect] 找不到 Shader：{MaskShaderName} / {CompositeShaderName}");
+                Debug.LogError($"[BoxMaskEffect] 找不到 Shader：{MaskShaderName}");
                 return;
             }
 
             maskMaterial = new Material(maskShader);
             maskMaterial.SetFloat(EdgeSoftnessId, edgeSoftness);
-            compositeMaterial = new Material(compositeShader);
         }
 
         private void CreateMaskRT()
@@ -324,65 +260,9 @@ namespace DiceTale
             maskRT.filterMode = FilterMode.Bilinear;
             maskRT.wrapMode = TextureWrapMode.Clamp;
             maskRT.name = "BoxMaskRT";
-        }
 
-        /// <summary>确定输出材质：优先 outputRenderer（自动换/建 BoxComposite 材质），否则自动显示 quad。</summary>
-        private void SetupOutput()
-        {
-            if (outputRenderer != null)
-            {
-                var current = outputRenderer.sharedMaterial;
-                if (current != null && current.shader == compositeShader)
-                {
-                    // 用户已配好 BoxComposite 材质：取实例（改属性不落盘）
-                    activeOutputMaterial = outputRenderer.material;
-                }
-                else
-                {
-                    // 材质不对：换成一个运行时实例（不修改原材质资源）
-                    activeOutputMaterial = new Material(compositeShader);
-                    outputRenderer.material = activeOutputMaterial;
-                }
-
-                return;
-            }
-
-            if (createDisplayQuad)
-            {
-                CreateDisplayQuad();
-            }
-        }
-
-        private void CreateDisplayQuad()
-        {
-            var go = new GameObject("BoxMaskOverlay");
-            go.transform.SetParent(transform, false);
-            go.transform.localPosition = Vector3.zero;
-            go.transform.localScale = transform.localScale; // 与父物体（背景 quad）同尺寸
-
-            var meshFilter = go.AddComponent<MeshFilter>();
-            meshFilter.mesh = Resources.GetBuiltinResource<Mesh>("Quad.fbx");
-
-            activeOutputMaterial = compositeMaterial;
-
-            var meshRenderer = go.AddComponent<MeshRenderer>();
-            meshRenderer.material = activeOutputMaterial;
-            meshRenderer.sortingOrder = displaySortingOrder;
-
-            displayQuad = go;
-        }
-
-        /// <summary>把当前纹理推给输出材质（每帧调用，成本极低）。</summary>
-        private void PushMaterialProperties()
-        {
-            if (activeOutputMaterial == null)
-            {
-                return;
-            }
-
-            activeOutputMaterial.SetTexture(MainTexId, backgroundTexture);
-            activeOutputMaterial.SetTexture(EffectTexId, effectTexture);
-            activeOutputMaterial.SetTexture(MaskTexId, maskRT);
+            // 设置Mask
+            meshRenderer.material.SetTexture("_MaskTex", maskRT);
         }
 
         // ---------------------------------------------------------------- 编辑器可视化
