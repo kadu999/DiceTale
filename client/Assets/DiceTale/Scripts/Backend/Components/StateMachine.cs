@@ -8,7 +8,7 @@ namespace DiceTale
     /// 状态组件（状态机）：提供 Inspector 状态列表、进入事件（onStateEnter）与状态动作列表（statefulActions）。
     /// 继承 <see cref="BackendComponent"/>，与 <see cref="BackendObject"/> 枢纽挂同一物体：
     /// - 状态列表/当前状态由组件自己上报（IBackendComponentData → GM 状态单选组）；
-    /// - set_object_state 命令由枢纽路由到本组件（TrySetState），切换后经枢纽上报（ReportStateChanged）；
+    /// - set_object_state 命令由枢纽路由到本组件（TrySetState），执行后不回执上报（数据由后台维护）；
     /// - 显示名称在枢纽上配置（BackendObject.displayName，后台看名字识别对象）；
     /// - 背包（道具存储）已拆分到 <see cref="Backpack"/>（需要的物体另挂该组件）。
     /// </summary>
@@ -103,8 +103,7 @@ namespace DiceTale
                     return true;
                 }
 
-                EnterState(i);
-                ReportStateChanged(); // 基类触发：经主体枢纽上报当前状态
+                EnterState(i); // 只执行后台命令，不回执上报（数据由后台维护）
                 return true;
             }
 

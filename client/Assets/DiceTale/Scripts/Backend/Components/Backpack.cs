@@ -4,10 +4,10 @@ using UnityEngine;
 namespace DiceTale
 {
     /// <summary>
-    /// 背包组件：存储道具（道具名列表，同名重复表示数量），与后台同步（IBackpack）。
+    /// 背包组件：存储道具（道具名列表，同名重复表示数量）。
     /// 供玩家等持有道具的物体使用（容器也可挂）。
-    /// 继承 <see cref="BackendComponent"/>，与 <see cref="BackendObject"/> 枢纽挂同一物体，
-    /// 增删道具后经枢纽上报（ReportItems），道具列表由组件自己上报（IBackendComponentData）。
+    /// 继承 <see cref="BackendComponent"/>，与 <see cref="BackendObject"/> 枢纽挂同一物体：
+    /// 初始化时由枢纽统一上报（IBackendComponentData），之后道具数据由后台 set_object_items 命令修改，前端不回执。
     /// </summary>
     public class Backpack : BackendComponent, IBackpack, IBackendComponentData, IBackendCommandHandler
     {
@@ -16,16 +16,16 @@ namespace DiceTale
 
         private readonly List<string> items = new List<string>();
 
-        /// <summary>物品列表（只读视图；修改用 AddItem/RemoveItem/SetItems，与后台同步）。</summary>
+        /// <summary>道具列表（只读视图；由后台命令修改）。</summary>
         public IReadOnlyList<string> Items => items;
 
-        /// <summary>组件数据上报：物品列表（GM 属性面板的物品编辑区）。</summary>
+        /// <summary>组件数据上报（初始化）：道具列表（GM 属性面板的物品编辑区）。</summary>
         public void AppendToInfo(Server.ServerObjectInfo info)
         {
             info.items = new List<string>(items);
         }
 
-        /// <summary>命令处理：set_object_items（物品列表由本组件自己解析并执行，不再经枢纽转发）。</summary>
+        /// <summary>命令处理：set_object_items（道具列表由本组件自己解析并执行）。</summary>
         public bool CanHandle(string commandType) => commandType == "set_object_items";
 
         public bool HandleCommand(Dictionary<string, object> msg)
@@ -47,7 +47,7 @@ namespace DiceTale
             return true;
         }
 
-        /// <summary>添加物品（重复添加忽略；与后台同步）。</summary>
+        /// <summary>添加道具（重复添加忽略；本地修改，不回执）。</summary>
         public void AddItem(string item)
         {
             if (string.IsNullOrEmpty(item) || items.Contains(item))
@@ -56,19 +56,15 @@ namespace DiceTale
             }
 
             items.Add(item);
-            ReportItems();
         }
 
-        /// <summary>移除物品（不存在时无操作；与后台同步）。</summary>
+        /// <summary>移除道具（不存在时无操作；本地修改，不回执）。</summary>
         public void RemoveItem(string item)
         {
-            if (items.Remove(item))
-            {
-                ReportItems();
-            }
+            items.Remove(item);
         }
 
-        /// <summary>整体设置道具列表（后台 set_object_items 命令经枢纽路由调用，与后台同步）。</summary>
+        /// <summary>整体设置道具列表（后台 set_object_items 命令经枢纽路由调用；本地修改，不回执）。</summary>
         public void SetItems(IEnumerable<string> newItems)
         {
             items.Clear();
@@ -76,8 +72,6 @@ namespace DiceTale
             {
                 items.AddRange(newItems);
             }
-
-            ReportItems(); // 基类触发：经主体枢纽上报道具列表
         }
     }
 }
