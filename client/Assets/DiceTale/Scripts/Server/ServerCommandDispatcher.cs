@@ -28,6 +28,9 @@ namespace DiceTale.Server
                     case "set_object_items":
                         HandleSetObjectItems(msg);
                         break;
+                    case "set_mask_image":
+                        HandleSetMaskImage(msg);
+                        break;
                     case "teleport_player":
                         HandleTeleportPlayer(msg);
                         break;
@@ -99,6 +102,22 @@ namespace DiceTale.Server
 
             // 玩家物品变化后刷新道具剩余数量并重报（GM 页面「剩余」随之更新）
             ItemObject.RefreshAllQuantities();
+        }
+
+        /// <summary>set_mask_image：按 ObjectId 定位后台对象，应用 GM 擦除后的遮罩图（base64 PNG）。</summary>
+        private void HandleSetMaskImage(Dictionary<string, object> msg)
+        {
+            var objectId = JsonParser.GetString(msg, "objectId");
+            var image = JsonParser.GetString(msg, "image");
+            var obj = FindBackendObject(objectId);
+            if (obj == null)
+            {
+                Debug.LogWarning($"[ServerCommandDispatcher] BackendObject not found in scene: {objectId}");
+                return;
+            }
+
+            obj.ApplyMaskImage(image);
+            Debug.Log($"[ServerCommandDispatcher] {objectId} ({obj.DisplayName}): mask image applied");
         }
 
         private void HandleTeleportPlayer(Dictionary<string, object> msg)

@@ -38,6 +38,11 @@ export function setObjectItems(ws: WebSocket, objectId: string, items: string[])
   send(ws, { type: 'set_object_items', objectId, items });
 }
 
+/** 下发 GM 擦除后的遮罩图（base64 PNG）给客户端遮罩对象。 */
+export function setMaskImage(ws: WebSocket, objectId: string, image: string) {
+  send(ws, { type: 'set_mask_image', objectId, image });
+}
+
 /** 向所有 GM 控制台广播最新快照（含客户端在线状态）。 */
 export function broadcastGmUpdate(
   gmSockets: Set<WebSocket>,

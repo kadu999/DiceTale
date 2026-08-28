@@ -21,6 +21,9 @@ export class GmHandler {
       case 'gm_set_object_items':
         this.setObjectItems(message.objectId, message.items);
         break;
+      case 'gm_set_mask_image':
+        this.setMaskImage(message.objectId, message.image);
+        break;
       default:
         console.warn('[GmHandler] Unknown message:', (message as any).type);
     }
@@ -75,6 +78,16 @@ export class GmHandler {
     }
 
     commands.setObjectItems(clientSocket, objectId, items);
+  }
+
+  /** 转发 GM 擦除后的遮罩图给客户端（遮罩对象），客户端替换本地纹理。 */
+  private setMaskImage(objectId: string, image: string) {
+    const clientSocket = this.getClientSocket();
+    if (!clientSocket) {
+      this.sendError('客户端未连接，无法更新遮罩');
+      return;
+    }
+    commands.setMaskImage(clientSocket, objectId, image);
   }
 
   /** 道具名 -> 总库存（多个同名道具对象的 quantity 累加）。 */

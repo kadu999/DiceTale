@@ -46,12 +46,15 @@ export type ServerMessage =
   /** 按对象 ID 切换客户端后台对象的状态（名称由客户端 Inspector 状态列表定义） */
   | { type: 'set_object_state'; objectId: string; state: string }
   /** 整体设置对象物品列表 */
-  | { type: 'set_object_items'; objectId: string; items: string[] };
+  | { type: 'set_object_items'; objectId: string; items: string[] }
+  /** 应用 GM 擦除后的遮罩图（base64 PNG，遮罩对象） */
+  | { type: 'set_mask_image'; objectId: string; image: string };
 
 export type GmMessage =
   | { type: 'gm_teleport_player'; mapName: string; spawnId: string }
   | { type: 'gm_set_object_state'; objectId: string; state: string }
-  | { type: 'gm_set_object_items'; objectId: string; items: string[] };
+  | { type: 'gm_set_object_items'; objectId: string; items: string[] }
+  | { type: 'gm_set_mask_image'; objectId: string; image: string };
 
 export interface PlayerStateSnapshot {
   name: string;
@@ -75,6 +78,10 @@ export interface ObjectStateSnapshot {
   itemName?: string;
   /** 道具总数量（道具对象固定库存） */
   quantity?: number;
+  /** 遮罩纹理宽度（遮罩对象上报，GM 页面据此生成编辑画布；非遮罩对象不设置） */
+  maskWidth?: number;
+  /** 遮罩纹理高度（遮罩对象上报，GM 页面据此生成编辑画布；非遮罩对象不设置） */
+  maskHeight?: number;
   /** 对象所在的地图 */
   mapName: string;
   /** 归一化位置 [0,1]，y 向下；未上报时为 null */

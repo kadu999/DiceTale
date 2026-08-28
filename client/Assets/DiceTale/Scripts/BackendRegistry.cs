@@ -111,6 +111,8 @@ namespace DiceTale
                     mapName = mapName,
                     itemName = obj.ItemName,
                     quantity = obj.ItemQuantity,
+                    maskWidth = obj.MaskWidth,
+                    maskHeight = obj.MaskHeight,
                     position = obj.GetNormalizedPosition(),
                     items = new List<string>(obj.Items)
                 });

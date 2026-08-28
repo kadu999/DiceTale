@@ -108,6 +108,20 @@
     </div>
   </div>
 
+  <!-- 遮罩编辑弹框：GM 用鼠标擦除黑色遮罩，结果同步到客户端 -->
+  <div id="maskEditorModal" class="modal-mask" style="display:none" onclick="if (event.target === this) closeMaskEditor()">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="maskEditorTitle">编辑遮罩</span>
+        <button class="modal-close" onclick="closeMaskEditor()">×</button>
+      </div>
+      <div class="modal-hint">按住鼠标拖拽擦除黑色遮罩，松手自动同步到客户端</div>
+      <div class="mask-editor-body">
+        <canvas id="maskCanvas" class="mask-canvas"></canvas>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>

@@ -17,6 +17,8 @@ export interface ObjectInfo {
   states: string[];
   itemName?: string;
   quantity?: number;
+  maskWidth?: number;
+  maskHeight?: number;
   mapName: string;
   position: { x: number; y: number } | null;
   items: string[];
@@ -87,6 +89,8 @@ export class GameState {
         states: obj.states ?? existing?.states ?? [],
         itemName: obj.itemName ?? existing?.itemName,
         quantity: obj.quantity ?? existing?.quantity,
+        maskWidth: obj.maskWidth ?? existing?.maskWidth,
+        maskHeight: obj.maskHeight ?? existing?.maskHeight,
         mapName: obj.mapName ?? mapName,
         position: obj.position ?? existing?.position ?? null,
         items: obj.items ?? existing?.items ?? [],

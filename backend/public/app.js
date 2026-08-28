@@ -379,11 +379,32 @@ function renderPropertyPanelInto(id) {
     renderObjectStates(propertySection(container, '状态'), selectedObjectId, obj, null);
   }
 
+  // 遮罩对象：提供「修改」按钮，点击弹框擦除黑色遮罩（不影响其他逻辑）
+  const isMask = !!(obj && obj.maskWidth > 0 && obj.maskHeight > 0);
+  if (isMask) {
+    const maskSection = propertySection(container, '遮罩');
+    const maskRow = document.createElement('div');
+    maskRow.className = 'property-row';
+    const maskLabel = document.createElement('span');
+    maskLabel.className = 'property-label';
+    maskLabel.textContent = '遮罩';
+    maskRow.appendChild(maskLabel);
+    const editBtn = document.createElement('button');
+    editBtn.className = 'state-btn property-item-add-btn';
+    editBtn.textContent = '修改';
+    editBtn.title = '打开遮罩编辑弹框，用鼠标擦除黑色遮罩';
+    editBtn.onclick = () => openMaskEditor(selectedObjectId);
+    maskRow.appendChild(editBtn);
+    maskSection.appendChild(maskRow);
+  }
+
   const isPlayer = !!player || (obj && obj.kind === 'Player');
 
   if (isPlayer) {
     // 玩家：显示身上的道具（分配样式 [-道具名 数量+]），「添加道具」走道具选择弹框（gm_set_object_items）
     renderObjectItems(propertySection(container), selectedObjectId, (obj && obj.items) || [], '物品');
+  } else if (isMask) {
+    // 遮罩对象：不是物品容器，不显示物品区（遮罩只通过「修改」弹框编辑）
   } else if (obj.kind === 'ItemObject' || obj.itemName) {
     // 道具对象：玩家分配列表（内部自带「分配道具（剩余 N）」标题）
     renderItemDistribution(propertySection(container), obj);
@@ -1050,7 +1071,7 @@ function renderPickerDetail() {
   }
 }
 
-// 弹框搜索框与数量输入（只绑定一次）
+// 道具搜索框与数量输入（只绑定一次）
 (function initPickerFilters() {
   const search = document.getElementById('pickerSearch');
   if (search) {
@@ -1066,6 +1087,210 @@ function renderPickerDetail() {
       updatePickerConfirmText(); // 确定按钮显示 ×N
     });
   }
+})();
+
+// ---------- 遮罩编辑弹框 ----------
+
+let maskEditorObjectId = null; // 正在编辑的遮罩对象 ID
+let maskEditorDirty = false;
+let maskSyncTimer = null;
+let maskErasing = false;
+let maskLastPoint = null;
+let maskCanvasFor = null; // 当前画布内容对应的对象 ID（同对象重开保留擦除结果）
+
+/** 擦除边缘虚化厚度（画布像素），对应 WipeMaskEffect 的 blendWidth 概念：越大过渡带越厚越柔。 */
+const maskFeatherWidth = 12;
+
+/** 打开遮罩编辑弹框：为对象生成/保留黑色画布，可拖拽擦除。 */
+function openMaskEditor(objectId) {
+  const obj = state.objects && state.objects[objectId];
+  if (!obj || !obj.maskWidth || !obj.maskHeight) {
+    showToast('该对象没有遮罩尺寸信息');
+    return;
+  }
+
+  maskEditorObjectId = objectId;
+  maskEditorDirty = false;
+
+  const modal = document.getElementById('maskEditorModal');
+  const canvas = document.getElementById('maskCanvas');
+  if (!modal || !canvas) return;
+
+  // 同对象重开或尺寸变化时才重置画布（保留上次擦除结果，避免覆盖客户端已有擦除）
+  if (maskCanvasFor !== objectId || canvas.width !== obj.maskWidth || canvas.height !== obj.maskHeight) {
+    canvas.width = obj.maskWidth;
+    canvas.height = obj.maskHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    maskCanvasFor = objectId;
+  }
+
+  // 画布背面用当前地图图：擦除（透明）处直接透出地图，而不是棋盘格
+  canvas.style.backgroundImage = `url('/maps/${encodeURIComponent(effectiveMap())}.png')`;
+  canvas.style.backgroundSize = '100% 100%';
+  canvas.style.backgroundRepeat = 'no-repeat';
+
+  document.getElementById('maskEditorTitle').textContent = '编辑遮罩：' + (obj.name || objectId);
+  modal.style.display = 'flex';
+}
+
+function closeMaskEditor() {
+  const modal = document.getElementById('maskEditorModal');
+  if (modal) modal.style.display = 'none';
+  maskEditorObjectId = null;
+  maskErasing = false;
+  maskLastPoint = null;
+}
+
+/** canvas 客户端坐标 -> 画布像素坐标（考虑 CSS 缩放）。 */
+function maskCanvasPoint(e) {
+  const canvas = document.getElementById('maskCanvas');
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) * (canvas.width / rect.width),
+    y: (e.clientY - rect.top) * (canvas.height / rect.height),
+  };
+}
+
+/** 在画布上擦掉一个圆（destination-out，smoothstep 式软笔刷）。
+ *  径向渐变 alpha 近似 smoothstep 曲线：中心近乎全擦，向边缘连续平滑衰减，
+ *  中间是大量半透明过渡像素（不是"全擦/全黑"两态），类似游戏 Shader 的柔和羽化边缘。 */
+function maskEraseDot(ctx, x, y, radius) {
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-out';
+
+  // 更柔和的渐变（smoothstep 放宽版）：中心强擦、向外加长半透明过渡带，边缘虚化更明显
+  const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+  gradient.addColorStop(0.0, 'rgba(0, 0, 0, 1.0)');
+  gradient.addColorStop(0.15, 'rgba(0, 0, 0, 0.95)');
+  gradient.addColorStop(0.35, 'rgba(0, 0, 0, 0.8)');
+  gradient.addColorStop(0.55, 'rgba(0, 0, 0, 0.55)');
+  gradient.addColorStop(0.75, 'rgba(0, 0, 0, 0.25)');
+  gradient.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = gradient;
+
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+/** 沿线段多次画圆，避免拖拽过快出现断点。 */
+function maskEraseSegment(ctx, from, to, radius) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const steps = Math.max(1, Math.ceil(dist / Math.max(1, radius * 0.5)));
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    maskEraseDot(ctx, from.x + dx * t, from.y + dy * t, radius);
+  }
+}
+
+/** 松手/节流后把画布当前内容作为 PNG 发送给客户端遮罩对象。 */
+function scheduleMaskSync() {
+  if (!maskEditorObjectId) return;
+  maskEditorDirty = true;
+  if (maskSyncTimer) return;
+  maskSyncTimer = setTimeout(() => {
+    maskSyncTimer = null;
+    if (maskEditorDirty) syncMaskNow();
+  }, 300);
+}
+
+function syncMaskNow() {
+  if (!maskEditorObjectId) return;
+  const canvas = document.getElementById('maskCanvas');
+  if (!canvas) return;
+  const image = canvas.toDataURL('image/png').split(',')[1]; // 去掉 data:image/png;base64, 前缀
+  send({ type: 'gm_set_mask_image', objectId: maskEditorObjectId, image });
+  maskEditorDirty = false;
+}
+
+/** 对遮罩边缘做"指定厚度"的平滑过渡带（仿 WipeMaskEffect 的 blendWidth 思路）：
+ *  1) 按厚度/2 高斯模糊产生渐变；2) smoothstep 塑形——以 alpha 0.5 为界居中、带宽内 S 形平滑过渡，
+ *  带外压回 0/1；最终过渡带厚度 ≈ width，擦除区域不因模糊明显缩小。 */
+function featherMask(canvas, width) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  if (!w || !h || width <= 0) return;
+
+  const radius = Math.max(1, width / 2);
+
+  const off = document.createElement('canvas');
+  off.width = w;
+  off.height = h;
+  const octx = off.getContext('2d');
+
+  // 1) 模糊产生渐变带
+  octx.filter = `blur(${radius}px)`;
+  octx.drawImage(canvas, 0, 0);
+
+  // 2) smoothstep 塑形：带内平滑过渡，带外压回 0/1，得到干净的 S 形过渡带（居中于 0.5）
+  const img = octx.getImageData(0, 0, w, h);
+  const data = img.data;
+  const band = 0.25; // 过渡带在 alpha 空间的宽度（0~0.5）
+  const lo = 0.5 - band;
+  const hi = 0.5 + band;
+  for (let i = 3; i < data.length; i += 4) {
+    const a = data[i] / 255;
+    let t = (a - lo) / (2 * band);
+    t = t < 0 ? 0 : t > 1 ? 1 : t;
+    data[i] = Math.round(t * t * (3 - 2 * t) * 255); // smoothstep
+  }
+  octx.putImageData(img, 0, 0);
+
+  // 3) 写回原画布
+  ctx.save();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.clearRect(0, 0, w, h);
+  ctx.drawImage(off, 0, 0);
+  ctx.restore();
+}
+
+// 画布擦除事件（只绑定一次）
+(function initMaskCanvas() {
+  const canvas = document.getElementById('maskCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const brushRadius = 48; // 笔刷半径（画布像素）：大半径 + smoothstep 羽化 = 更宽的柔和过渡带
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (!maskEditorObjectId) return;
+    e.preventDefault();
+    canvas.setPointerCapture(e.pointerId);
+    maskErasing = true;
+    const p = maskCanvasPoint(e);
+    maskLastPoint = p;
+    maskEraseDot(ctx, p.x, p.y, brushRadius);
+    scheduleMaskSync();
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (!maskErasing || !maskEditorObjectId) return;
+    const p = maskCanvasPoint(e);
+    if (maskLastPoint) {
+      maskEraseSegment(ctx, maskLastPoint, p, brushRadius);
+    } else {
+      maskEraseDot(ctx, p.x, p.y, brushRadius);
+    }
+    maskLastPoint = p;
+    scheduleMaskSync();
+  });
+
+  const endErase = () => {
+    maskErasing = false;
+    maskLastPoint = null;
+    if (maskEditorObjectId) {
+      featherMask(canvas, maskFeatherWidth); // 松手对边缘做指定厚度的平滑过渡带
+    }
+    scheduleMaskSync();
+  };
+  canvas.addEventListener('pointerup', endErase);
+  canvas.addEventListener('pointercancel', endErase);
 })();
 
 // 道具搜索框（只绑定一次，避免每次重渲染时重复监听）

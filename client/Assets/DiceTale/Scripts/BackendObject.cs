@@ -46,6 +46,12 @@ namespace DiceTale
         /// <summary>道具总数量（道具类对象覆写，固定库存；非道具对象返回 0）。</summary>
         public virtual int ItemQuantity => 0;
 
+        /// <summary>遮罩纹理宽度（遮罩对象覆写，GM 页面据此生成/编辑遮罩；非遮罩对象返回 0）。</summary>
+        public virtual int MaskWidth => 0;
+
+        /// <summary>遮罩纹理高度（遮罩对象覆写，GM 页面据此生成/编辑遮罩；非遮罩对象返回 0）。</summary>
+        public virtual int MaskHeight => 0;
+
         protected virtual void OnEnable()
         {
             BackendRegistry.Instance.Register(this);
@@ -79,6 +85,11 @@ namespace DiceTale
 
         /// <summary>后台命令入口：整体设置物品列表（默认不支持；<see cref="SceneObject"/> 实现物品列表）。</summary>
         public virtual void SetItems(IEnumerable<string> newItems)
+        {
+        }
+
+        /// <summary>后台命令入口：应用遮罩图像（base64 PNG；默认不支持，<see cref="MaskObject"/> 实现）。</summary>
+        public virtual void ApplyMaskImage(string base64Png)
         {
         }
 

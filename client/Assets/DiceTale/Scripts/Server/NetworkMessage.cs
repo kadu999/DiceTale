@@ -47,6 +47,10 @@ namespace DiceTale.Server
         public string itemName;
         /// <summary>道具总数量（道具对象固定库存，供 GM 页面计算剩余）。</summary>
         public int quantity;
+        /// <summary>遮罩纹理宽度（遮罩对象上报，供 GM 页面生成/编辑遮罩；非遮罩对象为 0）。</summary>
+        public int maskWidth;
+        /// <summary>遮罩纹理高度（遮罩对象上报，供 GM 页面生成/编辑遮罩；非遮罩对象为 0）。</summary>
+        public int maskHeight;
         /// <summary>对象在地图图片上的归一化位置 [0,1]，y 向下（左上角为原点）。</summary>
         public Position position;
         /// <summary>物品列表（字符串），与后台同步。</summary>

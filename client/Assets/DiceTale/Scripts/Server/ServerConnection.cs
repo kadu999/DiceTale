@@ -161,20 +161,16 @@ namespace DiceTale.Server
 
         private async Task ReceiveLoop()
         {
-            var buffer = new byte[65536];
             try
             {
                 while (webSocket != null && webSocket.State == WebSocketState.Open)
                 {
-                    var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), cts.Token);
-                    if (result.MessageType == WebSocketMessageType.Close)
+                    var json = await ReceiveOneMessage();
+                    if (json == null)
                     {
-                        break;
+                        break; // 收到 Close
                     }
 
-                    // 服务器不做 ws 级 ping（Unity 的 WebSocketMessageType 无 Pong，框架行为各平台不一），
-                    // 存活检测走应用层 heartbeat（见 HeartbeatCoroutine）。
-                    var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
                     pendingMessages.Enqueue(json); // 入队，由主线程 Update 分发 OnMessage
                 }
             }
@@ -192,6 +188,37 @@ namespace DiceTale.Server
                 if (!closing)
                 {
                     ScheduleReconnect();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 接收一条完整 WebSocket 消息：累积接收直到 EndOfMessage，缓冲不足时自动翻倍扩容。
+        /// 支持大消息（如遮罩图 PNG base64），避免固定 64KB 缓冲截断消息、
+        /// 残留字节冲歪后续消息导致客户端停止更新。返回 null 表示连接关闭。
+        /// </summary>
+        private async Task<string> ReceiveOneMessage()
+        {
+            var buffer = new byte[65536];
+            var offset = 0;
+            while (true)
+            {
+                if (offset == buffer.Length)
+                {
+                    Array.Resize(ref buffer, buffer.Length * 2); // 扩容
+                }
+
+                var result = await webSocket.ReceiveAsync(
+                    new ArraySegment<byte>(buffer, offset, buffer.Length - offset), cts.Token);
+                if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    return null;
+                }
+
+                offset += result.Count;
+                if (result.EndOfMessage)
+                {
+                    return Encoding.UTF8.GetString(buffer, 0, offset);
                 }
             }
         }
