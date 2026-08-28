@@ -1,9 +1,11 @@
-"""将 CoC-1920s常用物品表-精简版.xlsx 转换为 backend/public/items.json。
+"""将 backend/config/item.xlsx 转换为 backend/public/items.json。
 
 零第三方依赖（zipfile + xml.etree），可重复执行：
     python tools/convert_items.py [xlsx路径] [输出json路径]
+默认路径基于本脚本所在位置（仓库根 = tools/ 的上级）解析，与运行目录无关。
 """
 import json
+import os
 import sys
 import zipfile
 import xml.etree.ElementTree as ET
@@ -95,7 +97,7 @@ def convert(xlsx_path: str, out_path: str):
         })
 
     payload = {
-        'source': 'CoC-1920s常用物品表-精简版.xlsx',
+        'source': 'item.xlsx',
         'updatedAt': datetime.now().strftime('%Y-%m-%d'),
         'count': len(items),
         'items': items,
@@ -108,6 +110,8 @@ def convert(xlsx_path: str, out_path: str):
 
 
 if __name__ == '__main__':
-    xlsx = sys.argv[1] if len(sys.argv) > 1 else 'CoC-1920s常用物品表-精简版.xlsx'
-    out = sys.argv[2] if len(sys.argv) > 2 else 'backend/public/items.json'
+    # 仓库根 = tools/ 的上级目录，路径解析与运行目录无关
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    xlsx = sys.argv[1] if len(sys.argv) > 1 else os.path.join(repo_root, 'backend', 'config', 'item.xlsx')
+    out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(repo_root, 'backend', 'public', 'items.json')
     convert(xlsx, out)

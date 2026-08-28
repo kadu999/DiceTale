@@ -32,10 +32,17 @@ fetch('/items.json')
   })
   .catch(() => {});
 
-/** 类别下拉：从目录中去重所有类别并填充（含「全部类别」）。 */
+/** 类别标签：从目录中去重所有类别并填充为可点击标签（含「全部」）。 */
 function populateItemCategories() {
-  const select = document.getElementById('itemCategory');
-  if (!select) return;
+  fillCategoryTags(document.getElementById('itemCategory'), itemCategory, (c) => {
+    itemCategory = c;
+    renderItemList();
+  });
+}
+
+/** 填充类别标签按钮（道具页与选择弹框共用）；active 为当前选中类别，onSelect 为点选回调。 */
+function fillCategoryTags(container, active, onSelect) {
+  if (!container) return;
 
   const categories = [];
   for (const it of itemCatalog) {
@@ -44,18 +51,24 @@ function populateItemCategories() {
   }
   categories.sort();
 
-  select.innerHTML = '';
-  const all = document.createElement('option');
-  all.value = '';
-  all.textContent = '全部类别';
-  select.appendChild(all);
+  container.innerHTML = '';
+
+  const makeTag = (label, value) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'category-tag' + (value === active ? ' active' : '');
+    btn.textContent = label;
+    btn.onclick = () => {
+      fillCategoryTags(container, value, onSelect);
+      onSelect(value);
+    };
+    return btn;
+  };
+
+  container.appendChild(makeTag('全部', ''));
   for (const c of categories) {
-    const opt = document.createElement('option');
-    opt.value = c;
-    opt.textContent = c;
-    select.appendChild(opt);
+    container.appendChild(makeTag(c, c));
   }
-  select.value = itemCategory;
 }
 
 function connect() {
@@ -319,14 +332,14 @@ function renderPropertyPanelInto(id) {
   const isPlayer = !!player || (obj && obj.kind === 'Player');
 
   if (isPlayer) {
-    // 玩家：显示身上的道具，每个可删除（× 移除一个），并可输入添加（走 gm_set_object_items）
-    renderObjectItems(propertySection(container, '物品'), selectedObjectId, (obj && obj.items) || [], null);
+    // 玩家：显示身上的道具（chips 可删除 ×），「添加道具」走道具选择弹框（gm_set_object_items）
+    renderObjectItems(container, selectedObjectId, (obj && obj.items) || [], '物品');
   } else if (obj.kind === 'ItemObject' || obj.itemName) {
     // 道具对象：玩家分配列表（内部自带「分配道具（剩余 N）」标题）
     renderItemDistribution(propertySection(container), obj);
   } else {
     // 普通对象：物品编辑
-    renderObjectItems(propertySection(container, '物品'), selectedObjectId, obj.items || [], null);
+    renderObjectItems(container, selectedObjectId, obj.items || [], '物品');
   }
 
   // 状态（未配置状态列表时不显示整个区）
@@ -508,7 +521,7 @@ function renderPlayerList() {
 
     // 物品编辑（与地图页属性面板一致的物品区）
     const obj = state.objects && state.objects[playerId];
-    renderObjectItems(propertySection(list, '物品'), playerId, (obj && obj.items) || [], null);
+    renderObjectItems(list, playerId, (obj && obj.items) || [], '物品');
 
     // 状态切换（未配置状态列表时不显示）
     if (((obj && obj.states) || []).length > 0) {
@@ -543,9 +556,10 @@ function canAddItem(name) {
   return held < stock;
 }
 
-/** 渲染对象物品列表：按道具名分组显示「道具名 ×数量」，移除按钮每次移除一个，输入框添加；变更即发送 gm_set_object_items 同步。
+/** 渲染对象物品列表：按道具名分组显示「道具名 ×数量」，移除按钮每次移除一个，「添加道具」按钮弹出道具选择弹框；变更即发送 gm_set_object_items 同步。
  *  labelText 为空时省略左侧标签（配合分区标题使用）。 */
 function renderObjectItems(container, objectId, items, labelText) {
+  // 行 1：属性面板 UI 规则——左侧名字，右侧功能控件（添加道具按钮，数量在弹框内填写）
   const row = document.createElement('div');
   row.className = 'property-row';
   if (labelText) {
@@ -554,11 +568,17 @@ function renderObjectItems(container, objectId, items, labelText) {
     label.textContent = labelText;
     row.appendChild(label);
   }
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'state-btn property-item-add-btn';
+  addBtn.textContent = '添加道具';
+  addBtn.title = '从道具目录中选择并添加到背包';
+  addBtn.onclick = () => openItemPicker(objectId);
+  row.appendChild(addBtn);
+
+  // 行 2：携带的道具列表（分配样式：[-] 道具名 数量 [+]，走 gm_set_object_items）
   const box = document.createElement('div');
   box.className = 'property-items';
-
-  const chips = document.createElement('div');
-  chips.className = 'property-item-chips';
 
   // 按道具名分组统计数量：['铁剑','铁剑','草药'] → 铁剑 ×2、草药 ×1
   const counts = {};
@@ -571,65 +591,50 @@ function renderObjectItems(container, objectId, items, labelText) {
     const empty = document.createElement('span');
     empty.className = 'property-hint';
     empty.textContent = '暂无物品';
-    chips.appendChild(empty);
+    box.appendChild(empty);
   } else {
     for (const [name, count] of grouped) {
-      const chip = document.createElement('span');
-      chip.className = 'property-item-chip';
+      const line = document.createElement('div');
+      line.className = 'property-distribute-line';
 
-      const text = document.createElement('span');
-      text.textContent = `${name} ×${count}`;
-
-      const remove = document.createElement('button');
-      remove.className = 'property-item-remove';
-      remove.title = '移除一个';
-      remove.textContent = '×';
-      remove.onclick = () => {
+      const minus = document.createElement('button');
+      minus.className = 'state-btn';
+      minus.title = '移除一个';
+      minus.textContent = '−';
+      minus.onclick = () => {
         const next = items.slice();
         const idx = next.indexOf(name);
         if (idx >= 0) next.splice(idx, 1); // 每次只移除一个该道具
         send({ type: 'gm_set_object_items', objectId, items: next });
       };
 
-      chip.appendChild(text);
-      chip.appendChild(remove);
-      chips.appendChild(chip);
+      const nameEl = document.createElement('span');
+      nameEl.className = 'property-distribute-name';
+      nameEl.textContent = name;
+
+      const countEl = document.createElement('span');
+      countEl.className = 'property-distribute-count';
+      countEl.textContent = count;
+
+      const plus = document.createElement('button');
+      plus.className = 'state-btn property-distribute-plus';
+      plus.title = '添加一个';
+      plus.textContent = '+';
+      plus.disabled = !canAddItem(name); // 库存已分完时不可再添加
+      plus.onclick = () => {
+        send({ type: 'gm_set_object_items', objectId, items: items.concat([name]) });
+      };
+
+      line.appendChild(minus);
+      line.appendChild(nameEl);
+      line.appendChild(countEl);
+      line.appendChild(plus);
+      box.appendChild(line);
     }
   }
 
-  const addBox = document.createElement('div');
-  addBox.className = 'property-item-add';
-  const input = document.createElement('input');
-  input.className = 'property-item-input';
-  input.placeholder = '输入物品名';
-  input.maxLength = 40;
-  const addBtn = document.createElement('button');
-  addBtn.className = 'state-btn';
-  addBtn.textContent = '添加';
-  addBtn.onclick = () => {
-    const value = input.value.trim();
-    if (!value) return;
-    input.value = '';
-    if (!canAddItem(value)) {
-      return; // 该道具已分配完（库存不足），不添加
-    }
-    send({
-      type: 'gm_set_object_items',
-      objectId,
-      items: items.concat([value]),
-    });
-  };
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') addBtn.click();
-  });
-
-  addBox.appendChild(input);
-  addBox.appendChild(addBtn);
-
-  box.appendChild(chips);
-  box.appendChild(addBox);
-  row.appendChild(box);
   container.appendChild(row);
+  container.appendChild(box);
 }
 
 function addPropertyRow(container, labelText, value) {
@@ -823,19 +828,207 @@ function heldItemCount(name) {
   return held;
 }
 
-// 道具搜索框与类别下拉（只绑定一次，避免每次重渲染时重复监听）
+// ---------- 道具选择弹框 ----------
+
+let pickerTargetId = null; // 弹框要添加道具的目标对象 ID
+let pickerCurrentItems = []; // 打开弹框时目标的当前物品列表快照
+let pickerSelectedItem = null; // 弹框中当前选中的道具名（点「确定」才添加）
+let pickerSearch = '';
+let pickerCategory = '';
+
+/** 读取弹框数量输入（1~99），并更新确定按钮文案（×N）。 */
+function readPickerQty() {
+  const el = document.getElementById('pickerQty');
+  const v = el ? parseInt(el.value, 10) : NaN;
+  return Math.max(1, Math.min(99, v || 1));
+}
+
+function updatePickerConfirmText() {
+  const confirmBtn = document.getElementById('pickerConfirm');
+  if (!confirmBtn) return;
+  const n = readPickerQty();
+  confirmBtn.textContent = n > 1 ? '确定（×' + n + '）' : '确定';
+}
+
+/** 打开道具选择弹框：从道具目录点选一个道具，在弹框内设数量，点「确定」添加到目标（玩家/普通对象）背包。 */
+function openItemPicker(objectId) {
+  const obj = state && state.objects && state.objects[objectId];
+  if (!obj) {
+    showToast('目标数据未同步，无法添加道具');
+    return;
+  }
+
+  pickerTargetId = objectId;
+  pickerCurrentItems = (obj.items || []).slice();
+  pickerSelectedItem = null;
+  pickerSearch = '';
+  pickerCategory = '';
+
+  const modal = document.getElementById('itemPickerModal');
+  const search = document.getElementById('pickerSearch');
+  const category = document.getElementById('pickerCategory');
+  const qtyInput = document.getElementById('pickerQty');
+  if (!modal || !search || !category) return;
+
+  if (qtyInput) qtyInput.value = '1';
+  updatePickerConfirmText();
+
+  search.value = '';
+  fillCategoryTags(category, pickerCategory, (c) => {
+    pickerCategory = c;
+    renderPickerList();
+  });
+  modal.style.display = 'flex';
+  renderPickerList();
+  renderPickerDetail();
+  search.focus();
+}
+
+function closeItemPicker() {
+  const modal = document.getElementById('itemPickerModal');
+  if (modal) modal.style.display = 'none';
+  pickerTargetId = null;
+  pickerSelectedItem = null;
+}
+
+/** 确定：把弹框中选中的道具按弹框内数量添加到目标背包并关闭。 */
+function confirmPickerAdd() {
+  if (!pickerTargetId || !pickerSelectedItem) {
+    showToast('请先选择道具');
+    return;
+  }
+
+  const n = readPickerQty();
+
+  // 库存预检：场景中有同名道具对象时按总库存校验数量
+  const stock = itemNameStock(pickerSelectedItem);
+  if (stock > 0) {
+    const remaining = stock - heldItemCount(pickerSelectedItem);
+    if (remaining <= 0) {
+      showToast('该道具库存已分完，不可添加');
+      return;
+    }
+    if (n > remaining) {
+      showToast('库存不足，最多还可添加 ' + remaining + ' 个');
+      return;
+    }
+  }
+
+  const added = [];
+  for (let i = 0; i < n; i++) added.push(pickerSelectedItem);
+  send({
+    type: 'gm_set_object_items',
+    objectId: pickerTargetId,
+    items: pickerCurrentItems.concat(added),
+  });
+  closeItemPicker();
+}
+
+/** 弹框道具列表：点击行选中并预览属性；库存已分完的行禁用。 */
+function renderPickerList() {
+  const container = document.getElementById('pickerList');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!pickerTargetId) return;
+
+  const query = pickerSearch.trim().toLowerCase();
+  const filtered = itemCatalog.filter((it) => {
+    if (pickerCategory && (it.category || '—') !== pickerCategory) return false;
+    if (!query) return true;
+    return (it.name || '').toLowerCase().includes(query) || (it.category || '').toLowerCase().includes(query);
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="property-empty">无匹配道具</div>';
+    return;
+  }
+
+  for (const item of filtered) {
+    const addable = canAddItem(item.name);
+    const selected = item.name === pickerSelectedItem;
+    const row = document.createElement('button');
+    row.className = 'item-row' + (addable ? '' : ' disabled') + (selected ? ' selected' : '');
+    row.disabled = !addable;
+    row.title = addable ? (selected ? '已选中' : '点击查看属性') : '库存已分完，不可添加';
+    row.onclick = () => {
+      if (!addable) return;
+      pickerSelectedItem = item.name;
+      renderPickerList();
+      renderPickerDetail();
+    };
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'item-row-name';
+    nameEl.textContent = item.name;
+
+    const priceEl = document.createElement('span');
+    priceEl.className = 'item-row-price';
+    priceEl.textContent = item.price != null ? '$' + fmtPrice(item.price) : '价格自定';
+
+    row.appendChild(nameEl);
+    row.appendChild(priceEl);
+    container.appendChild(row);
+  }
+}
+
+/** 弹框右列：选中道具的属性预览 + 数量输入（数量行在底部，选中道具时显示）。 */
+function renderPickerDetail() {
+  const container = document.getElementById('pickerDetail');
+  const title = document.getElementById('pickerDetailTitle');
+  const confirmBtn = document.getElementById('pickerConfirm');
+  const qtyRow = document.getElementById('pickerQtyRow');
+  const qtyInput = document.getElementById('pickerQty');
+  if (!container || !title) return;
+
+  const item = itemCatalog.find((it) => it.name === pickerSelectedItem);
+  if (!item) {
+    title.textContent = '道具属性';
+    container.innerHTML = '<div class="property-empty">点击左侧道具查看属性</div>';
+    if (qtyRow) qtyRow.style.display = 'none';
+  } else {
+    title.textContent = item.name;
+    container.innerHTML = '';
+    const info = propertySection(container, '基本信息');
+    addPropertyRow(info, '类别', item.category || '—');
+    addPropertyRow(info, '价格', item.price != null ? '$' + fmtPrice(item.price) : '价格自定');
+    addPropertyRow(info, '鉴定', item.identify || '—');
+    addPropertyRow(info, '模组用途', item.usage || '—');
+
+    // 选中道具后显示数量行（重新选择道具时数量复位为 1）
+    if (qtyRow) qtyRow.style.display = 'flex';
+    if (qtyInput) qtyInput.value = '1';
+    updatePickerConfirmText();
+  }
+
+  if (confirmBtn) {
+    confirmBtn.disabled = !pickerSelectedItem; // 未选中道具时确定按钮不可用
+  }
+}
+
+// 弹框搜索框与数量输入（只绑定一次）
+(function initPickerFilters() {
+  const search = document.getElementById('pickerSearch');
+  if (search) {
+    search.addEventListener('input', () => {
+      pickerSearch = search.value;
+      renderPickerList();
+    });
+  }
+  const qty = document.getElementById('pickerQty');
+  if (qty) {
+    qty.addEventListener('input', () => {
+      qty.value = String(readPickerQty()); // 夹取到 1~99
+      updatePickerConfirmText(); // 确定按钮显示 ×N
+    });
+  }
+})();
+
+// 道具搜索框（只绑定一次，避免每次重渲染时重复监听）
 (function initItemFilters() {
   const input = document.getElementById('itemSearch');
   if (input) {
     input.addEventListener('input', () => {
       itemSearch = input.value;
-      renderItemList();
-    });
-  }
-  const categorySelect = document.getElementById('itemCategory');
-  if (categorySelect) {
-    categorySelect.addEventListener('change', () => {
-      itemCategory = categorySelect.value;
       renderItemList();
     });
   }

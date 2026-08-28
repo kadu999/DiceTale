@@ -499,9 +499,22 @@ main.layout {
   touch-action: manipulation;
 }
 
-.property-item-add {
-  display: flex;
-  gap: 0.35rem;
+/* 添加数量输入框：与添加按钮同行，靠右 */
+.property-item-qty {
+  flex: 0 0 auto;
+  width: 44px;
+  padding: 0.3rem 0.3rem;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* 添加道具按钮：在属性行内靠右（属性面板 UI 规则：左名字右控件） */
+.property-item-add-btn {
+  margin-left: auto;
 }
 
 .property-item-input {
@@ -743,15 +756,29 @@ main.layout {
   color: #64748b;
 }
 
-.item-category {
-  width: 100%;
-  padding: 0.35rem 0.6rem;
+.item-category-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
   margin-bottom: 0.5rem;
+}
+
+.category-tag {
+  padding: 0.2rem 0.6rem;
   border: 1px solid #334155;
-  border-radius: 8px;
-  background: #0f172a;
-  color: #e2e8f0;
-  font-size: 0.85rem;
+  border-radius: 999px;
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 0.78rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  white-space: nowrap;
+}
+
+.category-tag.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #fff;
 }
 
 .item-list {
@@ -834,4 +861,139 @@ main.layout {
     min-height: 0;
     overflow-y: auto;
   }
+}
+
+/* ---- 道具选择弹框 ---- */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(11, 18, 32, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  /* 4:3：宽 = 高(70vh) * 4/3；旧 WebView 用固定值兜底，现代浏览器 aspect-ratio 保证比例 */
+  width: 93.333vh;
+  width: 93.333dvh;
+  max-width: 100%;
+  height: 70vh;
+  height: 70dvh;
+  aspect-ratio: 4 / 3;
+  background: #1e293b;
+  border: 1px solid #2b3952;
+  border-radius: 12px;
+  padding: 0.75rem;
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.55);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.modal-title {
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.modal-close {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.18);
+  color: #e2e8f0;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.modal-hint {
+  color: #64748b;
+  font-size: 0.78rem;
+  margin-bottom: 0.4rem;
+}
+
+/* 主体：左道具列表 + 右属性预览（弹框宽度不变，两栏并排） */
+.modal-body {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.modal-list-col {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-detail-col {
+  flex: 0 0 45%; /* 加宽后把多余空间给右侧属性显示 */
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid rgba(148, 163, 184, 0.14);
+  padding-left: 0.5rem;
+}
+
+.modal-item-list {
+  max-height: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.modal-detail-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* 底部：取消 / 确定 */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+/* 数量输入行：位于弹框右侧属性栏底部（选中道具时显示） */
+.modal-detail-qty {
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.picker-confirm {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #fff;
+}
+
+.picker-confirm:disabled {
+  opacity: 0.4;
+}
+
+/* 弹框中库存已分完的道具行 */
+.item-row.disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.item-row.disabled:hover {
+  background: transparent;
 }

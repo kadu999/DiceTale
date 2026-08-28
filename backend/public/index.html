@@ -53,7 +53,7 @@
         <section class="panel item-selector">
           <div class="property-title">道具</div>
           <input id="itemSearch" class="item-search" type="search" placeholder="搜索道具名 / 类别" autocomplete="off">
-          <select id="itemCategory" class="item-category"></select>
+          <div id="itemCategory" class="item-category-tags"></div>
           <div id="itemList" class="item-list"></div>
         </section>
         <section class="panel item-detail">
@@ -76,6 +76,36 @@
 
   <!-- 操作失败提示（如客户端未连接、超出库存） -->
   <div id="toast" class="toast"></div>
+
+  <!-- 道具选择弹框：点击道具查看属性，点「确定」添加到目标背包 -->
+  <div id="itemPickerModal" class="modal-mask" style="display:none" onclick="if (event.target === this) closeItemPicker()">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">选择道具</span>
+        <button class="modal-close" onclick="closeItemPicker()">×</button>
+      </div>
+      <input id="pickerSearch" class="item-search" type="search" placeholder="搜索道具名 / 类别" autocomplete="off">
+      <div id="pickerCategory" class="item-category-tags"></div>
+      <div class="modal-body">
+        <div class="modal-list-col">
+          <div class="modal-hint">点击道具查看属性</div>
+          <div id="pickerList" class="item-list modal-item-list"></div>
+        </div>
+        <div class="modal-detail-col">
+          <div class="property-title" id="pickerDetailTitle">道具属性</div>
+          <div id="pickerDetail" class="property-list modal-detail-list"></div>
+          <div id="pickerQtyRow" class="property-row modal-detail-qty" style="display:none">
+            <span class="property-label">数量</span>
+            <input id="pickerQty" class="property-item-qty" type="number" min="1" max="99" value="1">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="state-btn" onclick="closeItemPicker()">取消</button>
+        <button class="state-btn picker-confirm" id="pickerConfirm" onclick="confirmPickerAdd()">确定</button>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>
