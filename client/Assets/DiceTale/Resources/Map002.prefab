@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 1651073707134471655}
   - component: {fileID: 8753679988149047712}
   - component: {fileID: 5511963221407643257}
+  - component: {fileID: 6152315340760772378}
   m_Layer: 0
   m_Name: Background
   m_TagString: Untagged
@@ -141,7 +142,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.MaskObject
   maskWidth: 960
   maskHeight: 540
-  displayName: 地图遮罩
+  displayName: "\u5730\u56FE\u906E\u7F69"
 --- !u!114 &5511963221407643257
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -157,6 +158,21 @@ MonoBehaviour:
   maskObject: {fileID: 8753679988149047712}
   outputRenderer: {fileID: 5165857551154719930}
   maskPropertyName: _MaskTex
+--- !u!114 &6152315340760772378
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3575240713818411454}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd0ce7c7e6ad5764797b0e0c574e3c03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.BackendObject
+  objectKind: MaskObject
+  objectId: 
+  generateUniqueId: 1
 --- !u!1 &6172666796392553763
 GameObject:
   m_ObjectHideFlags: 0
@@ -461,6 +477,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2526300918002709749}
   - component: {fileID: 5533735694493956684}
+  - component: {fileID: 8930956603127017924}
   m_Layer: 0
   m_Name: Door
   m_TagString: Untagged
@@ -506,6 +523,21 @@ MonoBehaviour:
       m_Calls: []
   statefulActions:
   - {fileID: 324196991457225583}
+--- !u!114 &8930956603127017924
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7159680781129640532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd0ce7c7e6ad5764797b0e0c574e3c03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.BackendObject
+  objectKind: SceneObject
+  objectId: 
+  generateUniqueId: 0
 --- !u!1 &9166112083032446475
 GameObject:
   m_ObjectHideFlags: 0

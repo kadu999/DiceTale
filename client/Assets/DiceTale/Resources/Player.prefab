@@ -13,6 +13,8 @@ GameObject:
   - component: {fileID: 5997600896787544582}
   - component: {fileID: 3876241800738876313}
   - component: {fileID: 2015517731039516873}
+  - component: {fileID: 6097837850147434567}
+  - component: {fileID: 5747932176760969357}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -169,3 +171,30 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &6097837850147434567
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4438434259499130340}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd0ce7c7e6ad5764797b0e0c574e3c03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.BackendObject
+  objectKind: Player
+  objectId: 
+  generateUniqueId: 0
+--- !u!114 &5747932176760969357
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4438434259499130340}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e061299f7c7e847458574e4440a3ed91, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.ItemInventory
