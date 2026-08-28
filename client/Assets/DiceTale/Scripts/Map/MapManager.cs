@@ -157,8 +157,6 @@ namespace DiceTale
             var spawnGo = new GameObject("Spawn_Default");
             spawnGo.transform.SetParent(dynamicGo.transform, false);
             spawnGo.transform.position = dynamicGrid.GridOrigin + new Vector3(dynamicGrid.CellSize * 0.5f, dynamicGrid.CellSize * 0.5f, 0f);
-            var spawnPoint = spawnGo.AddComponent<SpawnPoint>();
-            spawnPoint.SetId("Default");
 
             return dynamicGo;
         }
@@ -189,12 +187,12 @@ namespace DiceTale
             var spawn = FindSpawn(spawnId);
             if (spawn != null)
             {
-                target = spawn.Position;
-                targetDesc = $"spawn '{spawn.Id}'";
+                target = spawn.position;
+                targetDesc = $"spawn '{spawn.name}'";
             }
             else
             {
-                // 无 SpawnPoint 时回退到当前地图第一个 MapMarker（部分地图用标记作为出生点，如 Map002）
+                // 无出生点（Spawn_* 物体）时回退到当前地图第一个 MapMarker（部分地图用标记作为出生点，如 Map002）
                 var marker = FindFirstMarkerOnCurrentMap();
                 if (marker != null)
                 {
@@ -327,29 +325,36 @@ namespace DiceTale
             }
         }
 
-        /// <summary>只在当前地图上按 ID 查找出生点（忽略大小写）；找不到时回退到第一个出生点，没有则返回 null。
+        /// <summary>只在当前地图上按名字查找出生点：优先找名为「Spawn_{spawnId}」的子物体（忽略大小写），
+        /// 找不到回退到第一个名字以 Spawn_ 开头的子物体；没有则返回 null。
+        /// 出生点是普通 GameObject（无需任何组件），命名约定如 Spawn_Default / Spawn_North。
         /// 注意只搜当前地图：切图时旧地图虽已 Destroy 但销毁延迟到帧末，全局搜索会拿到旧地图的出生点。</summary>
-        private SpawnPoint FindSpawn(string spawnId)
+        private Transform FindSpawn(string spawnId)
         {
             if (CurrentMap == null)
             {
                 return null;
             }
 
-            var spawns = CurrentMap.GetComponentsInChildren<SpawnPoint>();
-
-            foreach (var spawn in spawns)
+            var expected = "Spawn_" + (spawnId ?? "Default");
+            Transform fallback = null;
+            foreach (var t in CurrentMap.GetComponentsInChildren<Transform>(true))
             {
-                if (spawn.Id == spawnId)
+                if (string.Equals(t.name, expected, System.StringComparison.OrdinalIgnoreCase))
                 {
-                    return spawn;
+                    return t;
+                }
+
+                if (fallback == null && t.name.StartsWith("Spawn_", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    fallback = t;
                 }
             }
 
-            return spawns.Length > 0 ? spawns[0] : null;
+            return fallback;
         }
 
-        /// <summary>当前地图上第一个位置标记（无 SpawnPoint 时的出生点回退）。</summary>
+        /// <summary>当前地图上第一个位置标记（无出生点 Spawn_* 物体时的回退）。</summary>
         private MapMarker FindFirstMarkerOnCurrentMap()
         {
             if (CurrentMap == null)
