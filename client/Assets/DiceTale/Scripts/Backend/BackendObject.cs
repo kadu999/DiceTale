@@ -27,8 +27,8 @@ namespace DiceTale
         private static readonly List<string> EmptyStates = new List<string>();
         private static readonly List<string> EmptyItems = new List<string>();
 
-        [SerializeField, Tooltip("GM 页面展示的对象类型名；为空时回退到 BackendObject（迁移脚本已按旧类名填好）")]
-        private string objectKind;
+        [SerializeField, Tooltip("后台对象类型（GM 页面分类展示用；新增类型在 BackendObjectKind 末尾追加）")]
+        private BackendObjectKind objectKind = BackendObjectKind.SceneObject;
 
         [SerializeField, HideInInspector, Tooltip("自定义对象 ID 覆盖（高级用途：需要稳定/可读 ID 时设置，如 Debug 模式或代码里写入）；为空时自动生成唯一 ID；Player/SpawnPoint 用角色组件自己的 ID")]
         private string objectId;
@@ -60,8 +60,8 @@ namespace DiceTale
             }
         }
 
-        /// <summary>对象类型显示名（GM 页面展示用）：优先序列化 objectKind，回退类名。</summary>
-        public string ObjectKind => !string.IsNullOrEmpty(objectKind) ? objectKind : GetType().Name;
+        /// <summary>对象类型显示名（GM 页面展示用）：序列化 BackendObjectKind 枚举的字符串形式。</summary>
+        public string ObjectKind => objectKind.ToString();
 
         /// <summary>GM 页面显示的名称：能力组件显示名（SceneObject/ItemObject/MaskObject）优先，回退对象 ID。</summary>
         public string DisplayName

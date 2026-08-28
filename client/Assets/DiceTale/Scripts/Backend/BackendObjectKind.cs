@@ -1,0 +1,24 @@
+namespace DiceTale
+{
+    /// <summary>
+    /// 后台对象类型（GM 页面展示与分类用，序列化在 BackendObject 枢纽上）。
+    /// 新增类型时在末尾追加新值（不要插入中间），避免打乱已保存 prefab 中的序列化索引。
+    /// </summary>
+    public enum BackendObjectKind
+    {
+        /// <summary>场景物体/事件机关（门、宝箱、拉杆等）；枢纽未配置类型时的默认值。</summary>
+        SceneObject = 0,
+
+        /// <summary>玩家（Player 角色组件）。</summary>
+        Player = 1,
+
+        /// <summary>道具（ItemObject 道具货源）。</summary>
+        Item = 2,
+
+        /// <summary>遮罩（MaskObject）。</summary>
+        Mask = 3,
+
+        /// <summary>出生点/地图标记（SpawnPoint）。</summary>
+        SpawnPoint = 4,
+    }
+}

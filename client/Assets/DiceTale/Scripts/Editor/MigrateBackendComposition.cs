@@ -11,7 +11,7 @@ namespace DiceTale.Editor
     ///
     /// 迁移内容（纯增量，不丢数据、不改 GUID）：
     /// - 为每个含旧能力组件的 GameObject 添加 BackendObject 枢纽；
-    /// - 枢纽 objectKind 填旧类名（GM 页面显示的对象类型不变）；
+    /// - 枢纽 objectKind 映射为 BackendObjectKind 枚举（GM 页面显示的对象类型与旧类名语义一致）；
     /// - Player 所在物体补挂 ItemInventory（旧实现玩家物品列表来自 SceneObject 继承，现已拆分到物品组件）。
     ///
     /// 对象 ID 说明：新枢纽默认自动生成唯一 ID（保持 ItemObject/MaskObject 旧行为；
@@ -101,12 +101,12 @@ namespace DiceTale.Editor
                 hub = go.AddComponent<BackendObject>();
             }
 
-            // 2. objectKind 填旧类名（GM 页面显示的类型不变）；对象 ID 由枢纽默认自动生成唯一
+            // 2. objectKind 按旧组件类型映射为枚举（GM 页面显示的类型保持一致）；对象 ID 由枢纽默认自动生成唯一
             var so = new SerializedObject(hub);
             var kindProp = so.FindProperty("objectKind");
-            if (kindProp != null && string.IsNullOrEmpty(kindProp.stringValue))
+            if (kindProp != null)
             {
-                kindProp.stringValue = legacy.GetType().Name;
+                kindProp.intValue = (int)GetKindForLegacy(legacy);
             }
 
             so.ApplyModifiedPropertiesWithoutUndo();
@@ -118,6 +118,32 @@ namespace DiceTale.Editor
             }
 
             return true;
+        }
+
+        /// <summary>旧能力组件类型 → 后台对象类型枚举（GM 页面显示的类型与旧类名语义一致）。</summary>
+        private static BackendObjectKind GetKindForLegacy(Component legacy)
+        {
+            if (legacy is ItemObject)
+            {
+                return BackendObjectKind.Item;
+            }
+
+            if (legacy is MaskObject)
+            {
+                return BackendObjectKind.Mask;
+            }
+
+            if (legacy is Player)
+            {
+                return BackendObjectKind.Player;
+            }
+
+            if (legacy is SpawnPoint)
+            {
+                return BackendObjectKind.SpawnPoint;
+            }
+
+            return BackendObjectKind.SceneObject;
         }
     }
 }
