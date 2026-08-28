@@ -9,7 +9,7 @@ namespace DiceTale
     /// 客户端本地也维护剩余（remaining），GM 分配/收回命令（set_object_items）到达时刷新。
     /// 对象 ID 由枢纽统一提供（默认自动生成唯一 ID）。
     /// </summary>
-    public class ItemObject : BackendComponent, IItemStock, IBackendDisplayName
+    public class ItemObject : BackendComponent, IBackendDisplayName
     {
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染道具分配区）。</summary>
         public override string ComponentId => "ItemObject";

@@ -12,7 +12,7 @@ namespace DiceTale
     /// - 显示名称在枢纽上配置（BackendObject.displayName，后台看名字识别对象）；
     /// - 背包（道具存储）已拆分到 <see cref="Backpack"/>（需要的物体另挂该组件）。
     /// </summary>
-    public class StateMachine : BackendComponent, IStateMachine
+    public class StateMachine : BackendComponent
     {
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染状态单选组）。</summary>
         public override string ComponentId => "StateMachine";

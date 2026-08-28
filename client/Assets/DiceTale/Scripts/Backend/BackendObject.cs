@@ -5,9 +5,9 @@ namespace DiceTale
 {
     /// <summary>
     /// 后台对象枢纽（组件模型）：挂在物体（主体）上的「后台对象」本体，只负责与后台（backend）的通信、身份与聚合，
-    /// 具体能力（状态机 / 物品 / 道具货源 / 遮罩 / 角色名单）由同一主体上的能力组件实现
-    /// <see cref="IBackendRole"/>、<see cref="IBackendDisplayName"/>、<see cref="IStateMachine"/>、
-    /// <see cref="IBackpack"/>、<see cref="IItemStock"/>、<see cref="IMaskSource"/> 提供。
+    /// 具体能力（状态机 / 背包 / 道具货源 / 遮罩 / 角色名单）由同一主体上的能力组件
+    /// （继承 <see cref="BackendComponent"/>）经 <see cref="IBackendRole"/>、<see cref="IBackendDisplayName"/>、
+    /// <see cref="IBackendComponentData"/>、<see cref="IBackendCommandHandler"/> 提供。
     ///
     /// 主体 = 挂了本枢纽的 GameObject；能力组件挂在同一个主体上。枢纽在初始化（OnEnable）时
     /// 扫描一次缓存能力组件列表（不序列化、不显示、不对外暴露），聚合上报与命令转发都以该缓存为来源。

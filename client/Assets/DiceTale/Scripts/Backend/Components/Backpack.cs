@@ -9,7 +9,7 @@ namespace DiceTale
     /// 继承 <see cref="BackendComponent"/>，与 <see cref="BackendObject"/> 枢纽挂同一物体：
     /// 初始化时由枢纽统一上报（IBackendComponentData），之后道具数据由后台 set_object_items 命令修改，前端不回执。
     /// </summary>
-    public class Backpack : BackendComponent, IBackpack
+    public class Backpack : BackendComponent
     {
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染物品编辑区）。</summary>
         public override string ComponentId => "Backpack";

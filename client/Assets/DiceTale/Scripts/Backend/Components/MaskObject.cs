@@ -14,7 +14,7 @@ namespace DiceTale
     ///   输出纹理 ReadPixels 同步，外部直接看到结果。
     /// 对象 ID 与显示名称由枢纽统一提供（默认自动生成唯一 ID；显示名在 BackendObject.displayName 配置）。
     /// </summary>
-    public class MaskObject : BackendComponent, IMaskSource
+    public class MaskObject : BackendComponent
     {
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染遮罩编辑区）。</summary>
         public override string ComponentId => "MaskObject";
