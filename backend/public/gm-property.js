@@ -6,9 +6,9 @@ function renderPropertyPanel() {
 }
 /** 组件 → 属性面板控件渲染器（与客户端组件类同名；新增客户端组件时在此注册渲染器）。 */
 const componentRenderers = {
-  SceneObject: (container, objectId, obj) =>
+  StateMachine: (container, objectId, obj) =>
     renderObjectStates(propertySection(container, '状态'), objectId, obj, null),
-  ItemInventory: (container, objectId, obj) =>
+  Backpack: (container, objectId, obj) =>
     renderObjectItems(propertySection(container), objectId, (obj && obj.items) || [], '物品'),
   ItemObject: (container, objectId, obj) =>
     renderItemDistribution(propertySection(container), obj),
@@ -19,10 +19,10 @@ const componentRenderers = {
 function inferComponents(obj) {
   const list = [];
   if (!obj) return list;
-  if ((obj.states || []).length > 0) list.push('SceneObject');
+  if ((obj.states || []).length > 0) list.push('StateMachine');
   if (obj.maskWidth > 0 && obj.maskHeight > 0) list.push('MaskObject');
   if (obj.itemName) list.push('ItemObject');
-  else if ((obj.items || []).length > 0) list.push('ItemInventory');
+  else if ((obj.items || []).length > 0) list.push('Backpack');
   return list;
 }
 

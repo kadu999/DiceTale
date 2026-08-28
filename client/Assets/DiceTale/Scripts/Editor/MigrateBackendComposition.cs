@@ -12,7 +12,7 @@ namespace DiceTale.Editor
     /// 迁移内容（纯增量，不丢数据、不改 GUID）：
     /// - 为每个含旧能力组件的 GameObject 添加 BackendObject 枢纽；
     /// - 枢纽 objectKind 映射为 BackendObjectKind 枚举（GM 页面显示的对象类型与旧类名语义一致）；
-    /// - Player 所在物体补挂 ItemInventory（旧实现玩家物品列表来自 SceneObject 继承，现已拆分到物品组件）。
+    /// - Player 所在物体补挂 Backpack（旧实现玩家道具列表来自 SceneObject 继承，现已拆分到背包组件）。
     ///
     /// 对象 ID 说明：新枢纽默认自动生成唯一 ID（保持 ItemObject/MaskObject 旧行为；
     /// SceneObject 由物体名改为唯一 ID，命令路由不受影响——ID 每次连接重新注册）。
@@ -23,7 +23,7 @@ namespace DiceTale.Editor
     {
         private static readonly Type[] LegacyComponents =
         {
-            typeof(SceneObject),
+            typeof(StateMachine),
             typeof(ItemObject),
             typeof(MaskObject),
             typeof(Player),
@@ -111,10 +111,10 @@ namespace DiceTale.Editor
 
             so.ApplyModifiedPropertiesWithoutUndo();
 
-            // 3. 玩家补挂物品组件（旧实现物品列表来自 SceneObject 继承，现已拆分到 ItemInventory）
-            if (go.GetComponent<Player>() != null && go.GetComponent<ItemInventory>() == null)
+            // 3. 玩家补挂背包组件（旧实现玩家道具列表来自 SceneObject 继承，现已拆分到 Backpack）
+            if (go.GetComponent<Player>() != null && go.GetComponent<Backpack>() == null)
             {
-                go.AddComponent<ItemInventory>();
+                go.AddComponent<Backpack>();
             }
 
             return true;

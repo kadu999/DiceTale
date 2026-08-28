@@ -3,7 +3,7 @@ using UnityEngine;
 namespace DiceTale
 {
     /// <summary>
-    /// 后台能力组件基类：所有能力组件（SceneObject 状态机 / ItemInventory 物品 / ItemObject 道具货源 /
+    /// 后台能力组件基类：所有能力组件（StateMachine 状态机 / Backpack 背包 / ItemObject 道具货源 /
     /// MaskObject 遮罩 / Player / SpawnPoint 角色）的统一基类。
     ///
     /// 基类提供：
@@ -17,7 +17,7 @@ namespace DiceTale
     [RequireComponent(typeof(BackendObject))]
     public abstract class BackendComponent : MonoBehaviour
     {
-        /// <summary>组件 ID（与客户端组件类同名，如 SceneObject / ItemInventory / ItemObject / MaskObject / Player / SpawnPoint）。</summary>
+        /// <summary>组件 ID（与客户端组件类同名，如 StateMachine / Backpack / ItemObject / MaskObject / Player / SpawnPoint）。</summary>
         public abstract string ComponentId { get; }
 
         /// <summary>GM 属性面板是否渲染该组件的编辑控件（默认 true；角色组件覆写为 false）。</summary>

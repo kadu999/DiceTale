@@ -4,15 +4,15 @@ using UnityEngine;
 namespace DiceTale
 {
     /// <summary>
-    /// 物品组件（组件模型下的能力组件，由原 SceneObject 的物品列表拆分而来）：
-    /// 持有物品列表并与后台同步（IItemInventory），供玩家等持有物品的物体使用。
+    /// 背包组件：存储道具（道具名列表，同名重复表示数量），与后台同步（IBackpack）。
+    /// 供玩家等持有道具的物体使用（容器也可挂）。
     /// 继承 <see cref="BackendComponent"/>，与 <see cref="BackendObject"/> 枢纽挂同一物体，
-    /// 增删物品后经枢纽上报（ReportItems），物品列表由组件自己上报（IBackendComponentData）。
+    /// 增删道具后经枢纽上报（ReportItems），道具列表由组件自己上报（IBackendComponentData）。
     /// </summary>
-    public class ItemInventory : BackendComponent, IItemInventory, IBackendComponentData, IBackendCommandHandler
+    public class Backpack : BackendComponent, IBackpack, IBackendComponentData, IBackendCommandHandler
     {
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染物品编辑区）。</summary>
-        public override string ComponentId => "ItemInventory";
+        public override string ComponentId => "Backpack";
 
         private readonly List<string> items = new List<string>();
 

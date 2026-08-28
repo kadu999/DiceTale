@@ -20,7 +20,7 @@ export type ClientMessage =
         position?: { x: number; y: number } | null;
         /** 物品列表（字符串） */
         items?: string[];
-        /** 能力组件清单（与客户端组件类同名：SceneObject/ItemInventory/ItemObject/MaskObject），GM 页面据此渲染属性控件 */
+        /** 能力组件清单（与客户端组件类同名：StateMachine/Backpack/ItemObject/MaskObject），GM 页面据此渲染属性控件 */
         components?: string[];
       }>;
     }
@@ -79,7 +79,7 @@ export interface PlayerStateSnapshot {
   mapName: string;
 }
 
-/** 通用后台物体（SceneObject）状态快照 */
+/** 通用后台物体（BackendObject 枢纽）状态快照 */
 export interface ObjectStateSnapshot {
   /** 显示名称（GM 页面标明这是什么物体）；未上报时回退为对象 id */
   name: string;

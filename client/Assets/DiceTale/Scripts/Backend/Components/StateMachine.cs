@@ -5,18 +5,17 @@ using UnityEngine.Events;
 namespace DiceTale
 {
     /// <summary>
-    /// 状态机组件（组件模型下的能力组件，原 SceneObject 拆分后的状态机部分）：
-    /// 提供 Inspector 状态列表、进入事件（onStateEnter）与状态动作列表（statefulActions）。
+    /// 状态组件（状态机）：提供 Inspector 状态列表、进入事件（onStateEnter）与状态动作列表（statefulActions）。
     /// 继承 <see cref="BackendComponent"/>，与 <see cref="BackendObject"/> 枢纽挂同一物体：
     /// - 状态列表/当前状态由组件自己上报（IBackendComponentData → GM 状态单选组）；
-    /// - set_object_state 命令由枢纽转发到 TrySetState，切换后经枢纽上报（ReportStateChanged）；
+    /// - set_object_state 命令由枢纽路由到本组件（TrySetState），切换后经枢纽上报（ReportStateChanged）；
     /// - 显示名称在枢纽上配置（BackendObject.displayName，后台看名字识别对象）；
-    /// - 物品列表已拆分到 <see cref="ItemInventory"/>（需要的物体另挂该组件）。
+    /// - 背包（道具存储）已拆分到 <see cref="Backpack"/>（需要的物体另挂该组件）。
     /// </summary>
-    public class SceneObject : BackendComponent, ISceneStateMachine, IBackendComponentData, IBackendCommandHandler
+    public class StateMachine : BackendComponent, IStateMachine, IBackendComponentData, IBackendCommandHandler
     {
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染状态单选组）。</summary>
-        public override string ComponentId => "SceneObject";
+        public override string ComponentId => "StateMachine";
 
         [SerializeField, Tooltip("状态列表（仅状态名称）；后台可用 set_object_state 按名称切换")]
         private List<SceneObjectState> states = new List<SceneObjectState>();
@@ -72,7 +71,7 @@ namespace DiceTale
             {
                 if (currentState < 0 || currentState >= states.Count)
                 {
-                    Debug.LogWarning($"[SceneObject] {name}: current state index {currentState} out of range, fallback to first state.");
+                    Debug.LogWarning($"[StateMachine] {name}: current state index {currentState} out of range, fallback to first state.");
                     currentState = 0;
                 }
 
@@ -148,7 +147,7 @@ namespace DiceTale
     /// <summary>
     /// 场景物体的一个状态：只包含状态名称（供后台 set_object_state 按名称切换）。
     /// 进入状态的 onStateEnter 事件与状态动作（<see cref="StatefulAction"/>）
-    /// 在 SceneObject 上统一配置，进入任意状态都会触发（并携带该状态）。
+    /// 在 StateMachine 上统一配置，进入任意状态都会触发（并携带该状态）。
     /// </summary>
     [System.Serializable]
     public class SceneObjectState

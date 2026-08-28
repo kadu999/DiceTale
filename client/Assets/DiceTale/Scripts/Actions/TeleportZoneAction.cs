@@ -8,7 +8,7 @@ namespace DiceTale
     /// 激活后玩家进入圆形范围（CircleCollider2D，自动设为 Trigger）即被传送到
     /// 目标地图上 <see cref="MapMarker"/> 标记的位置（targetMapName + targetMarkerId）；
     /// 切到其他状态时关闭传送（进入不传送）。
-    /// 挂到 SceneObject 的「状态动作列表」即可：任意状态切换都会重新评估开/关。
+    /// 挂到 StateMachine 的「状态动作列表」即可：任意状态切换都会重新评估开/关。
     /// 若要后台切状态时直接传送圆内玩家（不等进入），用 <see cref="TeleportAction"/>。
     /// </summary>
     [RequireComponent(typeof(CircleCollider2D))]

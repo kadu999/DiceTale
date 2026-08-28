@@ -6,8 +6,8 @@ namespace DiceTale
     /// <summary>
     /// 后台对象枢纽（组件模型）：挂在物体（主体）上的「后台对象」本体，只负责与后台（backend）的通信、身份与聚合，
     /// 具体能力（状态机 / 物品 / 道具货源 / 遮罩 / 角色名单）由同一主体上的能力组件实现
-    /// <see cref="IBackendRole"/>、<see cref="IBackendDisplayName"/>、<see cref="ISceneStateMachine"/>、
-    /// <see cref="IItemInventory"/>、<see cref="IItemStock"/>、<see cref="IMaskSource"/> 提供。
+    /// <see cref="IBackendRole"/>、<see cref="IBackendDisplayName"/>、<see cref="IStateMachine"/>、
+    /// <see cref="IBackpack"/>、<see cref="IItemStock"/>、<see cref="IMaskSource"/> 提供。
     ///
     /// 主体 = 挂了本枢纽的 GameObject；能力组件挂在同一个主体上。枢纽在初始化（OnEnable）时
     /// 扫描一次缓存能力组件列表（不序列化、不显示、不对外暴露），聚合上报与命令转发都以该缓存为来源。
@@ -228,7 +228,7 @@ namespace DiceTale
         /// <summary>状态切换后上报给后台，使 GM 页面同步显示当前状态（状态机组件切换状态后调用）。</summary>
         public void ReportStateChanged()
         {
-            var stateMachine = FindComponent<ISceneStateMachine>();
+            var stateMachine = FindComponent<IStateMachine>();
             var stateName = stateMachine != null ? stateMachine.CurrentStateName : null;
             if (string.IsNullOrEmpty(stateName))
             {
@@ -245,7 +245,7 @@ namespace DiceTale
         /// <summary>物品列表变化后上报给后台（物品组件在增删物品后调用）。</summary>
         public void ReportItems()
         {
-            var inventory = FindComponent<IItemInventory>();
+            var inventory = FindComponent<IBackpack>();
             var items = inventory != null ? inventory.Items : (IReadOnlyList<string>)EmptyItems;
             SendToBackend(new Server.ReportObjectItemsMessage
             {

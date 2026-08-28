@@ -9,7 +9,7 @@ namespace DiceTale
     /// 把目标玩家传送到目标地图上 <see cref="MapMarker"/> 标记的位置（targetMapName + targetMarkerId）。
     /// 目标玩家默认是 <see cref="range"/> 半径范围内（以自身为中心）的玩家；
     /// 勾选 <see cref="teleportAllPlayers"/> 时忽略半径，传送当前地图上的所有玩家。
-    /// 挂到 SceneObject 的「状态动作列表」即可，进入任意状态都会触发；
+    /// 挂到 StateMachine 的「状态动作列表」即可，进入任意状态都会触发；
     /// <see cref="triggerStateName"/> 非空时仅在该名称的状态下触发。
     /// 若要后台开/关传送区域（开启后玩家进入才传送），用 <see cref="TeleportZoneAction"/>。
     /// </summary>

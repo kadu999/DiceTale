@@ -1,3 +1,5 @@
+// 组件渲染器：Backpack（背包）——与客户端组件类同名，属性面板按 components 清单调用。
+// 控件：道具列表编辑（添加/移除，走 gm_set_object_items）。
 function renderObjectItems(container, objectId, items, labelText) {
   // 行 1：属性面板 UI 规则——左侧名字，右侧功能控件（添加道具按钮，数量在弹框内填写）
   const row = document.createElement('div');

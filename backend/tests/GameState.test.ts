@@ -64,11 +64,11 @@ describe('GameState', () => {
 
   test('registerObjects stores components list when provided, omits otherwise', () => {
     state.registerObjects('Map001', [
-      { id: 'Door_1', kind: 'SceneObject', components: ['SceneObject', 'ItemInventory'] },
+      { id: 'Door_1', kind: 'SceneObject', components: ['StateMachine', 'Backpack'] },
       { id: 'Plain_1', kind: 'SceneObject' },
     ]);
 
-    expect(state.objects['Door_1'].components).toEqual(['SceneObject', 'ItemInventory']);
+    expect(state.objects['Door_1'].components).toEqual(['StateMachine', 'Backpack']);
     expect(state.objects['Plain_1'].components).toBeUndefined();
   });
 

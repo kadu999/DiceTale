@@ -1,3 +1,5 @@
+// 组件渲染器：StateMachine（状态机）——与客户端组件类同名，属性面板按 components 清单调用。
+// 控件：状态单选组（点击发 gm_set_object_state，客户端枢纽路由到 StateMachine.TrySetState）。
 function renderObjectStates(container, objectId, obj, labelText) {
   const states = (obj && obj.states) || [];
   if (states.length === 0) {

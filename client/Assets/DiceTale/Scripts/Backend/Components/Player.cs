@@ -7,7 +7,7 @@ namespace DiceTale
     /// 玩家角色组件（组件模型下的能力组件，原 Player 的角色部分）：
     /// 提供玩家唯一标识（PlayerId）、玩家名单上报与位置上报（IBackendRole）。
     /// 继承 <see cref="BackendComponent"/>，与 <see cref="BackendObject"/> 枢纽挂同一物体；
-    /// 物品列表由同物体的 <see cref="ItemInventory"/> 提供。
+    /// 道具列表由同物体的 <see cref="Backpack"/> 提供。
     /// </summary>
     public class Player : BackendComponent, IBackendRole
     {
@@ -28,12 +28,12 @@ namespace DiceTale
         /// <summary>GM 页面显示的名称：取枢纽显示名（默认回退 PlayerId）。</summary>
         public string DisplayName => GetComponent<BackendObject>()?.DisplayName ?? PlayerId;
 
-        /// <summary>物品列表（由同物体的 ItemInventory 提供；无物品组件时为空）。</summary>
+        /// <summary>道具列表（由同物体的 Backpack 提供；无背包组件时为空）。</summary>
         public IReadOnlyList<string> Items
         {
             get
             {
-                var inventory = GetComponent<ItemInventory>();
+                var inventory = GetComponent<Backpack>();
                 return inventory != null ? inventory.Items : EmptyItems;
             }
         }

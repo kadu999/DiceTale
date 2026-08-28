@@ -39,7 +39,7 @@ namespace DiceTale
     /// <summary>
     /// 组件数据上报能力：组件把自己的参数（数据）填充到 GM 上报信息 <see cref="Server.ServerObjectInfo"/>。
     /// 数据归组件所有——每个能力组件实现本接口，由枢纽在 BackendRegistry.ReportAll 时对列表中的每个组件调用，
-    /// 只填自己负责的字段（SceneObject 填状态、ItemInventory 填物品、ItemObject 填道具、MaskObject 填遮罩）。
+    /// 只填自己负责的字段（StateMachine 填状态、Backpack 填道具、ItemObject 填货源、MaskObject 填遮罩）。
     /// </summary>
     public interface IBackendComponentData
     {
@@ -49,7 +49,7 @@ namespace DiceTale
 
     /// <summary>
     /// 命令处理能力：组件自己处理对应后台命令（解析参数并执行），枢纽只做通用路由、分派器只做定位。
-    /// 实现者：<see cref="SceneObject"/>（set_object_state）、<see cref="ItemInventory"/>（set_object_items）、
+    /// 实现者：<see cref="StateMachine"/>（set_object_state）、<see cref="Backpack"/>（set_object_items）、
     /// <see cref="MaskObject"/>（set_mask_image / erase_mask）。
     /// </summary>
     public interface IBackendCommandHandler
@@ -62,10 +62,10 @@ namespace DiceTale
     }
 
     /// <summary>
-    /// 状态机能力：提供状态列表、当前状态与按名称切换状态（后台 set_object_state 命令）。
-    /// 实现者：<see cref="SceneObject"/>。
+    /// 状态能力：提供状态列表、当前状态与按名称切换状态（后台 set_object_state 命令）。
+    /// 实现者：<see cref="StateMachine"/>。
     /// </summary>
-    public interface ISceneStateMachine
+    public interface IStateMachine
     {
         /// <summary>当前状态名称（未配置状态或尚未启动时为 null）。</summary>
         string CurrentStateName { get; }
@@ -78,15 +78,15 @@ namespace DiceTale
     }
 
     /// <summary>
-    /// 物品能力：持有物品列表并与后台同步（后台 set_object_items 命令）。
-    /// 实现者：<see cref="ItemInventory"/>。
+    /// 背包能力：持有道具列表（道具名，同名重复表示数量）并与后台同步（后台 set_object_items 命令）。
+    /// 实现者：<see cref="Backpack"/>。
     /// </summary>
-    public interface IItemInventory
+    public interface IBackpack
     {
-        /// <summary>物品列表（只读视图）。</summary>
+        /// <summary>道具列表（只读视图；同名重复表示数量）。</summary>
         IReadOnlyList<string> Items { get; }
 
-        /// <summary>整体设置物品列表（后台命令使用，与后台同步）。</summary>
+        /// <summary>整体设置道具列表（后台命令使用，与后台同步）。</summary>
         void SetItems(IEnumerable<string> newItems);
     }
 
