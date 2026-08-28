@@ -30,11 +30,9 @@ namespace DiceTale
         [SerializeField]
         private int blurPasses = 2;
 
-        private static readonly GridCellType[] FogTypes =
-        {
-            GridCellType.Fog1, GridCellType.Fog2, GridCellType.Fog3,
-            GridCellType.Fog4, GridCellType.Fog5,
-        };
+        /// <summary>所有雾位掩码（Fog1|Fog2|Fog3|Fog4|Fog5），用于提取格子的雾分量。</summary>
+        private const GridCellType FogMask =
+            GridCellType.Fog1 | GridCellType.Fog2 | GridCellType.Fog3 | GridCellType.Fog4 | GridCellType.Fog5;
 
         private const string BlurShaderName = "DiceTale/FogBlur";
         private const string GridSizeProperty = "_GridSize";
@@ -164,8 +162,10 @@ namespace DiceTale
             {
                 for (int x = 0; x < width; x++)
                 {
-                    var type = cellGrid[x, y];
-                    if (!IsFogType(type))
+                    // 只取雾位分量：格子可能是 Obstacle|Fog1 等组合掩码，
+                    // 分组/揭示一律按雾类型（Fog1~Fog5）归属，避免组合掩码把雾区拆散
+                    var fogType = cellGrid[x, y] & FogMask;
+                    if (fogType == GridCellType.Empty)
                     {
                         continue;
                     }
@@ -173,10 +173,10 @@ namespace DiceTale
                     var index = y * width + x;
                     colors[index] = new Color(fogColor.r, fogColor.g, fogColor.b, 1f);
 
-                    if (!cellsByType.TryGetValue(type, out var list))
+                    if (!cellsByType.TryGetValue(fogType, out var list))
                     {
                         list = new List<int>();
-                        cellsByType[type] = list;
+                        cellsByType[fogType] = list;
                     }
 
                     list.Add(index);
@@ -287,7 +287,8 @@ namespace DiceTale
             }
 
             var gridPos = gridMap.WorldToGrid(player.transform.position);
-            return gridMap.GetCellType(gridPos);
+            // 只取雾位：与 cellsByType 的分组口径一致（Obstacle|Fog1 的格子按 Fog1 归属）
+            return gridMap.GetCellType(gridPos) & FogMask;
         }
 
         // ---------------------------------------------------------------- 右键擦除
@@ -347,20 +348,6 @@ namespace DiceTale
 
             fogState.SetPixel(index % width, index / width, new Color(color.r, color.g, color.b, 0f));
             fogState.Apply();
-        }
-
-        private static bool IsFogType(GridCellType type)
-        {
-            // 含任意雾位即为雾格子（可与障碍等其他位组合，如 Obstacle | Fog1）
-            foreach (var fogType in FogTypes)
-            {
-                if ((type & fogType) != 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 }
