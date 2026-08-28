@@ -46,7 +46,7 @@ namespace DiceTale
         /// 聚合上报与命令转发以此列表为唯一来源。
         /// </summary>
         [SerializeField, Tooltip("主体上的能力组件（自动同步，无需手动维护）")]
-        private List<MonoBehaviour> capabilityComponents = new List<MonoBehaviour>();
+        private List<BackendComponent> capabilityComponents = new List<BackendComponent>();
 
         /// <summary>后台使用的唯一对象 ID：角色组件（Player/SpawnPoint）优先，其次自定义 ID（隐藏字段），默认自动生成唯一 ID。</summary>
         public string ObjectId
@@ -101,12 +101,11 @@ namespace DiceTale
         }
 
         /// <summary>主体上的能力组件（只读视图；数据由各组件自己持有并上报）。</summary>
-        public IReadOnlyList<MonoBehaviour> CapabilityComponents => capabilityComponents;
+        public IReadOnlyList<BackendComponent> CapabilityComponents => capabilityComponents;
 
         /// <summary>
-        /// 可编辑能力清单（上报给 GM 页面，据此渲染属性控件；与客户端组件类同名）：
-        /// SceneObject 状态机 / ItemInventory 物品 / ItemObject 道具货源 / MaskObject 遮罩。
-        /// 角色组件（Player/SpawnPoint）不在此清单——按 kind 与 register_players/spawnPoints 名单处理。
+        /// 可编辑能力清单（上报给 GM 页面，据此渲染属性控件）：取每个能力组件自己的 ComponentId；
+        /// 角色组件（Player/SpawnPoint）GmEditable=false，不进入清单（按 kind 与 register_players/spawnPoints 名单处理）。
         /// </summary>
         public List<string> Components
         {
@@ -115,16 +114,12 @@ namespace DiceTale
                 var components = new List<string>();
                 foreach (var comp in capabilityComponents)
                 {
-                    if (comp == null)
+                    if (comp == null || !comp.GmEditable)
                     {
                         continue;
                     }
 
-                    var id = GetComponentId(comp);
-                    if (id != null)
-                    {
-                        components.Add(id);
-                    }
+                    components.Add(comp.ComponentId);
                 }
 
                 return components;
@@ -151,19 +146,14 @@ namespace DiceTale
             }
         }
 
-        /// <summary>重新扫描主体上的能力组件并同步列表（挂/摘能力组件后自动调用；运行时动态 AddComponent 后可手动调用）。</summary>
+        /// <summary>重新扫描主体上的能力组件并同步列表（挂/摘能力组件后自动调用；运行时动态 AddComponent 后可手动调用）。
+        /// 能力组件统一继承 <see cref="BackendComponent"/>，扫描即全量。 </summary>
         public void RefreshCapabilityComponents()
         {
             capabilityComponents.Clear();
-            foreach (var comp in GetComponents<MonoBehaviour>())
+            foreach (var comp in GetComponents<BackendComponent>())
             {
-                if (comp == null || comp == this)
-                {
-                    continue;
-                }
-
-                if (comp is ISceneStateMachine || comp is IItemInventory || comp is IItemStock ||
-                    comp is IMaskSource || comp is IBackendRole || comp is IBackendDisplayName)
+                if (comp != null)
                 {
                     capabilityComponents.Add(comp);
                 }
@@ -184,32 +174,6 @@ namespace DiceTale
                 {
                     return t;
                 }
-            }
-
-            return null;
-        }
-
-        /// <summary>能力组件 → 上报给 GM 的组件名（与客户端组件类同名）；角色/显示名组件不进入上报清单。</summary>
-        private static string GetComponentId(MonoBehaviour comp)
-        {
-            if (comp is ISceneStateMachine)
-            {
-                return "SceneObject";
-            }
-
-            if (comp is IItemInventory)
-            {
-                return "ItemInventory";
-            }
-
-            if (comp is IItemStock)
-            {
-                return "ItemObject";
-            }
-
-            if (comp is IMaskSource)
-            {
-                return "MaskObject";
             }
 
             return null;

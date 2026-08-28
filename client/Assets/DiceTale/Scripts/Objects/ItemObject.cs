@@ -9,10 +9,11 @@ namespace DiceTale
     /// 客户端本地也维护剩余（remaining），GM 分配/收回命令（set_object_items）到达时刷新。
     /// 对象 ID 由枢纽统一提供（默认自动生成唯一 ID）。
     /// </summary>
-    [DisallowMultipleComponent]
-    [RequireComponent(typeof(BackendObject))]
-    public class ItemObject : MonoBehaviour, IItemStock, IBackendDisplayName, IBackendComponentData
+    public class ItemObject : BackendComponent, IItemStock, IBackendDisplayName, IBackendComponentData
     {
+        /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染道具分配区）。</summary>
+        public override string ComponentId => "ItemObject";
+
         [SerializeField, Tooltip("道具名（GM 页面显示名，也是分配给玩家的物品名）")]
         private string itemName;
 
@@ -50,16 +51,9 @@ namespace DiceTale
             }
         }
 
-        private void OnValidate()
+        protected override void OnEnable()
         {
-            // 编辑器里挂/改组件时同步枢纽的能力组件列表
-            GetComponent<BackendObject>()?.RefreshCapabilityComponents();
-        }
-
-        private void OnEnable()
-        {
-            // 通知枢纽刷新能力组件列表（挂/摘组件后保持同步）
-            GetComponent<BackendObject>()?.RefreshCapabilityComponents();
+            base.OnEnable(); // 通知枢纽刷新能力组件列表（基类内置）
 
             // 地图重载/激活时按当前玩家持有量重算剩余（首次进入时玩家尚未持有，剩余 = 总数）
             RefreshQuantity();

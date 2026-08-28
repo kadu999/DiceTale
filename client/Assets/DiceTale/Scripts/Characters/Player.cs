@@ -6,25 +6,18 @@ namespace DiceTale
     /// <summary>
     /// 玩家角色组件（组件模型下的能力组件，原 Player 的角色部分）：
     /// 提供玩家唯一标识（PlayerId）、玩家名单上报与位置上报（IBackendRole）。
-    /// 与 <see cref="BackendObject"/> 枢纽挂同一物体；物品列表由同物体的 <see cref="ItemInventory"/> 提供。
+    /// 继承 <see cref="BackendComponent"/>，与 <see cref="BackendObject"/> 枢纽挂同一物体；
+    /// 物品列表由同物体的 <see cref="ItemInventory"/> 提供。
     /// </summary>
-    [DisallowMultipleComponent]
-    [RequireComponent(typeof(BackendObject))]
-    public class Player : MonoBehaviour, IBackendRole
+    public class Player : BackendComponent, IBackendRole
     {
+        /// <summary>组件 ID（与客户端组件类同名；角色组件不进 GM 面板清单）。</summary>
+        public override string ComponentId => "Player";
+
+        /// <summary>角色组件不进 GM 属性面板清单（由玩家名单页处理）。</summary>
+        public override bool GmEditable => false;
+
         private static readonly List<string> EmptyItems = new List<string>();
-
-        private void OnValidate()
-        {
-            // 编辑器里挂/改组件时同步枢纽的能力组件列表
-            GetComponent<BackendObject>()?.RefreshCapabilityComponents();
-        }
-
-        private void OnEnable()
-        {
-            // 通知枢纽刷新能力组件列表（挂/摘组件后保持同步）
-            GetComponent<BackendObject>()?.RefreshCapabilityComponents();
-        }
 
         /// <summary>玩家唯一标识（由 CharacterManager 分配，上报给后台）。</summary>
         public string PlayerId { get; private set; } = "Player_1";

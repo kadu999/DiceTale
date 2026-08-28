@@ -7,16 +7,17 @@ namespace DiceTale
     /// <summary>
     /// 状态机组件（组件模型下的能力组件，原 SceneObject 拆分后的状态机部分）：
     /// 提供 Inspector 状态列表、进入事件（onStateEnter）与状态动作列表（statefulActions）。
-    /// 与 <see cref="BackendObject"/> 枢纽挂同一物体：
-    /// - 状态列表/当前状态由枢纽聚合上报（ISceneStateMachine）；
+    /// 继承 <see cref="BackendComponent"/>，与 <see cref="BackendObject"/> 枢纽挂同一物体：
+    /// - 状态列表/当前状态由组件自己上报（IBackendComponentData → GM 状态单选组）；
     /// - set_object_state 命令由枢纽转发到 TrySetState，切换后经枢纽上报（ReportStateChanged）；
     /// - 显示名称在枢纽上配置（BackendObject.displayName，后台看名字识别对象）；
     /// - 物品列表已拆分到 <see cref="ItemInventory"/>（需要的物体另挂该组件）。
     /// </summary>
-    [DisallowMultipleComponent]
-    [RequireComponent(typeof(BackendObject))]
-    public class SceneObject : MonoBehaviour, ISceneStateMachine, IBackendComponentData
+    public class SceneObject : BackendComponent, ISceneStateMachine, IBackendComponentData
     {
+        /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染状态单选组）。</summary>
+        public override string ComponentId => "SceneObject";
+
         [SerializeField, Tooltip("状态列表（仅状态名称）；后台可用 set_object_state 按名称切换")]
         private List<SceneObjectState> states = new List<SceneObjectState>();
 
@@ -53,18 +54,6 @@ namespace DiceTale
         {
             info.currentState = CurrentStateName;
             info.states = StateNames;
-        }
-
-        private void OnValidate()
-        {
-            // 编辑器里挂/改组件时同步枢纽的能力组件列表
-            GetComponent<BackendObject>()?.RefreshCapabilityComponents();
-        }
-
-        private void OnEnable()
-        {
-            // 通知枢纽刷新能力组件列表（挂/摘组件后保持同步）
-            GetComponent<BackendObject>()?.RefreshCapabilityComponents();
         }
 
         private void Start()

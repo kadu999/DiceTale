@@ -9,15 +9,16 @@ namespace DiceTale
     /// 场景中代表一张黑色遮罩（临时内存态，不持久化）：
     /// - 运行时生成全黑 <see cref="Texture2D"/>，通过 <see cref="MaskTexture"/> 暴露给外部渲染组件读取
     ///   （如 BoxComposite 的 _MaskTex）。**输出纹理实例创建一次、永不更换**，外部持有引用始终有效；
-    /// - 上报尺寸（maskWidth/maskHeight）给后台（经 <see cref="BackendObject"/> 枢纽聚合），GM 页面在弹框里用鼠标擦除黑色；
+    /// - 上报尺寸（maskWidth/maskHeight）给后台（组件自己上报，IBackendComponentData），GM 页面在弹框里用鼠标擦除黑色；
     /// - 擦除结果经 erase_mask 命令（笔画轨迹）同步回来：MaskEraseStamp shader 沿轨迹硬核打点（GPU），
     ///   输出纹理 ReadPixels 同步，外部直接看到结果。
     /// 对象 ID 与显示名称由枢纽统一提供（默认自动生成唯一 ID；显示名在 BackendObject.displayName 配置）。
     /// </summary>
-    [DisallowMultipleComponent]
-    [RequireComponent(typeof(BackendObject))]
-    public class MaskObject : MonoBehaviour, IMaskSource, IBackendComponentData
+    public class MaskObject : BackendComponent, IMaskSource, IBackendComponentData
     {
+        /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染遮罩编辑区）。</summary>
+        public override string ComponentId => "MaskObject";
+
         [SerializeField, Tooltip("遮罩纹理宽度（像素），GM 页面据此生成编辑画布")]
         private int maskWidth = 960;
 
@@ -52,16 +53,9 @@ namespace DiceTale
         /// <summary>稳定输出遮罩纹理（Texture2D，初始全黑；外部持有引用始终有效）。由外部渲染组件读取。</summary>
         public Texture2D MaskTexture => outputTexture;
 
-        private void OnValidate()
+        protected override void OnEnable()
         {
-            // 编辑器里挂/改组件时同步枢纽的能力组件列表
-            GetComponent<BackendObject>()?.RefreshCapabilityComponents();
-        }
-
-        private void OnEnable()
-        {
-            // 通知枢纽刷新能力组件列表（挂/摘组件后保持同步）
-            GetComponent<BackendObject>()?.RefreshCapabilityComponents();
+            base.OnEnable(); // 通知枢纽刷新能力组件列表（基类内置）
 
             EnsureOutputTexture();
             EnsureMaskRT();
