@@ -5,7 +5,7 @@
 //      mesh 直接渲染合成结果，无需额外合成 RT。
 //   b) 配合 Graphics.Blit(背景纹理, 目标, 本材质) 使用（_MainTex 由 Blit 自动传入源纹理）。
 //   一对一混合：两张纹理都按同一套 quad UV 采样，框内（mask.r > 0）显示效果纹理（纹理2），
-//              框外显示背景纹理（纹理1），边缘按 mask.r 羽化过渡。
+//              框外显示背景纹理（纹理1），边缘按 mask.r 平滑交叉混合（交界 = 两纹理的混合带）。
 Shader "DiceTale/BoxComposite"
 {
     Properties
@@ -64,8 +64,9 @@ Shader "DiceTale/BoxComposite"
                 fixed4 bg = tex2D(_MainTex, uv) * _BackgroundTint;
                 fixed4 fx = tex2D(_EffectTex, uv) * _EffectTint;
 
-                // 一对一混合：框内（mask.r>0）显示效果纹理，框外显示背景纹理
-                fixed coverage = saturate(mask.r);
+                // 一对一混合：覆盖侧（mask.r>0）显示效果纹理，未覆盖侧显示背景纹理，
+                // 交界带宽内两纹理按 mask.r 平滑交叉混合
+                fixed coverage = saturate(1.0 - mask.a);
                 return lerp(bg, fx, coverage);
             }
             ENDCG
