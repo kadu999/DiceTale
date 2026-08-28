@@ -1092,14 +1092,12 @@ function renderPickerDetail() {
 // ---------- 遮罩编辑弹框 ----------
 
 let maskEditorObjectId = null; // 正在编辑的遮罩对象 ID
-let maskEditorDirty = false;
-let maskSyncTimer = null;
 let maskErasing = false;
 let maskLastPoint = null;
+let maskStroke = null; // 当前笔画轨迹（归一化坐标）+ 半径/软硬
+let maskStrokeSent = 0; // 已发送的轨迹点数（增量发送用）
+let maskStrokeTimer = null; // 拖动中节流发送定时器
 let maskCanvasFor = null; // 当前画布内容对应的对象 ID（同对象重开保留擦除结果）
-
-/** 擦除边缘虚化厚度（画布像素），对应 WipeMaskEffect 的 blendWidth 概念：越大过渡带越厚越柔。 */
-const maskFeatherWidth = 12;
 
 /** 打开遮罩编辑弹框：为对象生成/保留黑色画布，可拖拽擦除。 */
 function openMaskEditor(objectId) {
@@ -1110,7 +1108,6 @@ function openMaskEditor(objectId) {
   }
 
   maskEditorObjectId = objectId;
-  maskEditorDirty = false;
 
   const modal = document.getElementById('maskEditorModal');
   const canvas = document.getElementById('maskCanvas');
@@ -1142,6 +1139,12 @@ function closeMaskEditor() {
   maskEditorObjectId = null;
   maskErasing = false;
   maskLastPoint = null;
+  maskStroke = null;
+  maskStrokeSent = 0;
+  if (maskStrokeTimer) {
+    clearTimeout(maskStrokeTimer);
+    maskStrokeTimer = null;
+  }
 }
 
 /** canvas 客户端坐标 -> 画布像素坐标（考虑 CSS 缩放）。 */
@@ -1154,101 +1157,82 @@ function maskCanvasPoint(e) {
   };
 }
 
-/** 在画布上擦掉一个圆（destination-out，smoothstep 式软笔刷）。
- *  径向渐变 alpha 近似 smoothstep 曲线：中心近乎全擦，向边缘连续平滑衰减，
- *  中间是大量半透明过渡像素（不是"全擦/全黑"两态），类似游戏 Shader 的柔和羽化边缘。 */
-function maskEraseDot(ctx, x, y, radius) {
+/** 在画布上擦掉一个软笔刷圆（destination-out，与客户端 MaskEraseStamp 同一公式）：
+ *  核内（d < radius）全擦，外圈 radius ~ radius*(1+softness) 平滑渐隐——预览即最终软边，与客户端一致。 */
+function maskEraseDot(ctx, x, y, radius, softness) {
   ctx.save();
   ctx.globalCompositeOperation = 'destination-out';
 
-  // 更柔和的渐变（smoothstep 放宽版）：中心强擦、向外加长半透明过渡带，边缘虚化更明显
-  const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-  gradient.addColorStop(0.0, 'rgba(0, 0, 0, 1.0)');
-  gradient.addColorStop(0.15, 'rgba(0, 0, 0, 0.95)');
-  gradient.addColorStop(0.35, 'rgba(0, 0, 0, 0.8)');
-  gradient.addColorStop(0.55, 'rgba(0, 0, 0, 0.55)');
-  gradient.addColorStop(0.75, 'rgba(0, 0, 0, 0.25)');
-  gradient.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
+  const outer = radius * (1 + Math.max(0, softness));
+  const gradient = ctx.createRadialGradient(x, y, 0, x, y, outer);
+  gradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
+  gradient.addColorStop(radius / outer, 'rgba(0, 0, 0, 1)'); // 核内全擦
+  gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');             // 外圈渐隐
   ctx.fillStyle = gradient;
 
   ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.arc(x, y, outer, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }
 
-/** 沿线段多次画圆，避免拖拽过快出现断点。 */
-function maskEraseSegment(ctx, from, to, radius) {
+/** 沿线段多次画软笔刷圆，避免拖拽过快出现断点。 */
+function maskEraseSegment(ctx, from, to, radius, softness) {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const dist = Math.sqrt(dx * dx + dy * dy);
   const steps = Math.max(1, Math.ceil(dist / Math.max(1, radius * 0.5)));
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
-    maskEraseDot(ctx, from.x + dx * t, from.y + dy * t, radius);
+    maskEraseDot(ctx, from.x + dx * t, from.y + dy * t, radius, softness);
   }
 }
 
-/** 松手/节流后把画布当前内容作为 PNG 发送给客户端遮罩对象。 */
-function scheduleMaskSync() {
-  if (!maskEditorObjectId) return;
-  maskEditorDirty = true;
-  if (maskSyncTimer) return;
-  maskSyncTimer = setTimeout(() => {
-    maskSyncTimer = null;
-    if (maskEditorDirty) syncMaskNow();
-  }, 300);
+/** 追加一个轨迹点（归一化坐标，去抖：与上一点距离过小时跳过）。 */
+function pushStrokePoint(p) {
+  if (!maskStroke) return;
+  const last = maskStroke.points[maskStroke.points.length - 1];
+  if (last && Math.hypot(p.x - last.x, p.y - last.y) < 0.002) return;
+  maskStroke.points.push({ x: p.x, y: p.y });
 }
 
-function syncMaskNow() {
-  if (!maskEditorObjectId) return;
-  const canvas = document.getElementById('maskCanvas');
-  if (!canvas) return;
-  const image = canvas.toDataURL('image/png').split(',')[1]; // 去掉 data:image/png;base64, 前缀
-  send({ type: 'gm_set_mask_image', objectId: maskEditorObjectId, image });
-  maskEditorDirty = false;
-}
-
-/** 对遮罩边缘做"指定厚度"的平滑过渡带（仿 WipeMaskEffect 的 blendWidth 思路）：
- *  1) 按厚度/2 高斯模糊产生渐变；2) smoothstep 塑形——以 alpha 0.5 为界居中、带宽内 S 形平滑过渡，
- *  带外压回 0/1；最终过渡带厚度 ≈ width，擦除区域不因模糊明显缩小。 */
-function featherMask(canvas, width) {
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width;
-  const h = canvas.height;
-  if (!w || !h || width <= 0) return;
-
-  const radius = Math.max(1, width / 2);
-
-  const off = document.createElement('canvas');
-  off.width = w;
-  off.height = h;
-  const octx = off.getContext('2d');
-
-  // 1) 模糊产生渐变带
-  octx.filter = `blur(${radius}px)`;
-  octx.drawImage(canvas, 0, 0);
-
-  // 2) smoothstep 塑形：带内平滑过渡，带外压回 0/1，得到干净的 S 形过渡带（居中于 0.5）
-  const img = octx.getImageData(0, 0, w, h);
-  const data = img.data;
-  const band = 0.25; // 过渡带在 alpha 空间的宽度（0~0.5）
-  const lo = 0.5 - band;
-  const hi = 0.5 + band;
-  for (let i = 3; i < data.length; i += 4) {
-    const a = data[i] / 255;
-    let t = (a - lo) / (2 * band);
-    t = t < 0 ? 0 : t > 1 ? 1 : t;
-    data[i] = Math.round(t * t * (3 - 2 * t) * 255); // smoothstep
+/** 发送一段轨迹（增量）：包含上一段最后一个点，客户端可连线；done=true 表示笔画结束。 */
+function sendMaskStrokeSegment(done) {
+  if (!maskEditorObjectId || !maskStroke) {
+    maskStroke = null;
+    return;
   }
-  octx.putImageData(img, 0, 0);
 
-  // 3) 写回原画布
-  ctx.save();
-  ctx.globalCompositeOperation = 'source-over';
-  ctx.clearRect(0, 0, w, h);
-  ctx.drawImage(off, 0, 0);
-  ctx.restore();
+  const all = maskStroke.points;
+  const start = Math.max(0, maskStrokeSent - 1);
+  if (all.length - start < 2) {
+    if (done) maskStroke = null;
+    return;
+  }
+
+  const seg = all.slice(start);
+  maskStrokeSent = all.length;
+  send({
+    type: 'gm_erase_mask',
+    objectId: maskEditorObjectId,
+    stroke: {
+      points: seg,
+      radius: maskStroke.radius,
+      softness: maskStroke.softness,
+      done: done,
+    },
+  });
+
+  if (done) maskStroke = null;
+}
+
+/** 拖动中节流（120ms）：把新轨迹点发一段给客户端，让前端拖动时实时刷新。 */
+function scheduleMaskStrokeSend() {
+  if (!maskStroke || maskStrokeTimer) return;
+  maskStrokeTimer = setTimeout(() => {
+    maskStrokeTimer = null;
+    sendMaskStrokeSegment(false);
+  }, 120);
 }
 
 // 画布擦除事件（只绑定一次）
@@ -1256,38 +1240,49 @@ function featherMask(canvas, width) {
   const canvas = document.getElementById('maskCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const brushRadius = 48; // 笔刷半径（画布像素）：大半径 + smoothstep 羽化 = 更宽的柔和过渡带
+  const brushRadius = 48; // 笔刷半径（画布像素，硬边）：软边由客户端 shader 按同半径计算
+  const strokeSoftness = 0.5; // 软边羽化比例（0~1）：客户端 stamp 在 radius ~ radius*(1+softness) 之间过渡
 
   canvas.addEventListener('pointerdown', (e) => {
     if (!maskEditorObjectId) return;
     e.preventDefault();
     canvas.setPointerCapture(e.pointerId);
     maskErasing = true;
+
+    // 新建笔画：半径归一化（相对画布宽度，客户端按自身纹理宽度换算，保证一致）
+    maskStroke = {
+      points: [],
+      radius: brushRadius / canvas.width,
+      softness: strokeSoftness,
+    };
+
     const p = maskCanvasPoint(e);
     maskLastPoint = p;
-    maskEraseDot(ctx, p.x, p.y, brushRadius);
-    scheduleMaskSync();
+    pushStrokePoint({ x: p.x / canvas.width, y: p.y / canvas.height });
+    maskEraseDot(ctx, p.x, p.y, brushRadius, strokeSoftness);
   });
 
   canvas.addEventListener('pointermove', (e) => {
     if (!maskErasing || !maskEditorObjectId) return;
     const p = maskCanvasPoint(e);
     if (maskLastPoint) {
-      maskEraseSegment(ctx, maskLastPoint, p, brushRadius);
+      maskEraseSegment(ctx, maskLastPoint, p, brushRadius, strokeSoftness);
     } else {
-      maskEraseDot(ctx, p.x, p.y, brushRadius);
+      maskEraseDot(ctx, p.x, p.y, brushRadius, strokeSoftness);
     }
     maskLastPoint = p;
-    scheduleMaskSync();
+    pushStrokePoint({ x: p.x / canvas.width, y: p.y / canvas.height });
+    scheduleMaskStrokeSend(); // 拖动中节流增量发送，前端实时刷新
   });
 
   const endErase = () => {
     maskErasing = false;
     maskLastPoint = null;
-    if (maskEditorObjectId) {
-      featherMask(canvas, maskFeatherWidth); // 松手对边缘做指定厚度的平滑过渡带
+    if (maskStrokeTimer) {
+      clearTimeout(maskStrokeTimer);
+      maskStrokeTimer = null;
     }
-    scheduleMaskSync();
+    sendMaskStrokeSegment(true); // 松手发送最后一段并结束笔画
   };
   canvas.addEventListener('pointerup', endErase);
   canvas.addEventListener('pointercancel', endErase);

@@ -61,10 +61,8 @@ namespace DiceTale
                 return; // 材质没有该槽（如未配 BoxComposite）时静默跳过，不影响其他逻辑
             }
 
-            if (mat.GetTexture(maskPropertyName) != maskObject.MaskTexture)
-            {
-                mat.SetTexture(maskPropertyName, maskObject.MaskTexture);
-            }
+            // 每帧都写入：防止同材质上的其他效果（BoxMaskEffect/WipeMaskEffect）把 _MaskTex 覆盖掉
+            mat.SetTexture(maskPropertyName, maskObject.MaskTexture);
         }
     }
 }

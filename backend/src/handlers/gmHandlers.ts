@@ -1,5 +1,5 @@
 import { WebSocket } from 'ws';
-import { GmMessage } from '../types';
+import { GmMessage, EraseStroke } from '../types';
 import { gameState } from '../GameState';
 import * as commands from '../commands/clientCommands';
 
@@ -23,6 +23,9 @@ export class GmHandler {
         break;
       case 'gm_set_mask_image':
         this.setMaskImage(message.objectId, message.image);
+        break;
+      case 'gm_erase_mask':
+        this.eraseMask(message.objectId, message.stroke);
         break;
       default:
         console.warn('[GmHandler] Unknown message:', (message as any).type);
@@ -88,6 +91,16 @@ export class GmHandler {
       return;
     }
     commands.setMaskImage(clientSocket, objectId, image);
+  }
+
+  /** 转发 GM 擦除遮罩的笔画轨迹给客户端（软边由客户端 shader 计算）。 */
+  private eraseMask(objectId: string, stroke: EraseStroke) {
+    const clientSocket = this.getClientSocket();
+    if (!clientSocket) {
+      this.sendError('客户端未连接，无法擦除遮罩');
+      return;
+    }
+    commands.eraseMask(clientSocket, objectId, stroke);
   }
 
   /** 道具名 -> 总库存（多个同名道具对象的 quantity 累加）。 */

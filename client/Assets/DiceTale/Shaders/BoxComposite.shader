@@ -4,8 +4,10 @@
 //      _MainTex = 背景纹理（纹理1）、_EffectTex = 效果纹理（纹理2）、_MaskTex = 框遮罩（RectMask 画出的 RT），
 //      mesh 直接渲染合成结果，无需额外合成 RT。
 //   b) 配合 Graphics.Blit(背景纹理, 目标, 本材质) 使用（_MainTex 由 Blit 自动传入源纹理）。
-//   一对一混合：两张纹理都按同一套 quad UV 采样，框内（mask.r > 0）显示效果纹理（纹理2），
-//              框外显示背景纹理（纹理1），边缘按 mask.r 平滑交叉混合（交界 = 两纹理的混合带）。
+//   一对一混合：两张纹理都按同一套 quad UV 采样，覆盖侧（mask.a < 0.5）显示效果纹理（纹理2），
+//              未覆盖侧显示背景纹理（纹理1），交界按 mask.a 平滑交叉混合。
+//   边缘虚化：_MaskEdgeSoftness 控制交界过渡带宽度（UV 单位，对应 WipeMaskEffect 的 blendWidth 概念），
+//             以 mask.a = 0.5 为界做 smoothstep——即使遮罩纹理是硬边，渲染时也会得到平滑羽化边缘。
 Shader "DiceTale/BoxComposite"
 {
     Properties
@@ -15,6 +17,7 @@ Shader "DiceTale/BoxComposite"
         _MaskTex ("框遮罩", 2D) = "black" {}
         _BackgroundTint ("背景纹理颜色", Color) = (1, 1, 1, 1)
         _EffectTint ("效果纹理颜色", Color) = (1, 1, 1, 1)
+        _MaskEdgeSoftness ("遮罩边缘虚化宽度 (UV)", Range(0, 0.2)) = 0.05
     }
     SubShader
     {
@@ -35,6 +38,7 @@ Shader "DiceTale/BoxComposite"
             sampler2D _MaskTex;
             fixed4 _BackgroundTint;
             fixed4 _EffectTint;
+            float _MaskEdgeSoftness;
 
             struct appdata
             {
@@ -64,9 +68,11 @@ Shader "DiceTale/BoxComposite"
                 fixed4 bg = tex2D(_MainTex, uv) * _BackgroundTint;
                 fixed4 fx = tex2D(_EffectTex, uv) * _EffectTint;
 
-                // 一对一混合：覆盖侧（mask.r>0）显示效果纹理，未覆盖侧显示背景纹理，
-                // 交界带宽内两纹理按 mask.r 平滑交叉混合
-                fixed coverage = saturate(1.0 - mask.a);
+                // 一对一混合：覆盖侧（mask.a < 0.5）显示效果纹理，未覆盖侧显示背景纹理。
+                // 边缘虚化：以 mask.a = 0.5 为界、_MaskEdgeSoftness 为带宽做 smoothstep，
+                // 即使遮罩纹理是硬边也能得到平滑羽化边缘（对应 WipeMaskEffect 的 blendWidth 思路）。
+                float edge = max(_MaskEdgeSoftness, 1e-4);
+                float coverage = 1.0 - smoothstep(0.5 - edge, 0.5 + edge, mask.a);
                 return lerp(bg, fx, coverage);
             }
             ENDCG

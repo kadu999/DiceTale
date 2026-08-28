@@ -31,6 +31,9 @@ namespace DiceTale.Server
                     case "set_mask_image":
                         HandleSetMaskImage(msg);
                         break;
+                    case "erase_mask":
+                        HandleEraseMask(msg);
+                        break;
                     case "teleport_player":
                         HandleTeleportPlayer(msg);
                         break;
@@ -118,6 +121,47 @@ namespace DiceTale.Server
 
             obj.ApplyMaskImage(image);
             Debug.Log($"[ServerCommandDispatcher] {objectId} ({obj.DisplayName}): mask image applied");
+        }
+
+        /// <summary>erase_mask：按 ObjectId 定位后台对象，应用 GM 擦除的笔画轨迹（客户端 shader 计算软边）。</summary>
+        private void HandleEraseMask(Dictionary<string, object> msg)
+        {
+            var objectId = JsonParser.GetString(msg, "objectId");
+            var stroke = JsonParser.GetObject(msg, "stroke");
+            if (stroke == null)
+            {
+                return;
+            }
+
+            var rawPoints = JsonParser.GetArray(stroke, "points");
+            if (rawPoints == null || rawPoints.Count < 2)
+            {
+                return; // 少于两个点没有线段，忽略
+            }
+
+            var points = new Vector2[rawPoints.Count];
+            for (int i = 0; i < rawPoints.Count; i++)
+            {
+                if (rawPoints[i] is Dictionary<string, object> p)
+                {
+                    points[i] = new Vector2(
+                        (float)JsonParser.GetNumber(p, "x"),
+                        (float)JsonParser.GetNumber(p, "y"));
+                }
+            }
+
+            var radius = (float)JsonParser.GetNumber(stroke, "radius");
+            var softness = (float)JsonParser.GetNumber(stroke, "softness");
+
+            var obj = FindBackendObject(objectId);
+            if (obj == null)
+            {
+                Debug.LogWarning($"[ServerCommandDispatcher] BackendObject not found in scene: {objectId}");
+                return;
+            }
+
+            obj.ApplyEraseStroke(points, radius, softness);
+            Debug.Log($"[ServerCommandDispatcher] {objectId} ({obj.DisplayName}): erase stroke ({points.Length} points)");
         }
 
         private void HandleTeleportPlayer(Dictionary<string, object> msg)

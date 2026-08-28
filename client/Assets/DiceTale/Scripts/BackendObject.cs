@@ -93,6 +93,11 @@ namespace DiceTale
         {
         }
 
+        /// <summary>后台命令入口：应用 GM 擦除的笔画轨迹（归一化点 + 归一化半径 + 软边比例；默认不支持，<see cref="MaskObject"/> 实现）。</summary>
+        public virtual void ApplyEraseStroke(Vector2[] points, float radius, float softness)
+        {
+        }
+
         /// <summary>状态切换后上报给后台，使 GM 页面同步显示当前状态（子类切换状态后调用）。</summary>
         protected void ReportStateChanged()
         {

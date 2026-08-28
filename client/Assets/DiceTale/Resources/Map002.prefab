@@ -141,7 +141,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.MaskObject
   maskWidth: 960
   maskHeight: 540
-  transitionTime: 2
+  displayName: 地图遮罩
 --- !u!114 &5511963221407643257
 MonoBehaviour:
   m_ObjectHideFlags: 0

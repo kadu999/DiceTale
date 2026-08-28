@@ -4,6 +4,7 @@ import {
   GmServerMessage,
   GmUpdateMessage,
   GameStateSnapshot,
+  EraseStroke,
 } from '../types';
 import { gameState } from '../GameState';
 
@@ -41,6 +42,11 @@ export function setObjectItems(ws: WebSocket, objectId: string, items: string[])
 /** 下发 GM 擦除后的遮罩图（base64 PNG）给客户端遮罩对象。 */
 export function setMaskImage(ws: WebSocket, objectId: string, image: string) {
   send(ws, { type: 'set_mask_image', objectId, image });
+}
+
+/** 下发 GM 擦除遮罩的笔画轨迹给客户端（客户端 shader 计算软边）。 */
+export function eraseMask(ws: WebSocket, objectId: string, stroke: EraseStroke) {
+  send(ws, { type: 'erase_mask', objectId, stroke });
 }
 
 /** 向所有 GM 控制台广播最新快照（含客户端在线状态）。 */
