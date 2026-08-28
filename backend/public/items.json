@@ -1,0 +1,693 @@
+{
+ "source": "CoC-1920s常用物品表-精简版.xlsx",
+ "updatedAt": "2026-08-28",
+ "count": 98,
+ "items": [
+  {
+   "name": "自来水笔",
+   "price": 1.8,
+   "category": "记录工具",
+   "identify": "—",
+   "usage": "书写、检查墨迹、留下或伪造便条"
+  },
+  {
+   "name": "自动铅笔",
+   "price": 0.85,
+   "category": "记录工具",
+   "identify": "—",
+   "usage": "拓印铭文，不易出现墨水污染"
+  },
+  {
+   "name": "怀表/腕表",
+   "price": 5.95,
+   "category": "计时",
+   "identify": "—",
+   "usage": "精确时间、制造不在场证明、同步行动；金表更贵"
+  },
+  {
+   "name": "钱包及零钱",
+   "price": null,
+   "category": "日常用品",
+   "identify": "信用评级",
+   "usage": "电话、出租车、小费、贿赂和临时采购"
+  },
+  {
+   "name": "身份证件/名片",
+   "price": null,
+   "category": "身份凭证",
+   "identify": "话术、信誉",
+   "usage": "进入档案馆、医院、报社或案发现场；价格自定"
+  },
+  {
+   "name": "公文包",
+   "price": 1.48,
+   "category": "容器",
+   "identify": "—",
+   "usage": "隐蔽携带文件、照片、小型工具"
+  },
+  {
+   "name": "帆布挎包",
+   "price": 3.45,
+   "category": "容器",
+   "identify": "—",
+   "usage": "携带调查装备和现场样本"
+  },
+  {
+   "name": "手电筒",
+   "price": 2.4,
+   "category": "照明",
+   "identify": "侦查",
+   "usage": "地下室、阁楼、矿洞和夜间搜索"
+  },
+  {
+   "name": "备用电池",
+   "price": 0.6,
+   "category": "消耗品",
+   "identify": "幸运",
+   "usage": "控制照明资源；失败时可令电量提前耗尽"
+  },
+  {
+   "name": "钢笔式小手电",
+   "price": 1.0,
+   "category": "照明",
+   "identify": "侦查",
+   "usage": "狭窄空间阅读、避免暴露自身位置"
+  },
+  {
+   "name": "防水火柴盒",
+   "price": 0.48,
+   "category": "点火",
+   "identify": "幸运",
+   "usage": "点灯、生火、焚毁物品或测试气流"
+  },
+  {
+   "name": "蜡烛（4支）",
+   "price": 0.38,
+   "category": "照明",
+   "identify": "侦查",
+   "usage": "长时间照明；火焰可提示风口或异常存在"
+  },
+  {
+   "name": "袖珍放大镜",
+   "price": 1.68,
+   "category": "观察工具",
+   "identify": "侦查、估价",
+   "usage": "检查血迹、纤维、刻痕、印刷和珠宝"
+  },
+  {
+   "name": "小折刀",
+   "price": 1.2,
+   "category": "工具/武器",
+   "identify": "格斗、手艺",
+   "usage": "切割绳索、撬封蜡、取样；伤害可按小刀"
+  },
+  {
+   "name": "雨伞",
+   "price": 1.79,
+   "category": "日常用品",
+   "identify": "格斗",
+   "usage": "恶劣天气、临时手杖或弱武器"
+  },
+  {
+   "name": "手帕/棉布",
+   "price": null,
+   "category": "日常用品",
+   "identify": "—",
+   "usage": "包裹证物、止血、避免直接接触污染物；价格自定"
+  },
+  {
+   "name": "香烟",
+   "price": 0.1,
+   "category": "社交用品",
+   "identify": "魅惑、话术",
+   "usage": "社交、拖延、测试空气流动；价格为每包"
+  },
+  {
+   "name": "警哨",
+   "price": 0.3,
+   "category": "信号工具",
+   "identify": "—",
+   "usage": "呼救、集合、制造声东击西"
+  },
+  {
+   "name": "袖珍《圣经》",
+   "price": 3.98,
+   "category": "文献",
+   "identify": "历史、神秘学",
+   "usage": "宗教引用、密码索引、对照异端文本"
+  },
+  {
+   "name": "素描本",
+   "price": 0.25,
+   "category": "记录工具",
+   "identify": "艺术/手艺",
+   "usage": "记录无法拍摄的符号、尸体和梦境"
+  },
+  {
+   "name": "相机、胶卷及闪光粉",
+   "price": null,
+   "category": "摄影器材",
+   "identify": "摄影、艺术/手艺",
+   "usage": "固定现场证据；照片也可产生新的异常细节；价格自定"
+  },
+  {
+   "name": "报纸/城市地图",
+   "price": null,
+   "category": "文献",
+   "identify": "导航、图书馆使用",
+   "usage": "地址定位、时间线、新闻线索和地图标记；价格自定"
+  },
+  {
+   "name": "铁路时刻表",
+   "price": null,
+   "category": "文献",
+   "identify": "导航、会计",
+   "usage": "核对嫌疑人的移动时间和不在场证明；价格自定"
+  },
+  {
+   "name": "撬棍",
+   "price": 2.25,
+   "category": "破拆",
+   "identify": "力量、机械维修",
+   "usage": "撬门、地板和木箱；声音大且容易留下痕迹"
+  },
+  {
+   "name": "50英尺绳索",
+   "price": 8.6,
+   "category": "攀爬/救援",
+   "identify": "攀爬、跳跃",
+   "usage": "攀爬、救援、捆绑或标记路线"
+  },
+  {
+   "name": "麻绳线团",
+   "price": 0.27,
+   "category": "测量/警戒",
+   "identify": "—",
+   "usage": "测量、布置警戒线、探索迷宫"
+  },
+  {
+   "name": "工具箱（20件）",
+   "price": 14.9,
+   "category": "维修",
+   "identify": "机械维修",
+   "usage": "拆卸机器、修门、破坏设备"
+  },
+  {
+   "name": "手钻和8枚钻头",
+   "price": 6.15,
+   "category": "破拆",
+   "identify": "机械维修",
+   "usage": "钻锁、墙壁取样；耗时且有噪声"
+  },
+  {
+   "name": "手锯",
+   "price": 1.65,
+   "category": "破拆",
+   "identify": "机械维修",
+   "usage": "切木板和支撑结构"
+  },
+  {
+   "name": "铲子",
+   "price": 0.95,
+   "category": "挖掘",
+   "identify": "力量",
+   "usage": "挖掘坟墓、地窖或掩埋物"
+  },
+  {
+   "name": "手斧",
+   "price": 0.98,
+   "category": "工具/武器",
+   "identify": "格斗、力量",
+   "usage": "砍木、破门；可按斧类武器处理"
+  },
+  {
+   "name": "挂锁",
+   "price": 0.95,
+   "category": "安保",
+   "identify": "锁匠",
+   "usage": "封闭入口，也可成为‘谁换了锁’的线索"
+  },
+  {
+   "name": "轻型铁链",
+   "price": 0.1,
+   "category": "安保",
+   "identify": "力量",
+   "usage": "封门、固定目标；价格按每英尺；对神话生物通常只能拖延"
+  },
+  {
+   "name": "汽油喷灯",
+   "price": 4.45,
+   "category": "切割/点火",
+   "identify": "机械维修",
+   "usage": "焊接、切割、点火；具有严重火灾风险"
+  },
+  {
+   "name": "电工绝缘手套",
+   "price": 1.98,
+   "category": "防护",
+   "identify": "电气维修",
+   "usage": "处理电线；不能防御神话性质的放电"
+  },
+  {
+   "name": "手铐",
+   "price": 3.35,
+   "category": "拘束",
+   "identify": "格斗、法律",
+   "usage": "警察或侦探合理持有；普通人携带可能惹麻烦"
+  },
+  {
+   "name": "备用手铐钥匙",
+   "price": 0.28,
+   "category": "脱困",
+   "identify": "妙手",
+   "usage": "脱困、秘密交易、嫁祸线索"
+  },
+  {
+   "name": "轮胎修补包",
+   "price": 0.32,
+   "category": "车辆维修",
+   "identify": "机械维修",
+   "usage": "防止偏远地区爆胎直接中断调查"
+  },
+  {
+   "name": "千斤顶",
+   "price": 1.0,
+   "category": "车辆维修",
+   "identify": "机械维修、力量",
+   "usage": "修车，也能抬起重物或制造事故"
+  },
+  {
+   "name": "化学灭火器",
+   "price": 13.85,
+   "category": "消防",
+   "identify": "—",
+   "usage": "扑灭普通火焰；可制造烟雾和遮蔽"
+  },
+  {
+   "name": "湿海绵呼吸器",
+   "price": 1.95,
+   "category": "防护",
+   "identify": "幸运",
+   "usage": "对烟尘有帮助，不等同于防毒面具"
+  },
+  {
+   "name": "医疗箱",
+   "price": 10.45,
+   "category": "综合医疗",
+   "identify": "急救、医学",
+   "usage": "建议作为医生、护士或探险队的职业装备"
+  },
+  {
+   "name": "纱布绷带（5码）",
+   "price": 0.69,
+   "category": "包扎",
+   "identify": "急救",
+   "usage": "止血、包扎，也能留下血型或纤维线索"
+  },
+  {
+   "name": "医用胶布",
+   "price": 0.29,
+   "category": "包扎",
+   "identify": "急救",
+   "usage": "固定敷料、封存小型容器"
+  },
+  {
+   "name": "医用酒精（半加仑）",
+   "price": 0.2,
+   "category": "消毒/保存",
+   "identify": "医学",
+   "usage": "消毒、保存样本、助燃"
+  },
+  {
+   "name": "阿司匹林（12片）",
+   "price": 0.1,
+   "category": "药品",
+   "identify": "—",
+   "usage": "普通镇痛；不能治疗疯狂或重伤"
+  },
+  {
+   "name": "临床温度计",
+   "price": 0.69,
+   "category": "诊断",
+   "identify": "医学",
+   "usage": "判断感染、死亡时间或异常低温"
+  },
+  {
+   "name": "镊子/医用钳",
+   "price": 3.59,
+   "category": "取样/手术",
+   "identify": "医学",
+   "usage": "取弹片、昆虫、组织或异物"
+  },
+  {
+   "name": "手术刀套装",
+   "price": 1.39,
+   "category": "手术/解剖",
+   "identify": "医学",
+   "usage": "解剖、取样；携带原因应与职业相符"
+  },
+  {
+   "name": "注射器",
+   "price": 12.5,
+   "category": "注射/取液",
+   "identify": "医学",
+   "usage": "注射药物、提取液体；适合制造药物疑云"
+  },
+  {
+   "name": "袖珍显微镜",
+   "price": 0.58,
+   "category": "初步分析",
+   "identify": "生物学、化学",
+   "usage": "初步检查粉末、纤维、孢子"
+  },
+  {
+   "name": "110倍台式显微镜",
+   "price": 17.5,
+   "category": "实验室分析",
+   "identify": "生物学、医学",
+   "usage": "实验室分析；通常不能随身携带"
+  },
+  {
+   "name": "空玻璃瓶/信封/标签",
+   "price": null,
+   "category": "证物保存",
+   "identify": "科学",
+   "usage": "保存土壤、毛发、粉末和液体；价格自定"
+  },
+  {
+   "name": "橡胶手套",
+   "price": null,
+   "category": "防护",
+   "identify": "医学",
+   "usage": "避免普通污染，但不保证隔绝神话影响；价格自定"
+  },
+  {
+   "name": "白布/尸布",
+   "price": null,
+   "category": "证物/尸体处理",
+   "identify": "法医学",
+   "usage": "覆盖尸体、保存痕迹、隐藏物品；价格自定"
+  },
+  {
+   "name": "带盖指南针",
+   "price": 2.85,
+   "category": "导航",
+   "identify": "导航",
+   "usage": "导航、发现磁场异常"
+  },
+  {
+   "name": "双筒望远镜",
+   "price": 28.5,
+   "category": "观察",
+   "identify": "侦查",
+   "usage": "远距离观察目标、建筑和星象"
+  },
+  {
+   "name": "水壶（1夸脱）",
+   "price": 1.69,
+   "category": "补给",
+   "identify": "生存",
+   "usage": "水源管理，也可装油或样本"
+  },
+  {
+   "name": "防水毯",
+   "price": 5.06,
+   "category": "露营/救援",
+   "identify": "生存",
+   "usage": "保暖、担架、防雨、包裹物品"
+  },
+  {
+   "name": "煤油灯",
+   "price": 1.3,
+   "category": "照明",
+   "identify": "侦查",
+   "usage": "长时间照明；能被风或怪物熄灭"
+  },
+  {
+   "name": "汽油提灯",
+   "price": 6.4,
+   "category": "照明",
+   "identify": "侦查",
+   "usage": "强光，但危险、显眼且需要燃料"
+  },
+  {
+   "name": "探照灯",
+   "price": 5.95,
+   "category": "强光搜索",
+   "identify": "侦查",
+   "usage": "搜索开阔区域，也会暴露调查员"
+  },
+  {
+   "name": "7×7英尺帐篷",
+   "price": 11.48,
+   "category": "露营",
+   "identify": "生存",
+   "usage": "远征营地、夜间遭遇场景"
+  },
+  {
+   "name": "野营炉",
+   "price": 6.1,
+   "category": "露营",
+   "identify": "生存",
+   "usage": "做饭、烧水、加热样本"
+  },
+  {
+   "name": "野炊套装",
+   "price": 8.98,
+   "category": "露营",
+   "identify": "生存",
+   "usage": "长途调查的基础补给"
+  },
+  {
+   "name": "猎刀",
+   "price": 2.35,
+   "category": "工具/武器",
+   "identify": "生存、格斗",
+   "usage": "生存、切割、近战"
+  },
+  {
+   "name": "重帆布挎包",
+   "price": 3.45,
+   "category": "容器",
+   "identify": "—",
+   "usage": "携带补给、样本与战利品"
+  },
+  {
+   "name": "24×36英尺防水布",
+   "price": 39.35,
+   "category": "遮蔽/露营",
+   "identify": "生存",
+   "usage": "遮雨、隐藏车辆或封锁挖掘现场"
+  },
+  {
+   "name": "汽车备胎",
+   "price": 10.95,
+   "category": "车辆维修",
+   "identify": "机械维修",
+   "usage": "防止远郊调查被一次故障彻底卡死"
+  },
+  {
+   "name": "指虎",
+   "price": 1.0,
+   "category": "武器",
+   "identify": "格斗（斗殴）",
+   "usage": "隐蔽但可能违法"
+  },
+  {
+   "name": "小刀",
+   "price": 2.0,
+   "category": "武器",
+   "identify": "格斗（斗殴）",
+   "usage": "普通；价格采用武器表通用小刀"
+  },
+  {
+   "name": "中型刀",
+   "price": 2.0,
+   "category": "武器",
+   "identify": "格斗（斗殴）",
+   "usage": "需要合理用途"
+  },
+  {
+   "name": "大砍刀",
+   "price": 4.0,
+   "category": "武器",
+   "identify": "格斗（斗殴）",
+   "usage": "野外合理，城内显眼"
+  },
+  {
+   "name": "警棍/短棍",
+   "price": 3.0,
+   "category": "武器",
+   "identify": "格斗（斗殴）",
+   "usage": "警察或保安常见"
+  },
+  {
+   "name": "棒球棍/壁炉拨棍",
+   "price": 3.0,
+   "category": "武器",
+   "identify": "格斗（斗殴）",
+   "usage": "容易临时取得"
+  },
+  {
+   "name": ".22自动手枪",
+   "price": 25.0,
+   "category": "武器",
+   "identify": "射击（手枪）",
+   "usage": "低威力、易隐藏"
+  },
+  {
+   "name": ".32左轮",
+   "price": 15.0,
+   "category": "武器",
+   "identify": "射击（手枪）",
+   "usage": "侦探常见选择"
+  },
+  {
+   "name": ".45自动手枪",
+   "price": 40.0,
+   "category": "武器",
+   "identify": "射击（手枪）",
+   "usage": "威力大、携带惹眼"
+  },
+  {
+   "name": ".22栓动步枪",
+   "price": 13.0,
+   "category": "武器",
+   "identify": "射击（步枪/霰弹枪）",
+   "usage": "农村或狩猎用途"
+  },
+  {
+   "name": ".30杠杆卡宾枪",
+   "price": 19.0,
+   "category": "武器",
+   "identify": "射击（步枪/霰弹枪）",
+   "usage": "乡村、牧场常见"
+  },
+  {
+   "name": "12号双管霰弹枪",
+   "price": 40.0,
+   "category": "武器",
+   "identify": "射击（步枪/霰弹枪）",
+   "usage": "近距离极其致命"
+  },
+  {
+   "name": "燃烧火把",
+   "price": 0.05,
+   "category": "武器",
+   "identify": "格斗（斗殴）",
+   "usage": "兼具照明和火灾风险"
+  },
+  {
+   "name": "带血的钥匙",
+   "price": null,
+   "category": "身份/地点",
+   "identify": "侦查、锁匠、法医学",
+   "usage": "线索：对应某扇门、保险箱或储物柜；风险：血迹把持有者与案件联系起来"
+  },
+  {
+   "name": "未冲洗胶卷",
+   "price": null,
+   "category": "影像证据",
+   "identify": "摄影、侦查",
+   "usage": "线索：保存凶案、仪式或神话生物影像；风险：冲洗后可能触发理智检定"
+  },
+  {
+   "name": "半烧毁的日记",
+   "price": null,
+   "category": "文字线索",
+   "identify": "图书馆使用、母语",
+   "usage": "线索：时间线、关系网、仪式步骤；风险：缺失部分诱使调查员误判"
+  },
+  {
+   "name": "标注过的城市地图",
+   "price": null,
+   "category": "地点线索",
+   "identify": "导航、侦查",
+   "usage": "线索：巢穴、失踪地点、地下通道；风险：标记可能是陷阱而非答案"
+  },
+  {
+   "name": "刻有符号的怀表",
+   "price": null,
+   "category": "身份信物",
+   "identify": "估价、神秘学、机械维修",
+   "usage": "线索：秘密组织信物、精确时间；风险：在特定时间自动停止或倒转"
+  },
+  {
+   "name": "异常材质的子弹",
+   "price": null,
+   "category": "物证",
+   "identify": "射击、化学、法医学",
+   "usage": "线索：证明敌人并非普通人类；风险：持有它可能引来警方盘问"
+  },
+  {
+   "name": "装有黑色粉末的药瓶",
+   "price": null,
+   "category": "物质线索",
+   "identify": "药学、化学、医学",
+   "usage": "线索：毒物、孢子或仪式材料；风险：开封造成污染或幻觉"
+  },
+  {
+   "name": "蜡筒录音/留声机唱片",
+   "price": null,
+   "category": "声音线索",
+   "identify": "聆听、语言、机械维修",
+   "usage": "线索：遗言、咒语、背景声；风险：播放本身可能完成仪式"
+  },
+  {
+   "name": "旧报纸剪报集",
+   "price": null,
+   "category": "时间线",
+   "identify": "图书馆使用、侦查",
+   "usage": "线索：串联多年失踪案；风险：剪报者可能仍在监视调查员"
+  },
+  {
+   "name": "银质护符",
+   "price": null,
+   "category": "身份/神秘物品",
+   "identify": "估价、神秘学",
+   "usage": "线索：教派身份或临时防护；风险：功能被误解，实际可能是定位装置"
+  },
+  {
+   "name": "锁住的医生手提箱",
+   "price": null,
+   "category": "容器线索",
+   "identify": "锁匠、医学、法律",
+   "usage": "线索：药物、病历、解剖工具；风险：非法药物会引发法律问题"
+  },
+  {
+   "name": "非人类骨片",
+   "price": null,
+   "category": "神话证物",
+   "identify": "生物学、医学、克苏鲁神话",
+   "usage": "线索：确认非人生物存在；风险：长期携带造成梦境或理智损失"
+  },
+  {
+   "name": "写错地址的电报",
+   "price": null,
+   "category": "通讯线索",
+   "identify": "密码学、会计、图书馆使用",
+   "usage": "线索：暗号、时间或地点；风险：收件人可能已经死亡"
+  },
+  {
+   "name": "沾泥的车票",
+   "price": null,
+   "category": "行程线索",
+   "identify": "自然学、导航、侦查",
+   "usage": "线索：证明某人去过偏远地区；风险：日期可能经过人为篡改"
+  },
+  {
+   "name": "密封档案袋",
+   "price": null,
+   "category": "官方资料",
+   "identify": "法律、伪装、图书馆使用",
+   "usage": "线索：调查记录、照片、尸检报告；风险：拆封留下痕迹，可能构成违法"
+  },
+  {
+   "name": "无法打开的金属盒",
+   "price": null,
+   "category": "核心谜题",
+   "identify": "机械维修、锁匠、神秘学",
+   "usage": "线索：封印容器、核心证物；风险：强行打开释放其中的东西"
+  }
+ ]
+}

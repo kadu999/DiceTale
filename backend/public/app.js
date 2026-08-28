@@ -15,6 +15,49 @@ fetch('/api/maps')
   })
   .catch(() => {});
 
+// 道具目录（GET /items.json，由 xlsx 转换而来）
+let itemCatalog = []; // [{name, price, category, identify, usage}]
+let selectedItem = null; // 当前选中的道具名
+let itemSearch = '';
+let itemCategory = ''; // 选中的类别（'' = 全部）
+fetch('/items.json')
+  .then((res) => res.json())
+  .then((data) => {
+    itemCatalog = data.items || [];
+    if (selectedItem && !itemCatalog.some((it) => it.name === selectedItem)) {
+      selectedItem = null;
+    }
+    populateItemCategories();
+    if (state) render();
+  })
+  .catch(() => {});
+
+/** 类别下拉：从目录中去重所有类别并填充（含「全部类别」）。 */
+function populateItemCategories() {
+  const select = document.getElementById('itemCategory');
+  if (!select) return;
+
+  const categories = [];
+  for (const it of itemCatalog) {
+    const c = it.category || '—';
+    if (categories.indexOf(c) < 0) categories.push(c);
+  }
+  categories.sort();
+
+  select.innerHTML = '';
+  const all = document.createElement('option');
+  all.value = '';
+  all.textContent = '全部类别';
+  select.appendChild(all);
+  for (const c of categories) {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    select.appendChild(opt);
+  }
+  select.value = itemCategory;
+}
+
 function connect() {
   ws = new WebSocket(wsUrl);
 
@@ -81,18 +124,22 @@ function send(msg) {
 
 // ---------- 渲染 ----------
 
-let activePage = 'map'; // 'map' | 'players'
+let activePage = 'map'; // 'map' | 'players' | 'items'
 
-/** 切换大页面（地图 / 玩家）。 */
+/** 切换大页面（地图 / 玩家 / 道具）。 */
 function switchPage(page) {
-  activePage = page === 'players' ? 'players' : 'map';
+  activePage = page === 'players' || page === 'items' ? page : 'map';
   document.getElementById('pageMap').classList.toggle('active', activePage === 'map');
   document.getElementById('pagePlayers').classList.toggle('active', activePage === 'players');
+  document.getElementById('pageItems').classList.toggle('active', activePage === 'items');
   document.getElementById('pageBtnMap').classList.toggle('active', activePage === 'map');
   document.getElementById('pageBtnPlayers').classList.toggle('active', activePage === 'players');
+  document.getElementById('pageBtnItems').classList.toggle('active', activePage === 'items');
   renderPropertyPanel();
   if (activePage === 'players') {
     renderPlayerList();
+  } else if (activePage === 'items') {
+    renderItemPage();
   } else {
     setTimeout(fitLayout, 50); // 地图页重新显示后重算地图尺寸与属性面板等高
   }
@@ -103,6 +150,7 @@ function render() {
   renderMapTabs();
   renderMap();
   renderPlayerList();
+  renderItemPage();
   renderPropertyPanel();
   syncPropertyHeight(); // 属性面板重新渲染后保持与地图框等高
 }
@@ -212,9 +260,7 @@ function renderMap() {
     marker.style.top = `${num(player.position && player.position.y, 0.5) * 100}%`;
 
     marker.textContent = player.name || playerId;
-    marker.onclick = () => {
-      if (state.objects && state.objects[playerId]) selectObject(playerId);
-    };
+    marker.onclick = () => selectObject(playerId);
     layer.appendChild(marker);
     fitPlayerName(marker);
   }
@@ -256,22 +302,30 @@ function renderPropertyPanelInto(id) {
     return;
   }
 
-  const obj = state.objects && state.objects[selectedObjectId];
-  if (!obj) {
-    container.innerHTML = '<div class="property-empty">未找到该对象（可能已移除）</div>';
+  const obj = (state.objects && state.objects[selectedObjectId]) || null;
+  const player = (state.players && state.players[selectedObjectId]) || null;
+  if (!obj && !player) {
+    container.innerHTML = '<div class="property-empty">未找到该目标（可能已移除）</div>';
     return;
   }
 
-  // 基本信息
+  // 基本信息（玩家在 objects 中缺条目时用 players 名单兜底）
   const info = propertySection(container, '基本信息');
-  addPropertyRow(info, '名称', obj.name || selectedObjectId);
+  addPropertyRow(info, '名称', (obj && obj.name) || (player && player.name) || selectedObjectId);
   addPropertyRow(info, 'ID', selectedObjectId);
-  addPropertyRow(info, '位置', fmtPos(obj.position));
+  addPropertyRow(info, '位置', fmtPos((obj && obj.position) || (player && player.position)));
+  if (player) addPropertyRow(info, '地图', player.mapName || '-');
 
-  // 道具对象：玩家分配列表（内部自带「分配道具（剩余 N）」标题）；普通对象：物品编辑
-  if (obj.kind === 'ItemObject' || obj.itemName) {
+  const isPlayer = !!player || (obj && obj.kind === 'Player');
+
+  if (isPlayer) {
+    // 玩家：显示身上的道具，每个可删除（× 移除一个），并可输入添加（走 gm_set_object_items）
+    renderObjectItems(propertySection(container, '物品'), selectedObjectId, (obj && obj.items) || [], null);
+  } else if (obj.kind === 'ItemObject' || obj.itemName) {
+    // 道具对象：玩家分配列表（内部自带「分配道具（剩余 N）」标题）
     renderItemDistribution(propertySection(container), obj);
   } else {
+    // 普通对象：物品编辑
     renderObjectItems(propertySection(container, '物品'), selectedObjectId, obj.items || [], null);
   }
 
@@ -591,6 +645,201 @@ function addPropertyRow(container, labelText, value) {
   row.appendChild(valueEl);
   container.appendChild(row);
 }
+
+// ---------- 道具页 ----------
+
+function renderItemPage() {
+  renderItemList();
+  renderItemDetail();
+}
+
+function renderItemList() {
+  const container = document.getElementById('itemList');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const query = itemSearch.trim().toLowerCase();
+  const filtered = itemCatalog.filter((it) => {
+    if (itemCategory && (it.category || '—') !== itemCategory) return false;
+    if (!query) return true;
+    return (it.name || '').toLowerCase().includes(query) || (it.category || '').toLowerCase().includes(query);
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="property-empty">无匹配道具</div>';
+    return;
+  }
+
+  for (const item of filtered) {
+    const row = document.createElement('button');
+    row.className = 'item-row' + (item.name === selectedItem ? ' selected' : '');
+    row.onclick = () => {
+      selectedItem = item.name;
+      renderItemList();
+      renderItemDetail();
+    };
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'item-row-name';
+    nameEl.textContent = item.name;
+
+    const priceEl = document.createElement('span');
+    priceEl.className = 'item-row-price';
+    priceEl.textContent = item.price != null ? '$' + fmtPrice(item.price) : '价格自定';
+
+    row.appendChild(nameEl);
+    row.appendChild(priceEl);
+    container.appendChild(row);
+  }
+}
+
+/** 价格显示：去掉多余小数位（0.2 → 0.2；1.0 → 1）。 */
+function fmtPrice(p) {
+  return String(Number(p.toFixed(2)));
+}
+
+function renderItemDetail() {
+  renderItemInfo();
+  renderItemAssignPanel();
+}
+
+/** 中列：选中道具的基本信息。 */
+function renderItemInfo() {
+  const container = document.getElementById('itemDetail');
+  const title = document.getElementById('itemDetailTitle');
+  if (!container || !title) return;
+
+  const item = itemCatalog.find((it) => it.name === selectedItem);
+  if (!item) {
+    title.textContent = '选择道具';
+    container.innerHTML = '<div class="property-empty">点击左侧道具查看信息</div>';
+    return;
+  }
+
+  title.textContent = item.name;
+  container.innerHTML = '';
+
+  const info = propertySection(container, '基本信息');
+  addPropertyRow(info, '类别', item.category || '—');
+  addPropertyRow(info, '价格', item.price != null ? '$' + fmtPrice(item.price) : '价格自定');
+  addPropertyRow(info, '鉴定', item.identify || '—');
+  addPropertyRow(info, '模组用途', item.usage || '—');
+}
+
+/** 右列：选中道具的玩家分配面板。 */
+function renderItemAssignPanel() {
+  const container = document.getElementById('itemAssign');
+  const title = document.getElementById('itemAssignTitle');
+  if (!container || !title) return;
+
+  const item = itemCatalog.find((it) => it.name === selectedItem);
+  if (!item) {
+    title.textContent = '分配';
+    container.innerHTML = '<div class="property-empty">选择道具后分配</div>';
+    return;
+  }
+
+  title.textContent = item.name;
+  container.innerHTML = '';
+  renderItemAssign(container, item);
+}
+
+/** 道具分配区：标题 + 每个玩家一行 [-][玩家名][数量][+]（走 gm_set_object_items，与地图页道具分配一致）。
+ *  库存口径与地图页相同：场景中有同名道具对象（itemName）时按总库存限制，否则不限。 */
+function renderItemAssign(container, item) {
+  if (!state) return;
+
+  const name = item.name;
+  const stock = itemNameStock(name);
+  const remaining = stock > 0 ? stock - heldItemCount(name) : null;
+
+  const title = document.createElement('div');
+  title.className = 'property-distribute-title';
+  title.textContent = remaining != null ? '分配道具（剩余 ' + remaining + '）' : '分配道具';
+  container.appendChild(title);
+
+  const players = Object.entries(state.players || {});
+  if (players.length === 0) {
+    const hint = document.createElement('div');
+    hint.className = 'property-hint';
+    hint.textContent = '暂无玩家';
+    container.appendChild(hint);
+    return;
+  }
+
+  for (const [playerId, player] of players) {
+    const playerItems = (state.objects[playerId] && state.objects[playerId].items) || [];
+    const count = playerItems.filter((i) => i === name).length;
+
+    const line = document.createElement('div');
+    line.className = 'property-distribute-line';
+
+    const minus = document.createElement('button');
+    minus.className = 'state-btn';
+    minus.title = '收回一个';
+    minus.textContent = '−';
+    minus.onclick = () => {
+      const next = playerItems.slice();
+      const idx = next.indexOf(name);
+      if (idx >= 0) next.splice(idx, 1);
+      send({ type: 'gm_set_object_items', objectId: playerId, items: next });
+    };
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'property-distribute-name';
+    nameEl.title = player.name || playerId;
+    nameEl.textContent = player.name || playerId;
+
+    const countEl = document.createElement('span');
+    countEl.className = 'property-distribute-count';
+    countEl.textContent = count;
+
+    const plus = document.createElement('button');
+    plus.className = 'state-btn property-distribute-plus';
+    plus.title = '分配一个';
+    plus.textContent = '+';
+    plus.disabled = remaining != null && remaining <= 0; // 有库存且已分完时不可再分
+    plus.onclick = () => {
+      send({ type: 'gm_set_object_items', objectId: playerId, items: playerItems.concat([name]) });
+    };
+
+    line.appendChild(minus);
+    line.appendChild(nameEl);
+    line.appendChild(countEl);
+    line.appendChild(plus);
+    container.appendChild(line);
+  }
+}
+
+/** 所有玩家持有的某道具总数。 */
+function heldItemCount(name) {
+  let held = 0;
+  for (const playerId of Object.keys(state.players || {})) {
+    const items = (state.objects[playerId] && state.objects[playerId].items) || [];
+    for (const it of items) {
+      if (it === name) held++;
+    }
+  }
+  return held;
+}
+
+// 道具搜索框与类别下拉（只绑定一次，避免每次重渲染时重复监听）
+(function initItemFilters() {
+  const input = document.getElementById('itemSearch');
+  if (input) {
+    input.addEventListener('input', () => {
+      itemSearch = input.value;
+      renderItemList();
+    });
+  }
+  const categorySelect = document.getElementById('itemCategory');
+  if (categorySelect) {
+    categorySelect.addEventListener('change', () => {
+      itemCategory = categorySelect.value;
+      renderItemList();
+    });
+  }
+})();
 
 // ---- 横屏时地图按 16:9 等比（高度决定宽度），避免 contain 两侧黑边 ----
 function fitMapContainer() {

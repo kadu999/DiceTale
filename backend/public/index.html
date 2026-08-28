@@ -13,6 +13,7 @@
     <nav class="page-tabs">
       <button id="pageBtnMap" class="page-tab active" onclick="switchPage('map')">地图</button>
       <button id="pageBtnPlayers" class="page-tab" onclick="switchPage('players')">玩家</button>
+      <button id="pageBtnItems" class="page-tab" onclick="switchPage('items')">道具</button>
     </nav>
     <div class="status-group">
       <span id="clientStatus" class="status disconnected">客户端未连接</span>
@@ -44,6 +45,26 @@
     <!-- 玩家页：每个玩家一个属性面板（与地图页属性面板同款），从左到右排列 -->
     <section id="pagePlayers" class="page">
       <div id="playerList" class="player-list"></div>
+    </section>
+
+    <!-- 道具页：道具目录（左侧列表 + 搜索）+ 道具详情（中间）+ 玩家分配（右侧 220px，与地图页属性面板同宽） -->
+    <section id="pageItems" class="page">
+      <div class="item-grid">
+        <section class="panel item-selector">
+          <div class="property-title">道具</div>
+          <input id="itemSearch" class="item-search" type="search" placeholder="搜索道具名 / 类别" autocomplete="off">
+          <select id="itemCategory" class="item-category"></select>
+          <div id="itemList" class="item-list"></div>
+        </section>
+        <section class="panel item-detail">
+          <div class="property-title" id="itemDetailTitle">选择道具</div>
+          <div id="itemDetail" class="property-list"></div>
+        </section>
+        <section class="panel item-property">
+          <div class="property-title" id="itemAssignTitle">分配</div>
+          <div id="itemAssign" class="property-list"></div>
+        </section>
+      </div>
     </section>
   </main>
 

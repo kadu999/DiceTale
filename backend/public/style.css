@@ -714,3 +714,124 @@ main.layout {
     height: calc(100dvh - 80px);
   }
 }
+
+/* ---- 道具页：道具目录（左列表 + 搜索）+ 详情/分配（右） ---- */
+.item-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.item-selector,
+.item-property {
+  max-width: 1200px;
+}
+
+.item-search {
+  width: 100%;
+  padding: 0.35rem 0.6rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+}
+
+.item-search::placeholder {
+  color: #64748b;
+}
+
+.item-category {
+  width: 100%;
+  padding: 0.35rem 0.6rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+}
+
+.item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  overflow-y: auto;
+  max-height: calc(100vh - 230px);
+  max-height: calc(100dvh - 230px);
+}
+
+.item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: transparent;
+  color: #cbd5e1;
+  cursor: pointer;
+  font-size: 0.85rem;
+  text-align: left;
+  touch-action: manipulation;
+}
+
+.item-row:hover {
+  background: #22304a;
+}
+
+.item-row.selected {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #fff;
+}
+
+.item-row-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.item-row-price {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.item-row.selected .item-row-price {
+  color: #dbeafe;
+}
+
+/* 横屏且宽度足够：道具目录(240px) | 道具详情(弹性) | 玩家分配(220px，与地图页属性面板同宽) 三列等高拉伸 */
+@media (orientation: landscape) and (min-width: 640px) {
+  .item-grid {
+    grid-template-columns: 240px minmax(0, 1fr) 220px;
+    align-items: stretch;
+  }
+
+  .item-selector,
+  .item-detail,
+  .item-property {
+    max-width: none;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 80px);
+    height: calc(100dvh - 80px);
+    min-height: 0;
+  }
+
+  .item-list,
+  .item-detail .property-list,
+  .item-property .property-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
