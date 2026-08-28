@@ -88,11 +88,10 @@ namespace DiceTale
                 return;
             }
 
-            // 逐个传送；多人时 2×2 错开站位，避免全部叠在标记点上
+            // 逐个传送；多人时按网格格子大小方阵错开站位，避免全部叠在标记点上
             for (int i = 0; i < targets.Count; i++)
             {
-                var offset = new Vector3((i % 2) * 0.5f, (i / 2) * 0.5f, 0f);
-                mapManager.TeleportPlayer(targets[i], targetMapName, targetMarkerId, offset);
+                mapManager.TeleportPlayer(targets[i], targetMapName, targetMarkerId, MapManager.GetSpawnOffset(i, targets.Count));
             }
         }
     }

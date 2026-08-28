@@ -233,12 +233,23 @@ namespace DiceTale
                 var player = characterManager.Players[i];
                 if (player != null)
                 {
-                    // 多玩家时错开站位（2×2 排列），避免完全重叠难以区分
-                    var offset = new Vector3((i % 2) * 0.5f, (i / 2) * 0.5f, 0f);
-                    player.transform.position = target.Value + offset;
+                    // 多人落位错开站位（按网格格子大小排成方阵），避免完全重叠难以区分
+                    player.transform.position = target.Value + GetSpawnOffset(i, characterManager.Players.Count);
                     player.ReportPosition(); // 传送/出生落点：上报位置
                 }
             }
+        }
+
+        /// <summary>
+        /// 多人落位错开偏移：按当前地图网格格子大小排成方阵（玩家是一格实体，间距=格大小不重叠）；
+        /// 无网格时回退 0.5 世界单位。
+        /// </summary>
+        public static Vector3 GetSpawnOffset(int index, int total)
+        {
+            var gridMap = Object.FindFirstObjectByType<GridMap>();
+            var spacing = gridMap != null && gridMap.CellSize > 0f ? gridMap.CellSize : 0.5f;
+            var cols = Mathf.Max(1, Mathf.CeilToInt(Mathf.Sqrt(total)));
+            return new Vector3((index % cols) * spacing, (index / cols) * spacing, 0f);
         }
 
         /// <summary>
