@@ -45,8 +45,17 @@ namespace DiceTale
         /// <summary>稳定输出遮罩纹理（Texture2D，初始全黑；外部持有引用始终有效）。由外部渲染组件读取。</summary>
         public Texture2D MaskTexture => outputTexture;
 
+        private void OnValidate()
+        {
+            // 编辑器里挂/改组件时同步枢纽的能力组件列表
+            GetComponent<BackendObject>()?.RefreshCapabilityComponents();
+        }
+
         private void OnEnable()
         {
+            // 通知枢纽刷新能力组件列表（挂/摘组件后保持同步）
+            GetComponent<BackendObject>()?.RefreshCapabilityComponents();
+
             EnsureOutputTexture();
             EnsureMaskRT();
             EnsureStampMaterial();

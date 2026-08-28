@@ -4,10 +4,14 @@ using UnityEngine;
 namespace DiceTale
 {
     /// <summary>
-    /// 后台对象枢纽（组件模型）：挂在物体上的「后台对象」本体，只负责与后台（backend）的通信、身份与聚合，
-    /// 具体能力（状态机 / 物品 / 道具货源 / 遮罩 / 角色名单）由同物体上的能力组件实现
+    /// 后台对象枢纽（组件模型）：挂在物体（主体）上的「后台对象」本体，只负责与后台（backend）的通信、身份与聚合，
+    /// 具体能力（状态机 / 物品 / 道具货源 / 遮罩 / 角色名单）由同一主体上的能力组件实现
     /// <see cref="IBackendRole"/>、<see cref="IBackendDisplayName"/>、<see cref="ISceneStateMachine"/>、
     /// <see cref="IItemInventory"/>、<see cref="IItemStock"/>、<see cref="IMaskSource"/> 提供。
+    ///
+    /// 主体 = 挂了本枢纽的 GameObject；能力组件挂在同一个主体上。枢纽维护「能力组件列表」
+    /// （Inspector 可见，挂/摘能力组件时自动同步），聚合上报与命令转发都以该列表为唯一来源，
+    /// 无需逐个 GetComponent 探测。
     ///
     /// 枢纽自动完成：
     /// - 启用/销毁时注册/注销到 <see cref="BackendRegistry"/>；
@@ -17,7 +21,7 @@ namespace DiceTale
     /// - 转发后台命令到对应能力组件（TrySetState → ISceneStateMachine、SetItems → IItemInventory、
     ///   ApplyMaskImage/ApplyEraseStroke → IMaskSource）。
     ///
-    /// 用法：枢纽与能力组件挂在同一个 GameObject 上，能力可任意组合（门=枢纽+状态机、道具=枢纽+道具货源、
+    /// 用法：主体（GameObject）上挂枢纽 + 任意组合的能力组件（门=枢纽+状态机、道具=枢纽+道具货源、
     /// 玩家=枢纽+角色+物品、宝箱=枢纽+状态机+道具货源…）。
     /// 后台命令经 ServerCommandDispatcher 按 ObjectId 定位枢纽。
     /// </summary>
@@ -38,12 +42,19 @@ namespace DiceTale
 
         private string generatedId;
 
+        /// <summary>
+        /// 主体上的能力组件列表（自动同步：编辑器挂/摘能力组件、运行时启用时刷新；勿手动修改）。
+        /// 聚合上报与命令转发以此列表为唯一来源。
+        /// </summary>
+        [SerializeField, Tooltip("主体上的能力组件（自动同步，无需手动维护）")]
+        private List<MonoBehaviour> capabilityComponents = new List<MonoBehaviour>();
+
         /// <summary>后台使用的唯一对象 ID：角色组件（Player/SpawnPoint）优先，其次自定义 ID（隐藏字段），默认自动生成唯一 ID。</summary>
         public string ObjectId
         {
             get
             {
-                var role = GetComponent<IBackendRole>();
+                var role = FindComponent<IBackendRole>();
                 if (role != null)
                 {
                     return role.ObjectId;
@@ -76,7 +87,7 @@ namespace DiceTale
                     return displayName;
                 }
 
-                var display = GetComponent<IBackendDisplayName>();
+                var display = FindComponent<IBackendDisplayName>();
                 if (display != null)
                 {
                     var dynamicName = display.DisplayName;
@@ -91,14 +102,14 @@ namespace DiceTale
         }
 
         /// <summary>当前状态名称（无状态机组件时为 null）。</summary>
-        public string CurrentStateName => GetComponent<ISceneStateMachine>()?.CurrentStateName;
+        public string CurrentStateName => FindComponent<ISceneStateMachine>()?.CurrentStateName;
 
         /// <summary>全部可选状态名称（上报给 GM 页面展示与切换；无状态机组件时为空列表）。</summary>
         public List<string> StateNames
         {
             get
             {
-                var stateMachine = GetComponent<ISceneStateMachine>();
+                var stateMachine = FindComponent<ISceneStateMachine>();
                 return stateMachine != null ? stateMachine.StateNames : EmptyStates;
             }
         }
@@ -108,25 +119,25 @@ namespace DiceTale
         {
             get
             {
-                var inventory = GetComponent<IItemInventory>();
+                var inventory = FindComponent<IItemInventory>();
                 return inventory != null ? inventory.Items : EmptyItems;
             }
         }
 
         /// <summary>道具名（有道具货源组件时才有，GM 页面据此展示分配界面；非道具对象返回 null）。</summary>
-        public string ItemName => GetComponent<IItemStock>()?.ItemName;
+        public string ItemName => FindComponent<IItemStock>()?.ItemName;
 
         /// <summary>道具总数量（有道具货源组件时才有，固定库存；非道具对象返回 0）。</summary>
-        public int ItemQuantity => GetComponent<IItemStock>()?.ItemQuantity ?? 0;
+        public int ItemQuantity => FindComponent<IItemStock>()?.ItemQuantity ?? 0;
 
         /// <summary>遮罩纹理宽度（有遮罩组件时才有，GM 页面据此生成/编辑遮罩；非遮罩对象返回 0）。</summary>
-        public int MaskWidth => GetComponent<IMaskSource>()?.MaskWidth ?? 0;
+        public int MaskWidth => FindComponent<IMaskSource>()?.MaskWidth ?? 0;
 
         /// <summary>遮罩纹理高度（有遮罩组件时才有，GM 页面据此生成/编辑遮罩；非遮罩对象返回 0）。</summary>
-        public int MaskHeight => GetComponent<IMaskSource>()?.MaskHeight ?? 0;
+        public int MaskHeight => FindComponent<IMaskSource>()?.MaskHeight ?? 0;
 
         /// <summary>
-        /// 能力组件清单（与客户端组件类同名，GM 页面据此渲染属性控件）：
+        /// 可编辑能力清单（上报给 GM 页面，据此渲染属性控件；与客户端组件类同名）：
         /// SceneObject 状态机 / ItemInventory 物品 / ItemObject 道具货源 / MaskObject 遮罩。
         /// 角色组件（Player/SpawnPoint）不在此清单——按 kind 与 register_players/spawnPoints 名单处理。
         /// </summary>
@@ -135,32 +146,32 @@ namespace DiceTale
             get
             {
                 var components = new List<string>();
-                if (GetComponent<ISceneStateMachine>() != null)
+                foreach (var comp in capabilityComponents)
                 {
-                    components.Add("SceneObject");
-                }
+                    if (comp == null)
+                    {
+                        continue;
+                    }
 
-                if (GetComponent<IItemInventory>() != null)
-                {
-                    components.Add("ItemInventory");
-                }
-
-                if (GetComponent<IItemStock>() != null)
-                {
-                    components.Add("ItemObject");
-                }
-
-                if (GetComponent<IMaskSource>() != null)
-                {
-                    components.Add("MaskObject");
+                    var id = GetComponentId(comp);
+                    if (id != null)
+                    {
+                        components.Add(id);
+                    }
                 }
 
                 return components;
             }
         }
 
+        private void OnValidate()
+        {
+            RefreshCapabilityComponents();
+        }
+
         private void OnEnable()
         {
+            RefreshCapabilityComponents();
             BackendRegistry.Instance.Register(this);
         }
 
@@ -173,6 +184,70 @@ namespace DiceTale
             }
         }
 
+        /// <summary>重新扫描主体上的能力组件并同步列表（挂/摘能力组件后自动调用；运行时动态 AddComponent 后可手动调用）。</summary>
+        public void RefreshCapabilityComponents()
+        {
+            capabilityComponents.Clear();
+            foreach (var comp in GetComponents<MonoBehaviour>())
+            {
+                if (comp == null || comp == this)
+                {
+                    continue;
+                }
+
+                if (comp is ISceneStateMachine || comp is IItemInventory || comp is IItemStock ||
+                    comp is IMaskSource || comp is IBackendRole || comp is IBackendDisplayName)
+                {
+                    capabilityComponents.Add(comp);
+                }
+            }
+        }
+
+        /// <summary>从能力组件列表找第一个实现指定接口的组件（无则返回 null；已销毁的引用直接跳过）。</summary>
+        private T FindComponent<T>() where T : class
+        {
+            foreach (var comp in capabilityComponents)
+            {
+                if (comp == null)
+                {
+                    continue;
+                }
+
+                if (comp is T t)
+                {
+                    return t;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>能力组件 → 上报给 GM 的组件名（与客户端组件类同名）；角色/显示名组件不进入上报清单。</summary>
+        private static string GetComponentId(MonoBehaviour comp)
+        {
+            if (comp is ISceneStateMachine)
+            {
+                return "SceneObject";
+            }
+
+            if (comp is IItemInventory)
+            {
+                return "ItemInventory";
+            }
+
+            if (comp is IItemStock)
+            {
+                return "ItemObject";
+            }
+
+            if (comp is IMaskSource)
+            {
+                return "MaskObject";
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// 把自身信息追加到上报消息：角色组件（Player 玩家名单、SpawnPoint 出生点）追加专用字段，
         /// 通用状态信息已由注册表统一加入 objects（本枢纽聚合各能力组件）。
@@ -181,7 +256,7 @@ namespace DiceTale
             Server.RegisterMapObjectsMessage mapObjects,
             Server.RegisterPlayersMessage players)
         {
-            var role = GetComponent<IBackendRole>();
+            var role = FindComponent<IBackendRole>();
             if (role != null)
             {
                 role.AppendToReport(mapObjects, players);
@@ -191,26 +266,26 @@ namespace DiceTale
         /// <summary>后台命令入口：按名称切换状态（转发给状态机组件；无状态机时返回 false）。</summary>
         public bool TrySetState(string stateName)
         {
-            var stateMachine = GetComponent<ISceneStateMachine>();
+            var stateMachine = FindComponent<ISceneStateMachine>();
             return stateMachine != null && stateMachine.TrySetState(stateName);
         }
 
         /// <summary>后台命令入口：整体设置物品列表（转发给物品组件；无物品组件时无操作）。</summary>
         public void SetItems(IEnumerable<string> newItems)
         {
-            GetComponent<IItemInventory>()?.SetItems(newItems);
+            FindComponent<IItemInventory>()?.SetItems(newItems);
         }
 
         /// <summary>后台命令入口：应用遮罩图像（base64 PNG；转发给遮罩组件）。</summary>
         public void ApplyMaskImage(string base64Png)
         {
-            GetComponent<IMaskSource>()?.ApplyMaskImage(base64Png);
+            FindComponent<IMaskSource>()?.ApplyMaskImage(base64Png);
         }
 
         /// <summary>后台命令入口：应用 GM 擦除的笔画轨迹（归一化点 + 归一化半径 + 软边比例；转发给遮罩组件）。</summary>
         public void ApplyEraseStroke(Vector2[] points, float radius, float softness)
         {
-            GetComponent<IMaskSource>()?.ApplyEraseStroke(points, radius, softness);
+            FindComponent<IMaskSource>()?.ApplyEraseStroke(points, radius, softness);
         }
 
         /// <summary>状态切换后上报给后台，使 GM 页面同步显示当前状态（状态机组件切换状态后调用）。</summary>

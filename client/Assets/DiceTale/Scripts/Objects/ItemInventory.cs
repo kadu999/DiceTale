@@ -14,6 +14,18 @@ namespace DiceTale
     {
         private readonly List<string> items = new List<string>();
 
+        private void OnValidate()
+        {
+            // 编辑器里挂/改组件时同步枢纽的能力组件列表
+            GetComponent<BackendObject>()?.RefreshCapabilityComponents();
+        }
+
+        private void OnEnable()
+        {
+            // 通知枢纽刷新能力组件列表（挂/摘组件后保持同步）
+            GetComponent<BackendObject>()?.RefreshCapabilityComponents();
+        }
+
         /// <summary>物品列表（只读视图；修改用 AddItem/RemoveItem/SetItems，与后台同步）。</summary>
         public IReadOnlyList<string> Items => items;
 

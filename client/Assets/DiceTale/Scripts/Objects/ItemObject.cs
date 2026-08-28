@@ -43,8 +43,17 @@ namespace DiceTale
             }
         }
 
+        private void OnValidate()
+        {
+            // 编辑器里挂/改组件时同步枢纽的能力组件列表
+            GetComponent<BackendObject>()?.RefreshCapabilityComponents();
+        }
+
         private void OnEnable()
         {
+            // 通知枢纽刷新能力组件列表（挂/摘组件后保持同步）
+            GetComponent<BackendObject>()?.RefreshCapabilityComponents();
+
             // 地图重载/激活时按当前玩家持有量重算剩余（首次进入时玩家尚未持有，剩余 = 总数）
             RefreshQuantity();
         }

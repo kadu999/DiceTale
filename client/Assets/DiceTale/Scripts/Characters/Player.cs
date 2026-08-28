@@ -14,6 +14,18 @@ namespace DiceTale
     {
         private static readonly List<string> EmptyItems = new List<string>();
 
+        private void OnValidate()
+        {
+            // 编辑器里挂/改组件时同步枢纽的能力组件列表
+            GetComponent<BackendObject>()?.RefreshCapabilityComponents();
+        }
+
+        private void OnEnable()
+        {
+            // 通知枢纽刷新能力组件列表（挂/摘组件后保持同步）
+            GetComponent<BackendObject>()?.RefreshCapabilityComponents();
+        }
+
         /// <summary>玩家唯一标识（由 CharacterManager 分配，上报给后台）。</summary>
         public string PlayerId { get; private set; } = "Player_1";
 
