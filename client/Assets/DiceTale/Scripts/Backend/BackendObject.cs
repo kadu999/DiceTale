@@ -9,9 +9,8 @@ namespace DiceTale
     /// <see cref="IBackendRole"/>、<see cref="IBackendDisplayName"/>、<see cref="ISceneStateMachine"/>、
     /// <see cref="IItemInventory"/>、<see cref="IItemStock"/>、<see cref="IMaskSource"/> 提供。
     ///
-    /// 主体 = 挂了本枢纽的 GameObject；能力组件挂在同一个主体上。枢纽维护「能力组件列表」
-    /// （Inspector 可见，挂/摘能力组件时自动同步），聚合上报与命令转发都以该列表为唯一来源，
-    /// 无需逐个 GetComponent 探测。
+    /// 主体 = 挂了本枢纽的 GameObject；能力组件挂在同一个主体上。枢纽在初始化（OnEnable）时
+    /// 扫描一次缓存能力组件列表（不序列化、不显示、不对外暴露），聚合上报与命令转发都以该缓存为来源。
     ///
     /// 枢纽自动完成：
     /// - 启用/销毁时注册/注销到 <see cref="BackendRegistry"/>；
@@ -40,12 +39,8 @@ namespace DiceTale
 
         private string generatedId;
 
-        /// <summary>
-        /// 主体上的能力组件列表（自动同步：编辑器挂/摘能力组件、运行时启用时刷新；勿手动修改）。
-        /// 聚合上报与命令转发以此列表为唯一来源。
-        /// </summary>
-        [SerializeField, Tooltip("主体上的能力组件（自动同步，无需手动维护）")]
-        private List<BackendComponent> capabilityComponents = new List<BackendComponent>();
+        /// <summary>主体上的能力组件缓存（初始化时扫描获取，不序列化不显示）；上报与命令路由以此列表为来源。</summary>
+        private readonly List<BackendComponent> capabilityComponents = new List<BackendComponent>();
 
         /// <summary>后台使用的唯一对象 ID：角色组件（Player/SpawnPoint）优先，其次自定义 ID（隐藏字段），默认自动生成唯一 ID。</summary>
         public string ObjectId
@@ -100,8 +95,6 @@ namespace DiceTale
         }
 
         /// <summary>主体上的能力组件（只读视图；数据由各组件自己持有并上报）。</summary>
-        public IReadOnlyList<BackendComponent> CapabilityComponents => capabilityComponents;
-
         /// <summary>
         /// 可编辑能力清单（上报给 GM 页面，据此渲染属性控件）：取每个能力组件自己的 ComponentId；
         /// 角色组件（Player/SpawnPoint）GmEditable=false，不进入清单（按 kind 与 register_players/spawnPoints 名单处理）。
@@ -125,11 +118,6 @@ namespace DiceTale
             }
         }
 
-        private void OnValidate()
-        {
-            RefreshCapabilityComponents();
-        }
-
         private void OnEnable()
         {
             RefreshCapabilityComponents();
@@ -145,7 +133,7 @@ namespace DiceTale
             }
         }
 
-        /// <summary>重新扫描主体上的能力组件并同步列表（挂/摘能力组件后自动调用；运行时动态 AddComponent 后可手动调用）。
+        /// <summary>重新扫描主体上的能力组件并同步缓存（初始化/启用时自动调用；运行时动态 AddComponent 后也可手动调用）。
         /// 能力组件统一继承 <see cref="BackendComponent"/>，扫描即全量。 </summary>
         public void RefreshCapabilityComponents()
         {
@@ -155,6 +143,19 @@ namespace DiceTale
                 if (comp != null)
                 {
                     capabilityComponents.Add(comp);
+                }
+            }
+        }
+
+        /// <summary>填充 GM 上报信息的能力数据：遍历能力组件调用 <see cref="IBackendComponentData.AppendToInfo"/>
+        /// （组件自己填自己的字段，本处不关心任何具体字段）。</summary>
+        public void FillReportData(Server.ServerObjectInfo info)
+        {
+            foreach (var comp in capabilityComponents)
+            {
+                if (comp is IBackendComponentData data)
+                {
+                    data.AppendToInfo(info);
                 }
             }
         }
