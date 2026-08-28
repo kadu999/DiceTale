@@ -9,7 +9,7 @@ namespace DiceTale
         /// <summary>场景物体（门、宝箱、拉杆等）；枢纽未配置类型时的默认值。</summary>
         SceneObject = 0,
 
-        /// <summary>玩家（Player 角色组件）。</summary>
+        /// <summary>玩家（枢纽 kind=Player，实体 = BackendObject + Backpack）。</summary>
         Player = 1,
 
         /// <summary>道具（ItemObject 道具货源）。</summary>

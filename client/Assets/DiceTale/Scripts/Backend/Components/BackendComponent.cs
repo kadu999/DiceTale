@@ -5,7 +5,7 @@ namespace DiceTale
 {
     /// <summary>
     /// 后台能力组件基类：所有能力组件（StateMachine 状态机 / Backpack 背包 / ItemObject 道具货源 /
-    /// MaskObject 遮罩 / Player / SpawnPoint 角色）的统一基类。
+    /// MaskObject 遮罩）的统一基类。
     ///
     /// 基类已实现组件公共契约，子类只需声明自己的能力接口：
     /// - <see cref="IBackendCommandHandler"/>：命令处理（CanHandle/HandleCommand 默认不处理，子类按需覆写）；
@@ -24,7 +24,7 @@ namespace DiceTale
     [RequireComponent(typeof(BackendObject))]
     public abstract class BackendComponent : MonoBehaviour, IBackendComponentData, IBackendCommandHandler
     {
-        /// <summary>组件 ID（与客户端组件类同名，如 StateMachine / Backpack / ItemObject / MaskObject / Player / SpawnPoint）。</summary>
+        /// <summary>组件 ID（与客户端组件类同名，如 StateMachine / Backpack / ItemObject / MaskObject）。</summary>
         public abstract string ComponentId { get; }
 
         /// <summary>GM 属性面板是否渲染该组件的编辑控件（默认 true；角色组件覆写为 false）。</summary>

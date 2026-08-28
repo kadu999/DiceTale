@@ -5,8 +5,8 @@ namespace DiceTale
 {
     /// <summary>
     /// 后台对象枢纽（组件模型）：挂在物体（主体）上的「后台对象」本体，只负责与后台（backend）的通信、身份与聚合，
-    /// 具体能力（状态机 / 背包 / 道具货源 / 遮罩 / 角色名单）由同一主体上的能力组件
-    /// （继承 <see cref="BackendComponent"/>）经 <see cref="IBackendRole"/>、<see cref="IBackendDisplayName"/>、
+    /// 具体能力（状态机 / 背包 / 道具货源 / 遮罩）由同一主体上的能力组件
+    /// （继承 <see cref="BackendComponent"/>）经 <see cref="IBackendDisplayName"/>、
     /// <see cref="IBackendComponentData"/>、<see cref="IBackendCommandHandler"/> 提供。
     ///
     /// 主体 = 挂了本枢纽的 GameObject；能力组件挂在同一个主体上。枢纽在初始化（OnEnable）时
@@ -14,7 +14,7 @@ namespace DiceTale
     ///
     /// 枢纽自动完成：
     /// - 启用/销毁时注册/注销到 <see cref="BackendRegistry"/>；
-    /// - 提供统一的对象 ID（ObjectId：角色组件优先，其次自定义 ID（隐藏字段），默认自动生成唯一 ID）与类型显示名（ObjectKind）；
+    /// - 提供统一的对象 ID（ObjectId：自定义 ID（隐藏字段）优先，默认自动生成唯一 ID）与类型显示名（ObjectKind）；
     /// - 提供向后台发送消息、世界坐标转图片归一化坐标的工具；
     /// - 收集能力组件的数据统一上报（各能力组件经 <see cref="IBackendComponentData"/> 自己填充状态/物品/道具/遮罩字段）；
     /// - 通用命令路由：后台命令按类型转发给能处理它的能力组件（组件实现 <see cref="IBackendCommandHandler"/> 自己解析并执行）；
@@ -33,7 +33,7 @@ namespace DiceTale
         [SerializeField, Tooltip("GM 页面显示的名称（后台看名字识别对象）；为空时回退道具动态显示名或对象 ID")]
         private string displayName;
 
-        [SerializeField, HideInInspector, Tooltip("自定义对象 ID 覆盖（高级用途：需要稳定/可读 ID 时设置，如 Debug 模式或代码里写入）；为空时自动生成唯一 ID；SpawnPoint 用角色组件自己的 ID")]
+        [SerializeField, HideInInspector, Tooltip("自定义对象 ID 覆盖（高级用途：需要稳定/可读 ID 时设置，如 Debug 模式或代码里写入）；为空时自动生成唯一 ID")]
         private string objectId;
 
         private string generatedId;
@@ -41,17 +41,11 @@ namespace DiceTale
         /// <summary>主体上的能力组件缓存（初始化时扫描获取，不序列化不显示）；上报与命令路由以此列表为来源。</summary>
         private readonly List<BackendComponent> capabilityComponents = new List<BackendComponent>();
 
-        /// <summary>后台使用的唯一对象 ID：角色组件（SpawnPoint）优先，其次自定义 ID（隐藏字段），默认自动生成唯一 ID。</summary>
+        /// <summary>后台使用的唯一对象 ID：自定义 ID（隐藏字段）优先，默认自动生成唯一 ID。</summary>
         public string ObjectId
         {
             get
             {
-                var role = FindComponent<IBackendRole>();
-                if (role != null)
-                {
-                    return role.ObjectId;
-                }
-
                 if (!string.IsNullOrEmpty(objectId))
                 {
                     return objectId;
@@ -105,11 +99,7 @@ namespace DiceTale
             }
         }
 
-        /// <summary>主体上的能力组件（只读视图；数据由各组件自己持有并上报）。</summary>
-        /// <summary>
-        /// 可编辑能力清单（上报给 GM 页面，据此渲染属性控件）：取每个能力组件自己的 ComponentId；
-        /// 角色组件（SpawnPoint）GmEditable=false，不进入清单（按 kind 与 spawnPoints 名单处理）。
-        /// </summary>
+        /// <summary>可编辑能力清单（上报给 GM 页面，据此渲染属性控件）：取每个能力组件自己的 ComponentId。</summary>
         public List<string> Components
         {
             get
@@ -191,21 +181,14 @@ namespace DiceTale
         }
 
         /// <summary>
-        /// 把自身信息追加到上报消息：角色组件（SpawnPoint 出生点）追加专用字段；
-        /// 无角色组件但 kind=Player 的主体登记为玩家（玩家实体 = BackendObject + Backpack，身份用 ObjectId、名字用 DisplayName）。
+        /// 把自身信息追加到上报消息：kind=Player 的主体登记为玩家（玩家实体 = BackendObject + Backpack，
+        /// 身份用 ObjectId、名字用 DisplayName）。出生点名单由 MapManager 按 Spawn_* 名字收集。
         /// 通用状态信息已由注册表统一加入 objects（本枢纽聚合各能力组件）。
         /// </summary>
         public void AppendToReport(
             Server.RegisterMapObjectsMessage mapObjects,
             Server.RegisterPlayersMessage players)
         {
-            var role = FindComponent<IBackendRole>();
-            if (role != null)
-            {
-                role.AppendToReport(mapObjects, players);
-                return;
-            }
-
             if (ObjectKind == "Player")
             {
                 players.players.Add(new Server.PlayerInfo
@@ -277,7 +260,7 @@ namespace DiceTale
 
         /// <summary>
         /// 位置同步（所有主体通用）：上报自身当前位置（归一化图片坐标）。
-        /// 玩家主体（有 <see cref="IBackendRole"/> 或 kind=Player）走玩家位置消息（后台 players 名单）；
+        /// 玩家主体（kind=Player）走玩家位置消息（后台 players 名单）；
         /// 普通主体走通用对象位置消息（后台 objects 位置更新）。
         /// </summary>
         public void ReportPosition()
@@ -285,7 +268,7 @@ namespace DiceTale
             var position = NormalizePosition(transform.position);
             var mapName = GetCurrentMapName();
 
-            if (FindComponent<IBackendRole>() != null || ObjectKind == "Player")
+            if (ObjectKind == "Player")
             {
                 SendToBackend(new Server.ReportPlayerPositionMessage
                 {

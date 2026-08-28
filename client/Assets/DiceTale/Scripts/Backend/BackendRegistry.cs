@@ -116,6 +116,9 @@ namespace DiceTale
                 mapMsg.objects.Add(info);
             }
 
+            // 出生点名单：由 MapManager 按名字（Spawn_* 物体）收集登记
+            mapManager?.FillSpawnPoints(mapMsg);
+
             if (!string.IsNullOrEmpty(mapMsg.mapName))
             {
                 connection.Send(mapMsg);

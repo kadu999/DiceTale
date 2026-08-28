@@ -88,7 +88,7 @@ export interface PlayerStateSnapshot {
 export interface ObjectStateSnapshot {
   /** 显示名称（GM 页面标明这是什么物体）；未上报时回退为对象 id */
   name: string;
-  /** 对象类型显示名（SpawnPoint / Player ...） */
+  /** 对象类型显示名（SceneObject / Player / Item / Event） */
   kind: string;
   /** 当前状态名称；未配置状态时为 null */
   currentState: string | null;

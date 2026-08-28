@@ -375,6 +375,24 @@ namespace DiceTale
             return fallback;
         }
 
+        /// <summary>按名字收集当前地图的出生点（Spawn_* 命名物体）并登记到地图对象上报消息
+        /// （后台/GM 的出生点名单，id = 名字去掉 Spawn_ 前缀，如 Spawn_Default → Default）。</summary>
+        public void FillSpawnPoints(Server.RegisterMapObjectsMessage mapMsg)
+        {
+            if (CurrentMap == null)
+            {
+                return;
+            }
+
+            foreach (var t in CurrentMap.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name.StartsWith("Spawn_", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    mapMsg.spawnPoints.Add(new Server.SpawnInfo { id = t.name.Substring("Spawn_".Length) });
+                }
+            }
+        }
+
         /// <summary>当前地图上第一个位置标记（无出生点 Spawn_* 物体时的回退）。</summary>
         private MapMarker FindFirstMarkerOnCurrentMap()
         {
