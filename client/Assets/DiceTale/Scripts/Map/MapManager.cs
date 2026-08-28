@@ -36,6 +36,8 @@ namespace DiceTale
             {
                 // 后台连接（或重连）成功后统一补报所有 BackendObject（门、出生点、玩家）
                 connection.OnConnected += BackendRegistry.Instance.ReportAll;
+                // 补报玩家当前位置：出生落点可能早于连接就绪被丢弃，连接后重报刷新 GM 网页位置
+                connection.OnConnected += ReportPlayerPositions;
             }
 
             LoadMap(initialMapName, "Default");
@@ -50,6 +52,25 @@ namespace DiceTale
                 if (registry != null)
                 {
                     connection.OnConnected -= registry.ReportAll;
+                    connection.OnConnected -= ReportPlayerPositions;
+                }
+            }
+        }
+
+        /// <summary>连接建立（或重连）后补报所有玩家的当前位置（移动/传送落点由各自调用方上报）。</summary>
+        private void ReportPlayerPositions()
+        {
+            var characterManager = CharacterManager.Instance;
+            if (characterManager == null)
+            {
+                return;
+            }
+
+            foreach (var player in characterManager.Players)
+            {
+                if (player != null)
+                {
+                    player.ReportPosition();
                 }
             }
         }
