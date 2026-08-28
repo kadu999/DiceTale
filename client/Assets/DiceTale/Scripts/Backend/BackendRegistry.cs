@@ -114,7 +114,8 @@ namespace DiceTale
                     maskWidth = obj.MaskWidth,
                     maskHeight = obj.MaskHeight,
                     position = obj.GetNormalizedPosition(),
-                    items = new List<string>(obj.Items)
+                    items = new List<string>(obj.Items),
+                    components = obj.Components
                 });
             }
 

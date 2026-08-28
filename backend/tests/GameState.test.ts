@@ -62,6 +62,16 @@ describe('GameState', () => {
     expect(state.objects['Door_1'].quantity).toBeUndefined();
   });
 
+  test('registerObjects stores components list when provided, omits otherwise', () => {
+    state.registerObjects('Map001', [
+      { id: 'Door_1', kind: 'SceneObject', components: ['SceneObject', 'ItemInventory'] },
+      { id: 'Plain_1', kind: 'SceneObject' },
+    ]);
+
+    expect(state.objects['Door_1'].components).toEqual(['SceneObject', 'ItemInventory']);
+    expect(state.objects['Plain_1'].components).toBeUndefined();
+  });
+
   test('registerObjects replaces previous objects and honors client mapName (no cross-map bleed)', () => {
     state.registerObjects('Map001', [
       { id: 'Door', name: '大门', kind: 'Door', mapName: 'Map001' },

@@ -20,6 +20,8 @@ export type ClientMessage =
         position?: { x: number; y: number } | null;
         /** 物品列表（字符串） */
         items?: string[];
+        /** 能力组件清单（与客户端组件类同名：SceneObject/ItemInventory/ItemObject/MaskObject），GM 页面据此渲染属性控件 */
+        components?: string[];
       }>;
     }
   | { type: 'register_players'; players: Array<{ id: string; name: string }> }
@@ -101,6 +103,8 @@ export interface ObjectStateSnapshot {
   position: { x: number; y: number } | null;
   /** 物品列表（字符串） */
   items: string[];
+  /** 能力组件清单（与客户端组件类同名），GM 页面据此渲染属性控件；旧客户端未上报时不设置 */
+  components?: string[];
 }
 
 export interface GameStateSnapshot {

@@ -122,6 +122,17 @@
     </div>
   </div>
 
+  <!-- 脚本按依赖顺序加载：核心 → 属性面板/组件渲染器 → 视图 → 启动 -->
+  <script src="gm-core.js"></script>
+  <script src="gm-property.js"></script>
+  <script src="components/SceneObject.js"></script>
+  <script src="components/ItemInventory.js"></script>
+  <script src="components/ItemObject.js"></script>
+  <script src="components/MaskObject.js"></script>
+  <script src="gm-map.js"></script>
+  <script src="gm-players.js"></script>
+  <script src="gm-items.js"></script>
+  <script src="gm-mask.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

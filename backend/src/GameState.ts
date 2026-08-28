@@ -22,6 +22,8 @@ export interface ObjectInfo {
   mapName: string;
   position: { x: number; y: number } | null;
   items: string[];
+  /** 能力组件清单（与客户端组件类同名），GM 页面据此渲染属性控件；旧客户端未上报时不设置 */
+  components?: string[];
 }
 
 export class GameState {
@@ -94,6 +96,7 @@ export class GameState {
         mapName: obj.mapName ?? mapName,
         position: obj.position ?? existing?.position ?? null,
         items: obj.items ?? existing?.items ?? [],
+        components: obj.components ?? existing?.components,
       };
     }
     this.objects = next;

@@ -125,6 +125,40 @@ namespace DiceTale
         /// <summary>遮罩纹理高度（有遮罩组件时才有，GM 页面据此生成/编辑遮罩；非遮罩对象返回 0）。</summary>
         public int MaskHeight => GetComponent<IMaskSource>()?.MaskHeight ?? 0;
 
+        /// <summary>
+        /// 能力组件清单（与客户端组件类同名，GM 页面据此渲染属性控件）：
+        /// SceneObject 状态机 / ItemInventory 物品 / ItemObject 道具货源 / MaskObject 遮罩。
+        /// 角色组件（Player/SpawnPoint）不在此清单——按 kind 与 register_players/spawnPoints 名单处理。
+        /// </summary>
+        public List<string> Components
+        {
+            get
+            {
+                var components = new List<string>();
+                if (GetComponent<ISceneStateMachine>() != null)
+                {
+                    components.Add("SceneObject");
+                }
+
+                if (GetComponent<IItemInventory>() != null)
+                {
+                    components.Add("ItemInventory");
+                }
+
+                if (GetComponent<IItemStock>() != null)
+                {
+                    components.Add("ItemObject");
+                }
+
+                if (GetComponent<IMaskSource>() != null)
+                {
+                    components.Add("MaskObject");
+                }
+
+                return components;
+            }
+        }
+
         private void OnEnable()
         {
             BackendRegistry.Instance.Register(this);

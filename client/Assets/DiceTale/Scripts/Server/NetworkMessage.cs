@@ -55,6 +55,9 @@ namespace DiceTale.Server
         public Position position;
         /// <summary>物品列表（字符串），与后台同步。</summary>
         public List<string> items = new List<string>();
+        /// <summary>能力组件清单（与客户端组件类同名：SceneObject/ItemInventory/ItemObject/MaskObject），
+        /// GM 页面据此渲染属性控件（状态单选组/物品编辑/道具分配/遮罩编辑）。</summary>
+        public List<string> components = new List<string>();
     }
 
     [Serializable]
