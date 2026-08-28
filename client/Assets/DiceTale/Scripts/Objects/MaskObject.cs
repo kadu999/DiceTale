@@ -12,7 +12,7 @@ namespace DiceTale
     /// - 上报尺寸（maskWidth/maskHeight）给后台（经 <see cref="BackendObject"/> 枢纽聚合），GM 页面在弹框里用鼠标擦除黑色；
     /// - 擦除结果经 erase_mask 命令（笔画轨迹）同步回来：MaskEraseStamp shader 沿轨迹硬核打点（GPU），
     ///   输出纹理 ReadPixels 同步，外部直接看到结果。
-    /// 对象 ID 由枢纽统一提供（勾选 generateUniqueId 运行时生成唯一 ID，迁移脚本已配置）。
+    /// 对象 ID 由枢纽统一提供（默认自动生成唯一 ID）。
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(BackendObject))]

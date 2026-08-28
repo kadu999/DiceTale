@@ -11,7 +11,7 @@ namespace DiceTale
     ///
     /// 枢纽自动完成：
     /// - 启用/销毁时注册/注销到 <see cref="BackendRegistry"/>；
-    /// - 提供统一的对象 ID（ObjectId：角色组件优先，其次自定义 ID，其次按需运行时唯一 ID 或物体名）与类型显示名（ObjectKind）；
+    /// - 提供统一的对象 ID（ObjectId：角色组件优先，其次自定义 ID（隐藏字段），默认自动生成唯一 ID）与类型显示名（ObjectKind）；
     /// - 提供向后台发送消息、世界坐标转图片归一化坐标的工具；
     /// - 聚合能力组件的信息统一上报（状态/物品/道具/遮罩/角色名单）；
     /// - 转发后台命令到对应能力组件（TrySetState → ISceneStateMachine、SetItems → IItemInventory、
@@ -30,15 +30,12 @@ namespace DiceTale
         [SerializeField, Tooltip("GM 页面展示的对象类型名；为空时回退到 BackendObject（迁移脚本已按旧类名填好）")]
         private string objectKind;
 
-        [SerializeField, Tooltip("自定义对象 ID；为空时用物体名（勾选 generateUniqueId 则运行时生成唯一 ID）")]
+        [SerializeField, HideInInspector, Tooltip("自定义对象 ID 覆盖（高级用途：需要稳定/可读 ID 时设置，如 Debug 模式或代码里写入）；为空时自动生成唯一 ID；Player/SpawnPoint 用角色组件自己的 ID")]
         private string objectId;
-
-        [SerializeField, Tooltip("运行时生成唯一对象 ID（道具/遮罩等需要全局唯一 ID 的对象勾选；Player/SpawnPoint 用角色组件自己的 ID）")]
-        private bool generateUniqueId;
 
         private string generatedId;
 
-        /// <summary>后台使用的唯一对象 ID：角色组件（Player/SpawnPoint）优先，其次自定义 ID，再其次运行时唯一 ID 或物体名。</summary>
+        /// <summary>后台使用的唯一对象 ID：角色组件（Player/SpawnPoint）优先，其次自定义 ID（隐藏字段），默认自动生成唯一 ID。</summary>
         public string ObjectId
         {
             get
@@ -54,17 +51,12 @@ namespace DiceTale
                     return objectId;
                 }
 
-                if (generateUniqueId)
+                if (generatedId == null)
                 {
-                    if (generatedId == null)
-                    {
-                        generatedId = $"{name}_{System.Guid.NewGuid():N}";
-                    }
-
-                    return generatedId;
+                    generatedId = $"{name}_{System.Guid.NewGuid():N}";
                 }
 
-                return name;
+                return generatedId;
             }
         }
 

@@ -7,7 +7,7 @@ namespace DiceTale
     /// 场景中代表一个道具（道具名 + 固定总数）：经 <see cref="BackendObject"/> 枢纽自动上报到 GM 页面，
     /// 上报的「数量」是固定总数，剩余（总数 − 玩家持有数）由 GM 页面即时推导；
     /// 客户端本地也维护剩余（remaining），GM 分配/收回命令（set_object_items）到达时刷新。
-    /// 对象 ID 由枢纽统一提供（勾选 generateUniqueId 运行时生成唯一 ID，迁移脚本已配置）。
+    /// 对象 ID 由枢纽统一提供（默认自动生成唯一 ID）。
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(BackendObject))]
