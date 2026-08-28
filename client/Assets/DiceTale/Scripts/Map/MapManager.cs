@@ -241,15 +241,30 @@ namespace DiceTale
         }
 
         /// <summary>
-        /// 多人落位错开偏移：按当前地图网格格子大小排成方阵（玩家是一格实体，间距=格大小不重叠）；
-        /// 无网格时回退 0.5 世界单位。
+        /// 多人落位错开偏移：按玩家精灵宽度 + 间隙排成方阵（间距≥玩家宽度，保证不重叠）；
+        /// 拿不到玩家尺寸时回退 0.5 世界单位。
         /// </summary>
         public static Vector3 GetSpawnOffset(int index, int total)
         {
-            var gridMap = Object.FindFirstObjectByType<GridMap>();
-            var spacing = gridMap != null && gridMap.CellSize > 0f ? gridMap.CellSize : 0.5f;
+            var spacing = GetPlayerSpacing();
             var cols = Mathf.Max(1, Mathf.CeilToInt(Mathf.Sqrt(total)));
             return new Vector3((index % cols) * spacing, (index / cols) * spacing, 0f);
+        }
+
+        /// <summary>玩家落位间距：取玩家精灵的世界宽度 ×1.2（宽度 + 20% 间隙）；无玩家/无精灵时回退 0.5。</summary>
+        private static float GetPlayerSpacing()
+        {
+            var manager = CharacterManager.Instance;
+            if (manager != null && manager.CurrentPlayer != null)
+            {
+                var renderer = manager.CurrentPlayer.GetComponentInChildren<SpriteRenderer>();
+                if (renderer != null && renderer.sprite != null && renderer.bounds.size.x > 0.01f)
+                {
+                    return renderer.bounds.size.x * 1.2f;
+                }
+            }
+
+            return 0.5f;
         }
 
         /// <summary>
