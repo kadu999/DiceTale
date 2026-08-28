@@ -14,8 +14,23 @@ namespace DiceTale.Editor
         [SerializeField] private int brushSize = 1;
         [SerializeField] private bool eraseMode;
         [SerializeField] private List<SerializedCell> serializedCells = new List<SerializedCell>();
+        [SerializeField] private List<CellTypeSettings> typeSettings = new List<CellTypeSettings>();
 
         private Dictionary<Vector2Int, GridCellType> cellTypes = new Dictionary<Vector2Int, GridCellType>();
+        private Dictionary<GridCellType, CellTypeSettings> settingsByType = new Dictionary<GridCellType, CellTypeSettings>();
+
+        /// <summary>所有可绘制的格子类型（掩码 1/2/4/8...128）。</summary>
+        public static readonly GridCellType[] PaintableTypes =
+        {
+            GridCellType.Obstacle,
+            GridCellType.Difficult,
+            GridCellType.Water,
+            GridCellType.Fog1,
+            GridCellType.Fog2,
+            GridCellType.Fog3,
+            GridCellType.Fog4,
+            GridCellType.Fog5,
+        };
 
         [System.Serializable]
         private class SerializedCell
@@ -23,6 +38,14 @@ namespace DiceTale.Editor
             public int x;
             public int y;
             public int mask;
+        }
+
+        [System.Serializable]
+        public class CellTypeSettings
+        {
+            public GridCellType type;
+            public bool visible = true;
+            public Color color = Color.white;
         }
 
         public string MapName { get => mapName; set => mapName = value; }
@@ -34,10 +57,112 @@ namespace DiceTale.Editor
         public Texture2D ReferenceTexture { get; set; }
         public IReadOnlyDictionary<Vector2Int, GridCellType> CellTypes => cellTypes;
 
+        public List<CellTypeSettings> TypeSettings
+        {
+            get => typeSettings;
+            set
+            {
+                typeSettings = value;
+                EnsureTypeSettings();
+            }
+        }
+
+        public bool IsTypeVisible(GridCellType type)
+        {
+            return settingsByType.TryGetValue(type, out var settings) ? settings.visible : true;
+        }
+
+        public Color GetTypeColor(GridCellType type)
+        {
+            return settingsByType.TryGetValue(type, out var settings) ? settings.color : GetDefaultColor(type);
+        }
+
+        public void SetTypeVisible(GridCellType type, bool visible)
+        {
+            var settings = GetOrCreateSettings(type);
+            if (settings.visible == visible)
+            {
+                return;
+            }
+
+            Undo.RecordObject(this, "切换类型显示");
+            settings.visible = visible;
+        }
+
+        public void SetTypeColor(GridCellType type, Color color)
+        {
+            var settings = GetOrCreateSettings(type);
+            if (settings.color == color)
+            {
+                return;
+            }
+
+            Undo.RecordObject(this, "修改类型颜色");
+            settings.color = color;
+        }
+
+        private CellTypeSettings GetOrCreateSettings(GridCellType type)
+        {
+            if (!settingsByType.TryGetValue(type, out var settings))
+            {
+                settings = new CellTypeSettings
+                {
+                    type = type,
+                    visible = true,
+                    color = GetDefaultColor(type)
+                };
+                typeSettings.Add(settings);
+                settingsByType[type] = settings;
+            }
+
+            return settings;
+        }
+
+        private void EnsureTypeSettings()
+        {
+            if (typeSettings == null)
+            {
+                typeSettings = new List<CellTypeSettings>();
+            }
+
+            settingsByType.Clear();
+            foreach (var settings in typeSettings)
+            {
+                if (settings == null)
+                {
+                    continue;
+                }
+
+                settingsByType[settings.type] = settings;
+            }
+
+            foreach (var type in PaintableTypes)
+            {
+                GetOrCreateSettings(type);
+            }
+        }
+
+        private static Color GetDefaultColor(GridCellType type)
+        {
+            switch (type)
+            {
+                case GridCellType.Obstacle: return new Color(1f, 0f, 0f, 0.6f);
+                case GridCellType.Difficult: return new Color(1f, 0.5f, 0f, 0.6f);
+                case GridCellType.Water: return new Color(0f, 0.5f, 1f, 0.6f);
+                case GridCellType.Fog1: return new Color(0.85f, 0.85f, 0.85f, 0.55f);
+                case GridCellType.Fog2: return new Color(0.3f, 0.8f, 0.9f, 0.6f);
+                case GridCellType.Fog3: return new Color(0.65f, 0.4f, 0.9f, 0.65f);
+                case GridCellType.Fog4: return new Color(1f, 0.65f, 0.15f, 0.7f);
+                case GridCellType.Fog5: return new Color(0.95f, 0.3f, 0.3f, 0.75f);
+                default: return Color.white;
+            }
+        }
+
         private void OnEnable()
         {
             Undo.undoRedoPerformed -= RebuildDictionary;
             Undo.undoRedoPerformed += RebuildDictionary;
+            EnsureTypeSettings();
             RebuildDictionary();
         }
 
@@ -48,6 +173,7 @@ namespace DiceTale.Editor
 
         private void OnValidate()
         {
+            EnsureTypeSettings();
             RebuildDictionary();
         }
 
@@ -67,7 +193,7 @@ namespace DiceTale.Editor
                 }
 
                 var pos = new Vector2Int(cell.x, cell.y);
-                var type = MaskToGridCellType(cell.mask);
+                var type = (GridCellType)cell.mask;
                 if (type != GridCellType.Empty && IsInsideGrid(pos))
                 {
                     cellTypes[pos] = type;
@@ -89,7 +215,7 @@ namespace DiceTale.Editor
                 {
                     x = pair.Key.x,
                     y = pair.Key.y,
-                    mask = GridCellTypeToMask(pair.Value)
+                    mask = (int)pair.Value
                 });
             }
         }
@@ -125,7 +251,9 @@ namespace DiceTale.Editor
                     }
                     else
                     {
-                        cellTypes[pos] = type;
+                        // 掩码叠加：同一格子上合并多个类型位（例如 Obstacle | Fog1）
+                        cellTypes.TryGetValue(pos, out var existing);
+                        cellTypes[pos] = existing | type;
                     }
                 }
             }
@@ -157,7 +285,7 @@ namespace DiceTale.Editor
 
             foreach (var pair in cellTypes)
             {
-                SetCellMask(data.cells, pair.Key.x, pair.Key.y, gridSize.x, GridCellTypeToMask(pair.Value));
+                SetCellMask(data.cells, pair.Key.x, pair.Key.y, gridSize.x, (int)pair.Value);
             }
 
             var directory = Path.Combine(Application.dataPath, GridMapEditorConstants.DataDirectoryFull);
@@ -214,7 +342,7 @@ namespace DiceTale.Editor
                     for (int x = 0; x < gridSize.x; x++)
                     {
                         var pos = new Vector2Int(x, y);
-                        var type = MaskToGridCellType(GetCellMask(data.cells, x, y, gridSize.x));
+                        var type = (GridCellType)GetCellMask(data.cells, x, y, gridSize.x);
                         if (IsInsideGrid(pos) && type != GridCellType.Empty)
                         {
                             cellTypes[pos] = type;
@@ -264,38 +392,6 @@ namespace DiceTale.Editor
         private static void SetCellMask(int[] cells, int x, int y, int width, int mask)
         {
             cells[y * width + x] = mask;
-        }
-
-        private static int GridCellTypeToMask(GridCellType type)
-        {
-            switch (type)
-            {
-                case GridCellType.Obstacle: return 1;
-                case GridCellType.Difficult: return 2;
-                case GridCellType.Water: return 4;
-                case GridCellType.Fog1: return 8;
-                case GridCellType.Fog2: return 16;
-                case GridCellType.Fog3: return 32;
-                case GridCellType.Fog4: return 64;
-                case GridCellType.Fog5: return 128;
-                default: return 0;
-            }
-        }
-
-        private static GridCellType MaskToGridCellType(int mask)
-        {
-            switch (mask)
-            {
-                case 1: return GridCellType.Obstacle;
-                case 2: return GridCellType.Difficult;
-                case 4: return GridCellType.Water;
-                case 8: return GridCellType.Fog1;
-                case 16: return GridCellType.Fog2;
-                case 32: return GridCellType.Fog3;
-                case 64: return GridCellType.Fog4;
-                case 128: return GridCellType.Fog5;
-                default: return GridCellType.Empty;
-            }
         }
     }
 }

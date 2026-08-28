@@ -97,7 +97,7 @@ namespace DiceTale
                 {
                     for (int x = 0; x < gridSize.x; x++)
                     {
-                        cellGrid[x, y] = MaskToGridCellType(GetCellMask(data.cells, x, y, gridSize.x));
+                        cellGrid[x, y] = (GridCellType)GetCellMask(data.cells, x, y, gridSize.x);
                     }
                 }
             }
@@ -118,7 +118,7 @@ namespace DiceTale
             {
                 for (int y = 0; y < gridSize.y; y++)
                 {
-                    SetCellMask(data.cells, x, y, gridSize.x, GridCellTypeToMask(cellGrid[x, y]));
+                    SetCellMask(data.cells, x, y, gridSize.x, (int)cellGrid[x, y]);
                 }
             }
 
@@ -153,38 +153,6 @@ namespace DiceTale
             cells[y * width + x] = mask;
         }
 
-        private static int GridCellTypeToMask(GridCellType type)
-        {
-            switch (type)
-            {
-                case GridCellType.Obstacle: return 1;
-                case GridCellType.Difficult: return 2;
-                case GridCellType.Water: return 4;
-                case GridCellType.Fog1: return 8;
-                case GridCellType.Fog2: return 16;
-                case GridCellType.Fog3: return 32;
-                case GridCellType.Fog4: return 64;
-                case GridCellType.Fog5: return 128;
-                default: return 0;
-            }
-        }
-
-        private static GridCellType MaskToGridCellType(int mask)
-        {
-            switch (mask)
-            {
-                case 1: return GridCellType.Obstacle;
-                case 2: return GridCellType.Difficult;
-                case 4: return GridCellType.Water;
-                case 8: return GridCellType.Fog1;
-                case 16: return GridCellType.Fog2;
-                case 32: return GridCellType.Fog3;
-                case 64: return GridCellType.Fog4;
-                case 128: return GridCellType.Fog5;
-                default: return GridCellType.Empty;
-            }
-        }
-
         public bool IsWalkable(Vector2Int gridPos)
         {
             if (gridPos.x < 0 || gridPos.x >= gridSize.x || gridPos.y < 0 || gridPos.y >= gridSize.y)
@@ -197,7 +165,8 @@ namespace DiceTale
                 return false;
             }
 
-            return GetCellType(gridPos) != GridCellType.Obstacle;
+            // 只要含 Obstacle 位即不可通行（允许与其他类型位组合，如 Obstacle | Fog1）
+            return (GetCellType(gridPos) & GridCellType.Obstacle) == GridCellType.Empty;
         }
 
         public void SetCellType(Vector2Int gridPos, GridCellType type)
@@ -395,42 +364,47 @@ namespace DiceTale
 
         private static Color GetCellTypeColor(GridCellType type)
         {
-            switch (type)
+            // 组合掩码按优先级取主色（Obstacle 优先，其次 Difficult/Water，最后雾）
+            if ((type & GridCellType.Obstacle) != 0)
             {
-                case GridCellType.Obstacle:
-                    return new Color(1f, 0f, 0f, 0.5f);
-                case GridCellType.Difficult:
-                    return new Color(1f, 0.5f, 0f, 0.5f);
-                case GridCellType.Water:
-                    return new Color(0f, 0.5f, 1f, 0.5f);
-                case GridCellType.Fog1:
-                    return new Color(0.85f, 0.85f, 0.85f, 0.4f);
-                case GridCellType.Fog2:
-                    return new Color(0.3f, 0.8f, 0.9f, 0.45f);
-                case GridCellType.Fog3:
-                    return new Color(0.65f, 0.4f, 0.9f, 0.5f);
-                case GridCellType.Fog4:
-                    return new Color(1f, 0.65f, 0.15f, 0.55f);
-                case GridCellType.Fog5:
-                    return new Color(0.95f, 0.3f, 0.3f, 0.6f);
-                default:
-                    return Color.clear;
+                return new Color(1f, 0f, 0f, 0.5f);
             }
+            if ((type & GridCellType.Difficult) != 0)
+            {
+                return new Color(1f, 0.5f, 0f, 0.5f);
+            }
+            if ((type & GridCellType.Water) != 0)
+            {
+                return new Color(0f, 0.5f, 1f, 0.5f);
+            }
+            if ((type & GridCellType.Fog1) != 0)
+            {
+                return new Color(0.85f, 0.85f, 0.85f, 0.4f);
+            }
+            if ((type & GridCellType.Fog2) != 0)
+            {
+                return new Color(0.3f, 0.8f, 0.9f, 0.45f);
+            }
+            if ((type & GridCellType.Fog3) != 0)
+            {
+                return new Color(0.65f, 0.4f, 0.9f, 0.5f);
+            }
+            if ((type & GridCellType.Fog4) != 0)
+            {
+                return new Color(1f, 0.65f, 0.15f, 0.55f);
+            }
+            if ((type & GridCellType.Fog5) != 0)
+            {
+                return new Color(0.95f, 0.3f, 0.3f, 0.6f);
+            }
+            return Color.clear;
         }
 
         private static bool IsFogType(GridCellType type)
         {
-            switch (type)
-            {
-                case GridCellType.Fog1:
-                case GridCellType.Fog2:
-                case GridCellType.Fog3:
-                case GridCellType.Fog4:
-                case GridCellType.Fog5:
-                    return true;
-                default:
-                    return false;
-            }
+            // 含任意雾位即为雾格子（可与障碍等其他位组合）
+            const GridCellType fogMask = GridCellType.Fog1 | GridCellType.Fog2 | GridCellType.Fog3 | GridCellType.Fog4 | GridCellType.Fog5;
+            return (type & fogMask) != 0;
         }
 
         private void DrawCellGizmo(Vector2Int gridPos, Color color)

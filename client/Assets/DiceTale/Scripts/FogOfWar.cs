@@ -351,17 +351,16 @@ namespace DiceTale
 
         private static bool IsFogType(GridCellType type)
         {
-            switch (type)
+            // 含任意雾位即为雾格子（可与障碍等其他位组合，如 Obstacle | Fog1）
+            foreach (var fogType in FogTypes)
             {
-                case GridCellType.Fog1:
-                case GridCellType.Fog2:
-                case GridCellType.Fog3:
-                case GridCellType.Fog4:
-                case GridCellType.Fog5:
+                if ((type & fogType) != 0)
+                {
                     return true;
-                default:
-                    return false;
+                }
             }
+
+            return false;
         }
     }
 }

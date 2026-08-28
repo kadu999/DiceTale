@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -8,12 +9,16 @@ namespace DiceTale.Editor
         private GridMapEditorState state;
         private GridMapEditorRenderer renderer;
         private Vector2 scrollPosition;
+        private Vector2 panelScrollPosition;
+
+        private const float PanelWidth = 260f;
 
         [SerializeField] private string serializedMapName = "";
         [SerializeField] private Vector2Int serializedGridSize = new Vector2Int(20, 20);
         [SerializeField] private GridCellType serializedSelectedType = GridCellType.Obstacle;
         [SerializeField] private int serializedBrushSize = 1;
         [SerializeField] private bool serializedEraseMode;
+        [SerializeField] private List<GridMapEditorState.CellTypeSettings> serializedTypeSettings;
 
         [MenuItem("DiceTale/GridMap Editor")]
         public static void ShowWindow()
@@ -32,6 +37,7 @@ namespace DiceTale.Editor
             state.SelectedType = serializedSelectedType;
             state.BrushSize = serializedBrushSize;
             state.EraseMode = serializedEraseMode;
+            state.TypeSettings = serializedTypeSettings;
         }
 
         private void OnDisable()
@@ -46,6 +52,7 @@ namespace DiceTale.Editor
             serializedSelectedType = state.SelectedType;
             serializedBrushSize = state.BrushSize;
             serializedEraseMode = state.EraseMode;
+            serializedTypeSettings = new List<GridMapEditorState.CellTypeSettings>(state.TypeSettings);
 
             DestroyImmediate(state);
             state = null;
@@ -53,16 +60,22 @@ namespace DiceTale.Editor
 
         private void OnGUI()
         {
+            var viewportWidth = Mathf.Max(position.width - PanelWidth, 50f);
+            var viewportRect = new Rect(0f, 0f, viewportWidth, position.height);
+            var panelRect = new Rect(viewportRect.xMax, 0f, position.width - viewportRect.xMax, position.height);
+
+            GUILayout.BeginArea(panelRect);
+            panelScrollPosition = EditorGUILayout.BeginScrollView(panelScrollPosition);
             renderer.DrawToolbar(
                 state,
                 out var shouldLoadTexture,
                 out var shouldSave,
-                out var shouldLoad,
-                out var shouldClear);
+                out var shouldLoad);
             renderer.DrawInfo(state);
+            EditorGUILayout.EndScrollView();
+            GUILayout.EndArea();
 
-            var toolbarRect = GUILayoutUtility.GetLastRect();
-            var viewportRect = new Rect(0f, toolbarRect.yMax, position.width, Mathf.Max(position.height - toolbarRect.yMax, 50f));
+            EditorGUI.DrawRect(new Rect(viewportRect.xMax, 0f, 1f, position.height), new Color(0f, 0f, 0f, 0.35f));
 
             var totalWidth = state.GridSize.x * GridMapEditorConstants.CellDisplaySize;
             var totalHeight = state.GridSize.y * GridMapEditorConstants.CellDisplaySize;
@@ -84,13 +97,6 @@ namespace DiceTale.Editor
             if (shouldLoad)
             {
                 state.LoadData();
-            }
-            if (shouldClear)
-            {
-                if (EditorUtility.DisplayDialog("确认清空", "确定要清空所有格子吗？", "确定", "取消"))
-                {
-                    state.Clear();
-                }
             }
 
             HandleInput(viewportRect, gridRect);
