@@ -4,8 +4,7 @@ using UnityEngine;
 namespace DiceTale
 {
     /// <summary>
-    /// 遮罩组件（组件模型下的能力组件，原 MaskObject 的遮罩部分）：
-    /// 只负责持有/更新遮罩纹理，不依赖任何渲染组件。
+    /// 遮罩组件（Mask）：只负责持有/更新遮罩纹理，不依赖任何渲染组件。
     /// 场景中代表一张黑色遮罩（临时内存态，不持久化）：
     /// - 运行时生成全黑 <see cref="Texture2D"/>，通过 <see cref="MaskTexture"/> 暴露给外部渲染组件读取
     ///   （如 BoxComposite 的 _MaskTex）。**输出纹理实例创建一次、永不更换**，外部持有引用始终有效；
@@ -14,10 +13,10 @@ namespace DiceTale
     ///   输出纹理 ReadPixels 同步，外部直接看到结果。
     /// 对象 ID 与显示名称由枢纽统一提供（默认自动生成唯一 ID；显示名在 BackendObject.displayName 配置）。
     /// </summary>
-    public class MaskObject : BackendComponent
+    public class Mask : BackendComponent
     {
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染遮罩编辑区）。</summary>
-        public override string ComponentId => "MaskObject";
+        public override string ComponentId => "Mask";
 
         [SerializeField, Tooltip("遮罩纹理宽度（像素），GM 页面据此生成编辑画布")]
         private int maskWidth = 960;
@@ -194,7 +193,7 @@ namespace DiceTale
             var shader = Shader.Find(StampShaderName);
             if (shader == null)
             {
-                Debug.LogError($"[MaskObject] 找不到 Shader：{StampShaderName}");
+                Debug.LogError($"[Mask] 找不到 Shader：{StampShaderName}");
                 return;
             }
 
@@ -231,13 +230,13 @@ namespace DiceTale
 
             if (!loadTexture.LoadImage(System.Convert.FromBase64String(base64Png)))
             {
-                Debug.LogWarning($"[MaskObject] Failed to decode mask image: {name}");
+                Debug.LogWarning($"[Mask] Failed to decode mask image: {name}");
                 return;
             }
 
             Graphics.Blit(loadTexture, maskRT);
             SyncOutputTexture();
-            Debug.Log($"[MaskObject] {name}: mask image applied ({loadTexture.width}x{loadTexture.height})");
+            Debug.Log($"[Mask] {name}: mask image applied ({loadTexture.width}x{loadTexture.height})");
         }
 
         /// <summary>后台命令入口：应用 GM 擦除的笔画轨迹。
@@ -255,7 +254,7 @@ namespace DiceTale
             EnsureStampMaterial();
             if (maskRT == null || blendRT == null || outputTexture == null || stampMaterial == null)
             {
-                Debug.LogWarning($"[MaskObject] {name}: 擦除被跳过（RT/材质未就绪，请检查 MaskEraseStamp Shader 是否导入）");
+                Debug.LogWarning($"[Mask] {name}: 擦除被跳过（RT/材质未就绪，请检查 MaskEraseStamp Shader 是否导入）");
                 return;
             }
 
@@ -292,10 +291,10 @@ namespace DiceTale
                 var px = Mathf.Clamp(Mathf.RoundToInt(points[0].x * outputTexture.width), 0, outputTexture.width - 1);
                 var py = Mathf.Clamp(Mathf.RoundToInt(points[0].y * outputTexture.height), 0, outputTexture.height - 1);
                 var sample = outputTexture.GetPixel(px, py);
-                Debug.Log($"[MaskObject] {name}: 输出纹理采样 alpha={sample.a:F2} (起点 {px},{py})");
+                Debug.Log($"[Mask] {name}: 输出纹理采样 alpha={sample.a:F2} (起点 {px},{py})");
             }
 
-            Debug.Log($"[MaskObject] {name}: erase stroke ({points.Length} points, r={radiusTex}, soft={softness})");
+            Debug.Log($"[Mask] {name}: erase stroke ({points.Length} points, r={radiusTex}, soft={softness})");
         }
 
         private void ReleaseResources()

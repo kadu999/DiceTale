@@ -5,7 +5,7 @@ namespace DiceTale
 {
     /// <summary>
     /// 后台能力组件基类：所有能力组件（StateMachine 状态机 / Backpack 背包 / ItemExchange 道具交换 /
-    /// MaskObject 遮罩）的统一基类。
+    /// Mask 遮罩）的统一基类。
     ///
     /// 基类已实现组件公共契约，子类只需声明自己的能力接口：
     /// - <see cref="IBackendCommandHandler"/>：命令处理（CanHandle/HandleCommand 默认不处理，子类按需覆写）；
@@ -24,7 +24,7 @@ namespace DiceTale
     [RequireComponent(typeof(BackendObject))]
     public abstract class BackendComponent : MonoBehaviour, IBackendComponentData, IBackendCommandHandler
     {
-        /// <summary>组件 ID（与客户端组件类同名，如 StateMachine / Backpack / ItemExchange / MaskObject）。</summary>
+        /// <summary>组件 ID（与客户端组件类同名，如 StateMachine / Backpack / ItemExchange / Mask）。</summary>
         public abstract string ComponentId { get; }
 
         /// <summary>GM 属性面板是否渲染该组件的编辑控件（默认 true；角色组件覆写为 false）。</summary>
@@ -41,14 +41,14 @@ namespace DiceTale
 
         // ---------- IBackendComponentData（默认空实现，有数据要上报的子类覆写） ----------
 
-        /// <summary>把本组件的参数填充到上报信息（默认空实现；StateMachine/Backpack/ItemExchange/MaskObject 覆写）。</summary>
+        /// <summary>把本组件的参数填充到上报信息（默认空实现；StateMachine/Backpack/ItemExchange/Mask 覆写）。</summary>
         public virtual void AppendToInfo(Server.ServerObjectInfo info)
         {
         }
 
         // ---------- IBackendCommandHandler（默认不处理命令，有命令要处理的子类覆写） ----------
 
-        /// <summary>是否处理该命令类型（默认 false；StateMachine/Backpack/MaskObject 覆写声明自己处理的命令）。</summary>
+        /// <summary>是否处理该命令类型（默认 false；StateMachine/Backpack/Mask 覆写声明自己处理的命令）。</summary>
         public virtual bool CanHandle(string commandType) => false;
 
         /// <summary>执行命令（默认不处理；覆写 CanHandle 的组件在此解析参数并执行）。</summary>
