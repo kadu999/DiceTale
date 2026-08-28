@@ -73,7 +73,13 @@ namespace DiceTale
                         continue;
                     }
 
-                    foreach (var item in player.Items)
+                    var backpack = player.GetComponent<Backpack>();
+                    if (backpack == null)
+                    {
+                        continue;
+                    }
+
+                    foreach (var item in backpack.Items)
                     {
                         if (item == itemName)
                         {

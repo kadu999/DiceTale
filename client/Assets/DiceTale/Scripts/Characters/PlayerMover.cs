@@ -14,7 +14,7 @@ namespace DiceTale
 
         public void MoveTo(Vector3 targetPosition)
         {
-            var player = GetComponent<Player>();
+            var hub = GetComponent<BackendObject>();
 
             var gridMap = Object.FindFirstObjectByType<GridMap>();
             if (gridMap == null)
@@ -23,7 +23,7 @@ namespace DiceTale
                 path.Add(targetPosition);
                 currentPathIndex = 0;
                 isMoving = true;
-                player?.ReportPosition(); // 移动开始：上报起点
+                hub?.ReportPosition(); // 移动开始：上报起点
                 return;
             }
 
@@ -78,7 +78,7 @@ namespace DiceTale
             {
                 isMoving = false;
                 path.Clear();
-                GetComponent<Player>()?.ReportPosition(); // 被阻挡中止：上报当前位置
+                GetComponent<BackendObject>()?.ReportPosition(); // 被阻挡中止：上报当前位置
                 return;
             }
 
@@ -91,7 +91,7 @@ namespace DiceTale
                 {
                     isMoving = false;
                     path.Clear();
-                    GetComponent<Player>()?.ReportPosition(); // 到达终点：上报结束位置
+                    GetComponent<BackendObject>()?.ReportPosition(); // 到达终点：上报结束位置
                 }
             }
         }

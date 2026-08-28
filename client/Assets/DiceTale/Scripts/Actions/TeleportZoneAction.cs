@@ -51,8 +51,8 @@ namespace DiceTale
                 return;
             }
 
-            var player = other.GetComponent<Player>();
-            if (player == null)
+            var player = other.GetComponent<BackendObject>();
+            if (player == null || player.ObjectKind != "Player")
             {
                 return;
             }

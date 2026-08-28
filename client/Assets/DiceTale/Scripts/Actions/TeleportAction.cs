@@ -67,9 +67,9 @@ namespace DiceTale
                 return;
             }
 
-            // 目标集合：全部玩家（忽略半径）或半径范围内的玩家
+            // 目标集合：全部玩家（忽略半径）或半径范围内的玩家主体
             var center = transform.position;
-            var targets = new List<Player>();
+            var targets = new List<BackendObject>();
             foreach (var player in characterManager.Players)
             {
                 if (player == null)

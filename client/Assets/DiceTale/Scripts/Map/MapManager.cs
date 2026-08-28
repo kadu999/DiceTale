@@ -223,11 +223,11 @@ namespace DiceTale
         }
 
         /// <summary>
-        /// 把指定玩家传送到指定地图的指定世界位置。
+        /// 把指定玩家主体传送到指定地图的指定世界位置。
         /// 目标地图与当前地图不同时先切图（切图后其他玩家停在出生点，本玩家落到目标位置）；
         /// 同图传送不重载地图。
         /// </summary>
-        public void TeleportPlayer(Player player, string mapName, Vector3 position)
+        public void TeleportPlayer(BackendObject player, string mapName, Vector3 position)
         {
             if (CurrentMapName != mapName)
             {
@@ -242,11 +242,11 @@ namespace DiceTale
         }
 
         /// <summary>
-        /// 把指定玩家传送到指定地图上位置标记（<see cref="MapMarker"/>）所在的位置。
+        /// 把指定玩家主体传送到指定地图上位置标记（<see cref="MapMarker"/>）所在的位置。
         /// 先切到目标地图（同图不重载），再按标记 ID 定位；<paramref name="offset"/> 用于多人传送时错开站位。
         /// </summary>
         /// <returns>标记找到并传送成功返回 true；标记不存在返回 false。</returns>
-        public bool TeleportPlayer(Player player, string mapName, string markerId, Vector3 offset = default)
+        public bool TeleportPlayer(BackendObject player, string mapName, string markerId, Vector3 offset = default)
         {
             if (CurrentMapName != mapName)
             {

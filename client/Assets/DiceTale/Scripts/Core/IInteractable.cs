@@ -2,6 +2,6 @@ namespace DiceTale
 {
     public interface IInteractable
     {
-        void Interact(Player player);
+        void Interact(BackendObject player);
     }
 }

@@ -228,7 +228,7 @@ namespace DiceTale
             {
                 var player = manager != null && i < manager.Players.Count ? manager.Players[i] : null;
 
-                // 名字：玩家区分色（与地图精灵一致）
+                // 名字：玩家区分色（与地图精灵一致）；显示名取主体枢纽
                 nameTexts[i].text = player != null ? player.DisplayName : string.Empty;
                 nameTexts[i].color = player != null ? CharacterManager.GetPlayerColor(i) : Color.white;
 
@@ -280,10 +280,11 @@ namespace DiceTale
             }
         }
 
-        /// <summary>玩家拥有的道具：按道具名分组，同名合并为「道具名 ×数量」，逐行「· 」前缀显示。</summary>
-        private static string BuildItemsText(Player player)
+        /// <summary>玩家主体的道具：按道具名分组，同名合并为「道具名 ×数量」，逐行「· 」前缀显示。</summary>
+        private static string BuildItemsText(BackendObject player)
         {
-            var items = player.Items;
+            var backpack = player != null ? player.GetComponent<Backpack>() : null;
+            var items = backpack != null ? backpack.Items : null;
             if (items == null || items.Count == 0)
             {
                 return string.Empty;

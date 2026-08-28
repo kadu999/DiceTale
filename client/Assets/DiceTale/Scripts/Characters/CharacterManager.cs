@@ -3,6 +3,10 @@ using UnityEngine;
 
 namespace DiceTale
 {
+    /// <summary>
+    /// 角色管理：持有所有玩家主体（BackendObject 枢纽，kind=Player）并维护当前玩家。
+    /// 玩家实体形态：BackendObject + Backpack（Player 组件仅作身份桥接，分配 PlayerId）。
+    /// </summary>
     public class CharacterManager : MonoBehaviour
     {
         private static CharacterManager instance;
@@ -21,8 +25,12 @@ namespace DiceTale
             }
         }
 
-        public List<Player> Players { get; private set; } = new List<Player>();
-        public Player CurrentPlayer { get; private set; }
+        /// <summary>所有玩家主体（BackendObject 枢纽）。</summary>
+        public List<BackendObject> Players { get; private set; } = new List<BackendObject>();
+
+        /// <summary>当前玩家主体（BackendObject 枢纽）。</summary>
+        public BackendObject CurrentPlayer { get; private set; }
+
         public int CurrentPlayerIndex { get; private set; }
 
         private void Awake()
@@ -90,11 +98,12 @@ namespace DiceTale
                     rb.bodyType = RigidbodyType2D.Kinematic;
                 }
 
-                var player = playerGo.GetComponent<Player>();
-                if (player != null)
+                var hub = playerGo.GetComponent<BackendObject>();
+                if (hub != null)
                 {
-                    player.SetPlayerId($"Player_{i + 1}");
-                    Players.Add(player);
+                    // 身份桥接：Player 组件分配 PlayerId（后续改为纯 BackendObject+Backpack 时由枢纽分配）
+                    playerGo.GetComponent<Player>()?.SetPlayerId($"Player_{i + 1}");
+                    Players.Add(hub);
                 }
             }
 
@@ -104,7 +113,7 @@ namespace DiceTale
             }
         }
 
-        public void AddPlayer(Player player)
+        public void AddPlayer(BackendObject player)
         {
             if (player == null || Players.Contains(player))
             {
