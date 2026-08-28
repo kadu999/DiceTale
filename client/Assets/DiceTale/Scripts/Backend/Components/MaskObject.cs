@@ -14,7 +14,7 @@ namespace DiceTale
     ///   输出纹理 ReadPixels 同步，外部直接看到结果。
     /// 对象 ID 与显示名称由枢纽统一提供（默认自动生成唯一 ID；显示名在 BackendObject.displayName 配置）。
     /// </summary>
-    public class MaskObject : BackendComponent, IMaskSource, IBackendComponentData, IBackendCommandHandler
+    public class MaskObject : BackendComponent, IMaskSource
     {
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染遮罩编辑区）。</summary>
         public override string ComponentId => "MaskObject";
@@ -44,7 +44,7 @@ namespace DiceTale
         public int MaskHeight => maskHeight;
 
         /// <summary>组件数据上报：遮罩尺寸（GM 属性面板的遮罩编辑区）。</summary>
-        public void AppendToInfo(Server.ServerObjectInfo info)
+        public override void AppendToInfo(Server.ServerObjectInfo info)
         {
             info.maskWidth = maskWidth;
             info.maskHeight = maskHeight;
@@ -54,10 +54,10 @@ namespace DiceTale
         public Texture2D MaskTexture => outputTexture;
 
         /// <summary>命令处理：set_mask_image / erase_mask（遮罩命令由本组件自己解析并执行，不再经枢纽转发）。</summary>
-        public bool CanHandle(string commandType) =>
+        public override bool CanHandle(string commandType) =>
             commandType == "set_mask_image" || commandType == "erase_mask";
 
-        public bool HandleCommand(Dictionary<string, object> msg)
+        public override bool HandleCommand(Dictionary<string, object> msg)
         {
             switch (Server.JsonParser.GetString(msg, "type"))
             {

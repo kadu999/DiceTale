@@ -12,7 +12,7 @@ namespace DiceTale
     /// - 显示名称在枢纽上配置（BackendObject.displayName，后台看名字识别对象）；
     /// - 背包（道具存储）已拆分到 <see cref="Backpack"/>（需要的物体另挂该组件）。
     /// </summary>
-    public class StateMachine : BackendComponent, IStateMachine, IBackendComponentData, IBackendCommandHandler
+    public class StateMachine : BackendComponent, IStateMachine
     {
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染状态单选组）。</summary>
         public override string ComponentId => "StateMachine";
@@ -49,16 +49,16 @@ namespace DiceTale
         }
 
         /// <summary>组件数据上报：状态列表与当前状态（GM 属性面板的状态单选组）。</summary>
-        public void AppendToInfo(Server.ServerObjectInfo info)
+        public override void AppendToInfo(Server.ServerObjectInfo info)
         {
             info.currentState = CurrentStateName;
             info.states = StateNames;
         }
 
         /// <summary>命令处理：set_object_state（状态切换由本组件自己解析并执行，不再经枢纽转发）。</summary>
-        public bool CanHandle(string commandType) => commandType == "set_object_state";
+        public override bool CanHandle(string commandType) => commandType == "set_object_state";
 
-        public bool HandleCommand(Dictionary<string, object> msg)
+        public override bool HandleCommand(Dictionary<string, object> msg)
         {
             var stateName = Server.JsonParser.GetString(msg, "state");
             return TrySetState(stateName);

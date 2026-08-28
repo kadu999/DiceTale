@@ -9,7 +9,7 @@ namespace DiceTale
     /// 继承 <see cref="BackendComponent"/>，与 <see cref="BackendObject"/> 枢纽挂同一物体：
     /// 初始化时由枢纽统一上报（IBackendComponentData），之后道具数据由后台 set_object_items 命令修改，前端不回执。
     /// </summary>
-    public class Backpack : BackendComponent, IBackpack, IBackendComponentData, IBackendCommandHandler
+    public class Backpack : BackendComponent, IBackpack
     {
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染物品编辑区）。</summary>
         public override string ComponentId => "Backpack";
@@ -20,15 +20,15 @@ namespace DiceTale
         public IReadOnlyList<string> Items => items;
 
         /// <summary>组件数据上报（初始化）：道具列表（GM 属性面板的物品编辑区）。</summary>
-        public void AppendToInfo(Server.ServerObjectInfo info)
+        public override void AppendToInfo(Server.ServerObjectInfo info)
         {
             info.items = new List<string>(items);
         }
 
         /// <summary>命令处理：set_object_items（道具列表由本组件自己解析并执行）。</summary>
-        public bool CanHandle(string commandType) => commandType == "set_object_items";
+        public override bool CanHandle(string commandType) => commandType == "set_object_items";
 
-        public bool HandleCommand(Dictionary<string, object> msg)
+        public override bool HandleCommand(Dictionary<string, object> msg)
         {
             var rawItems = Server.JsonParser.GetArray(msg, "items");
             var newItems = new List<string>();

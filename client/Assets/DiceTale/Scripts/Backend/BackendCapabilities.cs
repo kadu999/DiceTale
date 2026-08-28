@@ -38,7 +38,7 @@ namespace DiceTale
 
     /// <summary>
     /// 组件数据上报能力：组件把自己的参数（数据）填充到 GM 上报信息 <see cref="Server.ServerObjectInfo"/>。
-    /// 数据归组件所有——每个能力组件实现本接口，由枢纽在 BackendRegistry.ReportAll 时对列表中的每个组件调用，
+    /// 由 <see cref="BackendComponent"/> 基类实现（默认空实现），有数据要上报的子类覆写，
     /// 只填自己负责的字段（StateMachine 填状态、Backpack 填道具、ItemObject 填货源、MaskObject 填遮罩）。
     /// </summary>
     public interface IBackendComponentData
@@ -49,7 +49,8 @@ namespace DiceTale
 
     /// <summary>
     /// 命令处理能力：组件自己处理对应后台命令（解析参数并执行），枢纽只做通用路由、分派器只做定位。
-    /// 实现者：<see cref="StateMachine"/>（set_object_state）、<see cref="Backpack"/>（set_object_items）、
+    /// 由 <see cref="BackendComponent"/> 基类实现（默认不处理任何命令），子类覆写声明并执行自己的命令：
+    /// <see cref="StateMachine"/>（set_object_state）、<see cref="Backpack"/>（set_object_items）、
     /// <see cref="MaskObject"/>（set_mask_image / erase_mask）。
     /// </summary>
     public interface IBackendCommandHandler

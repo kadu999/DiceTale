@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DiceTale
@@ -6,18 +7,22 @@ namespace DiceTale
     /// 后台能力组件基类：所有能力组件（StateMachine 状态机 / Backpack 背包 / ItemObject 道具货源 /
     /// MaskObject 遮罩 / Player / SpawnPoint 角色）的统一基类。
     ///
-    /// 基类提供：
+    /// 基类已实现组件公共契约，子类只需声明自己的能力接口：
+    /// - <see cref="IBackendCommandHandler"/>：命令处理（CanHandle/HandleCommand 默认不处理，子类按需覆写）；
+    /// - <see cref="IBackendComponentData"/>：数据上报（AppendToInfo 默认空实现，有数据要上报的子类覆写）。
+    ///
+    /// 基类另提供：
     /// - <see cref="ComponentId"/>：组件 ID（与客户端组件类同名，上报给 GM 面板用于渲染控件），子类覆写；
     /// - <see cref="GmEditable"/>：GM 属性面板是否渲染该组件的编辑控件
     ///   （角色组件由玩家/出生点名单处理，不进入面板清单，覆写为 false）；
     /// - 激活时自动通知 <see cref="BackendObject"/> 枢纽刷新能力组件缓存（OnEnable 内置）；
-    /// - 上报触发：<see cref="SendToBackend"/> / <see cref="NormalizePosition"/>——统一转发给主体枢纽，
+    /// - <see cref="SendToBackend"/> / <see cref="NormalizePosition"/>：上报触发，统一转发给主体枢纽，
     ///   组件不直接接触通信层；数据修改由后台命令驱动，前端只在初始化上报；
     /// - 要求同物体必须有 BackendObject 枢纽（RequireComponent）。
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(BackendObject))]
-    public abstract class BackendComponent : MonoBehaviour
+    public abstract class BackendComponent : MonoBehaviour, IBackendComponentData, IBackendCommandHandler
     {
         /// <summary>组件 ID（与客户端组件类同名，如 StateMachine / Backpack / ItemObject / MaskObject / Player / SpawnPoint）。</summary>
         public abstract string ComponentId { get; }
@@ -33,6 +38,23 @@ namespace DiceTale
             // 通知枢纽刷新能力组件缓存（激活/动态挂载后保持同步）
             Hub?.RefreshCapabilityComponents();
         }
+
+        // ---------- IBackendComponentData（默认空实现，有数据要上报的子类覆写） ----------
+
+        /// <summary>把本组件的参数填充到上报信息（默认空实现；StateMachine/Backpack/ItemObject/MaskObject 覆写）。</summary>
+        public virtual void AppendToInfo(Server.ServerObjectInfo info)
+        {
+        }
+
+        // ---------- IBackendCommandHandler（默认不处理命令，有命令要处理的子类覆写） ----------
+
+        /// <summary>是否处理该命令类型（默认 false；StateMachine/Backpack/MaskObject 覆写声明自己处理的命令）。</summary>
+        public virtual bool CanHandle(string commandType) => false;
+
+        /// <summary>执行命令（默认不处理；覆写 CanHandle 的组件在此解析参数并执行）。</summary>
+        public virtual bool HandleCommand(Dictionary<string, object> msg) => false;
+
+        // ---------- 上报触发（统一经主体枢纽） ----------
 
         /// <summary>向后台发送一条消息（JSON 自动序列化；统一经主体枢纽）。</summary>
         protected void SendToBackend(object message)
