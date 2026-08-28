@@ -104,7 +104,7 @@ namespace DiceTale
                 }
 
                 EnterState(i);
-                GetComponent<BackendObject>()?.ReportStateChanged();
+                ReportStateChanged(); // 基类触发：经主体枢纽上报当前状态
                 return true;
             }
 

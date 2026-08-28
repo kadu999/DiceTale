@@ -68,7 +68,7 @@ namespace DiceTale
             }
         }
 
-        /// <summary>整体设置物品列表（后台 set_object_items 命令经枢纽转发调用，与后台同步）。</summary>
+        /// <summary>整体设置道具列表（后台 set_object_items 命令经枢纽路由调用，与后台同步）。</summary>
         public void SetItems(IEnumerable<string> newItems)
         {
             items.Clear();
@@ -77,13 +77,7 @@ namespace DiceTale
                 items.AddRange(newItems);
             }
 
-            ReportItems();
-        }
-
-        /// <summary>物品列表变化后经枢纽上报给后台（GM 页面同步显示）。</summary>
-        private void ReportItems()
-        {
-            GetComponent<BackendObject>()?.ReportItems();
+            ReportItems(); // 基类触发：经主体枢纽上报道具列表
         }
     }
 }

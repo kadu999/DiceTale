@@ -26,7 +26,7 @@ namespace DiceTale
         public string ObjectId => PlayerId;
 
         /// <summary>GM 页面显示的名称：取枢纽显示名（默认回退 PlayerId）。</summary>
-        public string DisplayName => GetComponent<BackendObject>()?.DisplayName ?? PlayerId;
+        public string DisplayName => Hub?.DisplayName ?? PlayerId;
 
         /// <summary>道具列表（由同物体的 Backpack 提供；无背包组件时为空）。</summary>
         public IReadOnlyList<string> Items
@@ -61,16 +61,10 @@ namespace DiceTale
         /// </summary>
         public void ReportPosition()
         {
-            var hub = GetComponent<BackendObject>();
-            if (hub == null)
-            {
-                return;
-            }
-
-            hub.SendToBackend(new Server.ReportPlayerPositionMessage
+            SendToBackend(new Server.ReportPlayerPositionMessage
             {
                 playerId = PlayerId,
-                position = hub.NormalizePosition(transform.position),
+                position = NormalizePosition(transform.position),
                 mapName = GetCurrentMapName()
             });
         }
