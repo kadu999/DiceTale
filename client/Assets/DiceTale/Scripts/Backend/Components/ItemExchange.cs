@@ -9,7 +9,7 @@ namespace DiceTale
     /// 客户端本地也维护剩余（remaining），GM 分配/收回命令（set_object_items）到达时刷新。
     /// 对象 ID 由枢纽统一提供（默认自动生成唯一 ID）。
     /// </summary>
-    public class ItemExchange : BackendComponent, IBackendDisplayName
+    public class ItemExchange : BackendComponent
     {
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染道具分配区）。</summary>
         public override string ComponentId => "ItemExchange";
@@ -34,21 +34,6 @@ namespace DiceTale
         {
             info.itemName = itemName;
             info.quantity = quantity;
-        }
-
-        /// <summary>GM 页面动态显示名：道具名（剩余大于 1 时带 ×剩余）；道具名为空返回 null。
-        /// 枢纽未配置静态显示名时以此作为对象名（IBackendDisplayName）。</summary>
-        public string DisplayName
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(itemName))
-                {
-                    return null;
-                }
-
-                return remaining > 1 ? $"{itemName} ×{remaining}" : itemName;
-            }
         }
 
         protected override void OnEnable()

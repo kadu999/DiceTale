@@ -6,8 +6,8 @@ namespace DiceTale
     /// <summary>
     /// 后台对象枢纽（组件模型）：挂在物体（主体）上的「后台对象」本体，只负责与后台（backend）的通信、身份与聚合，
     /// 具体能力（状态机 / 背包 / 道具货源 / 遮罩）由同一主体上的能力组件
-    /// （继承 <see cref="BackendComponent"/>）经 <see cref="IBackendDisplayName"/>、
-    /// <see cref="IBackendComponentData"/>、<see cref="IBackendCommandHandler"/> 提供。
+    /// （继承 <see cref="BackendComponent"/>）经 <see cref="IBackendComponentData"/>、
+    /// <see cref="IBackendCommandHandler"/> 提供。
     ///
     /// 主体 = 挂了本枢纽的 GameObject；能力组件挂在同一个主体上。枢纽在初始化（OnEnable）时
     /// 扫描一次缓存能力组件列表（不序列化、不显示、不对外暴露），聚合上报与命令转发都以该缓存为来源。
@@ -75,7 +75,7 @@ namespace DiceTale
             displayName = name;
         }
 
-        /// <summary>GM 页面显示的名称：优先静态显示名（本枢纽），其次道具动态显示名（ItemExchange「道具名 ×剩余」），回退对象 ID。</summary>
+        /// <summary>GM 页面显示的名称：静态显示名（本枢纽）优先，回退对象 ID。</summary>
         public string DisplayName
         {
             get
@@ -83,16 +83,6 @@ namespace DiceTale
                 if (!string.IsNullOrEmpty(displayName))
                 {
                     return displayName;
-                }
-
-                var display = FindComponent<IBackendDisplayName>();
-                if (display != null)
-                {
-                    var dynamicName = display.DisplayName;
-                    if (!string.IsNullOrEmpty(dynamicName))
-                    {
-                        return dynamicName;
-                    }
                 }
 
                 return ObjectId;
@@ -159,25 +149,6 @@ namespace DiceTale
                     data.AppendToInfo(info);
                 }
             }
-        }
-
-        /// <summary>从能力组件列表找第一个实现指定接口的组件（无则返回 null；已销毁的引用直接跳过）。</summary>
-        private T FindComponent<T>() where T : class
-        {
-            foreach (var comp in capabilityComponents)
-            {
-                if (comp == null)
-                {
-                    continue;
-                }
-
-                if (comp is T t)
-                {
-                    return t;
-                }
-            }
-
-            return null;
         }
 
         /// <summary>

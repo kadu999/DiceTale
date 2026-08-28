@@ -302,8 +302,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7952393538782929469}
-  - component: {fileID: 3615305867695832250}
   - component: {fileID: 2131290503008212206}
+  - component: {fileID: 3615305867695832250}
   m_Layer: 0
   m_Name: Door
   m_TagString: Untagged
@@ -327,29 +327,6 @@ Transform:
   - {fileID: 5796399747589728500}
   m_Father: {fileID: 6586617523669123881}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3615305867695832250
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3483525914648463662}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a5f079cd2b5b47898ac2228c012d11de, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.SceneObject
-  displayName: "\u53E4\u5821\u7684\u5927\u95E8"
-  states:
-  - name: "\u672A\u89E3\u9501"
-  - name: "\u89E3\u9501"
-  - name: "\u8FDB\u5165"
-  currentState: 0
-  onStateEnter:
-    m_PersistentCalls:
-      m_Calls: []
-  statefulActions:
-  - {fileID: 90111590232480573}
 --- !u!114 &2131290503008212206
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -362,9 +339,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd0ce7c7e6ad5764797b0e0c574e3c03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.BackendObject
-  objectKind: SceneObject
+  objectKind: 0
+  displayName: "\u7834\u6865"
   objectId: 
-  generateUniqueId: 0
+--- !u!114 &3615305867695832250
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3483525914648463662}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5f079cd2b5b47898ac2228c012d11de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.SceneObject
+  states:
+  - name: "\u672A\u89E3\u9501"
+  - name: "\u89E3\u9501"
+  - name: "\u8FDB\u5165"
+  currentState: 0
+  onStateEnter:
+    m_PersistentCalls:
+      m_Calls: []
+  statefulActions:
+  - {fileID: 90111590232480573}
 --- !u!1 &3890056362384748944
 GameObject:
   m_ObjectHideFlags: 0
@@ -374,8 +373,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5552941982991616821}
-  - component: {fileID: 3847467109664341175}
   - component: {fileID: 4747477038061520472}
+  - component: {fileID: 3847467109664341175}
   m_Layer: 0
   m_Name: Bridge
   m_TagString: Untagged
@@ -400,29 +399,6 @@ Transform:
   - {fileID: 2332140358798470492}
   m_Father: {fileID: 6586617523669123881}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3847467109664341175
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3890056362384748944}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a5f079cd2b5b47898ac2228c012d11de, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.SceneObject
-  displayName: "\u7834\u6865"
-  states:
-  - name: "\u6BC1\u574F"
-  - name: "\u4FEE\u590D"
-  currentState: 0
-  onStateEnter:
-    m_PersistentCalls:
-      m_Calls: []
-  statefulActions:
-  - {fileID: 7865490019946216524}
-  - {fileID: 4986186018652317216}
 --- !u!114 &4747477038061520472
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -435,9 +411,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd0ce7c7e6ad5764797b0e0c574e3c03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.BackendObject
-  objectKind: SceneObject
+  objectKind: 3
+  displayName: "\u5761\u6865"
   objectId: 
-  generateUniqueId: 0
+--- !u!114 &3847467109664341175
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3890056362384748944}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5f079cd2b5b47898ac2228c012d11de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.SceneObject
+  states:
+  - name: "\u6BC1\u574F"
+  - name: "\u4FEE\u590D"
+  currentState: 0
+  onStateEnter:
+    m_PersistentCalls:
+      m_Calls: []
+  statefulActions:
+  - {fileID: 7865490019946216524}
+  - {fileID: 4986186018652317216}
 --- !u!1 &3944054351576381290
 GameObject:
   m_ObjectHideFlags: 0
@@ -447,8 +445,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7005999888087101817}
-  - component: {fileID: 3859959988492472982}
   - component: {fileID: 9169497043803634332}
+  - component: {fileID: 3859959988492472982}
   m_Layer: 0
   m_Name: Item
   m_TagString: Untagged
@@ -471,6 +469,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 6586617523669123881}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9169497043803634332
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3944054351576381290}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd0ce7c7e6ad5764797b0e0c574e3c03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.BackendObject
+  objectKind: 2
+  displayName: "\u7EF4\u4FEE\u5DE5\u5177"
+  objectId: 
 --- !u!114 &3859959988492472982
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -486,21 +499,6 @@ MonoBehaviour:
   itemName: "\u7EF4\u4FEE\u5DE5\u5177"
   quantity: 4
   remaining: 0
---- !u!114 &9169497043803634332
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3944054351576381290}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bd0ce7c7e6ad5764797b0e0c574e3c03, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.BackendObject
-  objectKind: ItemObject
-  objectId: 
-  generateUniqueId: 1
 --- !u!1 &4029669799040524807
 GameObject:
   m_ObjectHideFlags: 0
@@ -1163,7 +1161,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5193962138331919335}
-  - component: {fileID: 5365771918129449326}
   - component: {fileID: 6002238172978914045}
   m_Layer: 0
   m_Name: SpawnPoint
@@ -1187,19 +1184,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 6586617523669123881}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5365771918129449326
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8725336608045207518}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 01af866d823304341933690c436325f4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.SpawnPoint
-  id: Map001_001
 --- !u!114 &6002238172978914045
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1212,6 +1196,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd0ce7c7e6ad5764797b0e0c574e3c03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.BackendObject
-  objectKind: SpawnPoint
+  objectKind: 0
+  displayName: "\u51FA\u751F\u70B9"
   objectId: 
-  generateUniqueId: 0
