@@ -130,7 +130,7 @@ namespace DiceTale.Editor
 
             if (legacy is MaskObject)
             {
-                return BackendObjectKind.Mask;
+                return BackendObjectKind.Event; // 遮罩归入「事件」类（原 Mask 类别已并入事件）
             }
 
             if (legacy is Player)
@@ -138,11 +138,7 @@ namespace DiceTale.Editor
                 return BackendObjectKind.Player;
             }
 
-            if (legacy is SpawnPoint)
-            {
-                return BackendObjectKind.SpawnPoint;
-            }
-
+            // SpawnPoint 类别已移除：出生点归入场景物体
             return BackendObjectKind.SceneObject;
         }
     }

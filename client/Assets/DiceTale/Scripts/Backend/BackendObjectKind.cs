@@ -6,7 +6,7 @@ namespace DiceTale
     /// </summary>
     public enum BackendObjectKind
     {
-        /// <summary>场景物体/事件机关（门、宝箱、拉杆等）；枢纽未配置类型时的默认值。</summary>
+        /// <summary>场景物体（门、宝箱、拉杆等）；枢纽未配置类型时的默认值。</summary>
         SceneObject = 0,
 
         /// <summary>玩家（Player 角色组件）。</summary>
@@ -15,10 +15,7 @@ namespace DiceTale
         /// <summary>道具（ItemObject 道具货源）。</summary>
         Item = 2,
 
-        /// <summary>遮罩（MaskObject）。</summary>
-        Mask = 3,
-
-        /// <summary>出生点/地图标记（SpawnPoint）。</summary>
-        SpawnPoint = 4,
+        /// <summary>事件（机关触发、遮罩等事件类对象；原 Mask 类别已并入）。</summary>
+        Event = 3,
     }
 }
