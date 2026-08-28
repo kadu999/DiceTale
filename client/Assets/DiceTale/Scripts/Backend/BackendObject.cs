@@ -4,60 +4,133 @@ using UnityEngine;
 namespace DiceTale
 {
     /// <summary>
-    /// 后台对象基类：只负责与后台（backend）的通信，不包含具体玩法逻辑。
+    /// 后台对象枢纽（组件模型）：挂在物体上的「后台对象」本体，只负责与后台（backend）的通信、身份与聚合，
+    /// 具体能力（状态机 / 物品 / 道具货源 / 遮罩 / 角色名单）由同物体上的能力组件实现
+    /// <see cref="IBackendRole"/>、<see cref="IBackendDisplayName"/>、<see cref="ISceneStateMachine"/>、
+    /// <see cref="IItemInventory"/>、<see cref="IItemStock"/>、<see cref="IMaskSource"/> 提供。
     ///
-    /// 基类自动完成：
+    /// 枢纽自动完成：
     /// - 启用/销毁时注册/注销到 <see cref="BackendRegistry"/>；
-    /// - 提供统一的对象 ID（ObjectId，可覆写）与类型显示名（ObjectKind）；
+    /// - 提供统一的对象 ID（ObjectId：角色组件优先，其次自定义 ID，其次按需运行时唯一 ID 或物体名）与类型显示名（ObjectKind）；
     /// - 提供向后台发送消息、世界坐标转图片归一化坐标的工具；
-    /// - 提供状态/物品的同步上报入口（ReportStateChanged / ReportItems，读取虚属性）；
-    /// - 提供后台命令入口（TrySetState / SetItems，默认空实现，由子类覆写具体行为）。
+    /// - 聚合能力组件的信息统一上报（状态/物品/道具/遮罩/角色名单）；
+    /// - 转发后台命令到对应能力组件（TrySetState → ISceneStateMachine、SetItems → IItemInventory、
+    ///   ApplyMaskImage/ApplyEraseStroke → IMaskSource）。
     ///
-    /// 玩法相关的通用能力（显示名称、状态机、物品列表）放在 <see cref="SceneObject"/>，
-    /// 具体对象（如 <see cref="Player"/>、<see cref="SpawnPoint"/>）按需继承。
-    /// 后台命令经 ServerCommandDispatcher 按 ObjectId 定位。
+    /// 用法：枢纽与能力组件挂在同一个 GameObject 上，能力可任意组合（门=枢纽+状态机、道具=枢纽+道具货源、
+    /// 玩家=枢纽+角色+物品、宝箱=枢纽+状态机+道具货源…）。
+    /// 后台命令经 ServerCommandDispatcher 按 ObjectId 定位枢纽。
     /// </summary>
-    public abstract class BackendObject : MonoBehaviour
+    [DisallowMultipleComponent]
+    public class BackendObject : MonoBehaviour
     {
         private static readonly List<string> EmptyStates = new List<string>();
         private static readonly List<string> EmptyItems = new List<string>();
 
-        /// <summary>后台使用的唯一对象 ID（子类覆写：Player 用 PlayerId、SpawnPoint 用 id）。</summary>
-        public virtual string ObjectId => name;
+        [SerializeField, Tooltip("GM 页面展示的对象类型名；为空时回退到 BackendObject（迁移脚本已按旧类名填好）")]
+        private string objectKind;
 
-        /// <summary>对象类型显示名（GM 页面展示用），默认取类名。</summary>
-        public virtual string ObjectKind => GetType().Name;
+        [SerializeField, Tooltip("自定义对象 ID；为空时用物体名（勾选 generateUniqueId 则运行时生成唯一 ID）")]
+        private string objectId;
 
-        /// <summary>GM 页面显示的名称：子类可覆写（如 <see cref="SceneObject"/> 用显示名称字段）。</summary>
-        public virtual string DisplayName => ObjectId;
+        [SerializeField, Tooltip("运行时生成唯一对象 ID（道具/遮罩等需要全局唯一 ID 的对象勾选；Player/SpawnPoint 用角色组件自己的 ID）")]
+        private bool generateUniqueId;
 
-        /// <summary>当前状态名称（无状态机时为 null）；子类覆写。</summary>
-        public virtual string CurrentStateName => null;
+        private string generatedId;
 
-        /// <summary>全部可选状态名称（上报给 GM 页面展示与切换）；子类覆写。</summary>
-        public virtual List<string> StateNames => EmptyStates;
+        /// <summary>后台使用的唯一对象 ID：角色组件（Player/SpawnPoint）优先，其次自定义 ID，再其次运行时唯一 ID 或物体名。</summary>
+        public string ObjectId
+        {
+            get
+            {
+                var role = GetComponent<IBackendRole>();
+                if (role != null)
+                {
+                    return role.ObjectId;
+                }
 
-        /// <summary>物品列表（只读视图）；子类覆写。</summary>
-        public virtual IReadOnlyList<string> Items => EmptyItems;
+                if (!string.IsNullOrEmpty(objectId))
+                {
+                    return objectId;
+                }
 
-        /// <summary>道具名（道具类对象覆写，GM 页面据此展示分配界面）；非道具对象返回 null。</summary>
-        public virtual string ItemName => null;
+                if (generateUniqueId)
+                {
+                    if (generatedId == null)
+                    {
+                        generatedId = $"{name}_{System.Guid.NewGuid():N}";
+                    }
 
-        /// <summary>道具总数量（道具类对象覆写，固定库存；非道具对象返回 0）。</summary>
-        public virtual int ItemQuantity => 0;
+                    return generatedId;
+                }
 
-        /// <summary>遮罩纹理宽度（遮罩对象覆写，GM 页面据此生成/编辑遮罩；非遮罩对象返回 0）。</summary>
-        public virtual int MaskWidth => 0;
+                return name;
+            }
+        }
 
-        /// <summary>遮罩纹理高度（遮罩对象覆写，GM 页面据此生成/编辑遮罩；非遮罩对象返回 0）。</summary>
-        public virtual int MaskHeight => 0;
+        /// <summary>对象类型显示名（GM 页面展示用）：优先序列化 objectKind，回退类名。</summary>
+        public string ObjectKind => !string.IsNullOrEmpty(objectKind) ? objectKind : GetType().Name;
 
-        protected virtual void OnEnable()
+        /// <summary>GM 页面显示的名称：能力组件显示名（SceneObject/ItemObject/MaskObject）优先，回退对象 ID。</summary>
+        public string DisplayName
+        {
+            get
+            {
+                var display = GetComponent<IBackendDisplayName>();
+                if (display != null)
+                {
+                    var displayName = display.DisplayName;
+                    if (!string.IsNullOrEmpty(displayName))
+                    {
+                        return displayName;
+                    }
+                }
+
+                return ObjectId;
+            }
+        }
+
+        /// <summary>当前状态名称（无状态机组件时为 null）。</summary>
+        public string CurrentStateName => GetComponent<ISceneStateMachine>()?.CurrentStateName;
+
+        /// <summary>全部可选状态名称（上报给 GM 页面展示与切换；无状态机组件时为空列表）。</summary>
+        public List<string> StateNames
+        {
+            get
+            {
+                var stateMachine = GetComponent<ISceneStateMachine>();
+                return stateMachine != null ? stateMachine.StateNames : EmptyStates;
+            }
+        }
+
+        /// <summary>物品列表（只读视图；无物品组件时为空列表）。</summary>
+        public IReadOnlyList<string> Items
+        {
+            get
+            {
+                var inventory = GetComponent<IItemInventory>();
+                return inventory != null ? inventory.Items : EmptyItems;
+            }
+        }
+
+        /// <summary>道具名（有道具货源组件时才有，GM 页面据此展示分配界面；非道具对象返回 null）。</summary>
+        public string ItemName => GetComponent<IItemStock>()?.ItemName;
+
+        /// <summary>道具总数量（有道具货源组件时才有，固定库存；非道具对象返回 0）。</summary>
+        public int ItemQuantity => GetComponent<IItemStock>()?.ItemQuantity ?? 0;
+
+        /// <summary>遮罩纹理宽度（有遮罩组件时才有，GM 页面据此生成/编辑遮罩；非遮罩对象返回 0）。</summary>
+        public int MaskWidth => GetComponent<IMaskSource>()?.MaskWidth ?? 0;
+
+        /// <summary>遮罩纹理高度（有遮罩组件时才有，GM 页面据此生成/编辑遮罩；非遮罩对象返回 0）。</summary>
+        public int MaskHeight => GetComponent<IMaskSource>()?.MaskHeight ?? 0;
+
+        private void OnEnable()
         {
             BackendRegistry.Instance.Register(this);
         }
 
-        protected virtual void OnDisable()
+        private void OnDisable()
         {
             var registry = BackendRegistry.Instance;
             if (registry != null)
@@ -67,39 +140,47 @@ namespace DiceTale
         }
 
         /// <summary>
-        /// 把自身信息追加到上报消息（默认空实现：通用状态信息已由注册表统一加入 objects）。
-        /// 子类可按需覆写追加专用字段，如出生点加入地图对象消息、玩家加入玩家名单消息。
+        /// 把自身信息追加到上报消息：角色组件（Player 玩家名单、SpawnPoint 出生点）追加专用字段，
+        /// 通用状态信息已由注册表统一加入 objects（本枢纽聚合各能力组件）。
         /// </summary>
-        public virtual void AppendToReport(
+        public void AppendToReport(
             Server.RegisterMapObjectsMessage mapObjects,
             Server.RegisterPlayersMessage players)
         {
+            var role = GetComponent<IBackendRole>();
+            if (role != null)
+            {
+                role.AppendToReport(mapObjects, players);
+            }
         }
 
-        /// <summary>后台命令入口：按名称切换状态（默认不支持；<see cref="SceneObject"/> 实现状态机）。</summary>
-        /// <returns>状态存在并切换成功（或已在同状态）返回 true；名称不存在返回 false。</returns>
-        public virtual bool TrySetState(string stateName)
+        /// <summary>后台命令入口：按名称切换状态（转发给状态机组件；无状态机时返回 false）。</summary>
+        public bool TrySetState(string stateName)
         {
-            return false;
+            var stateMachine = GetComponent<ISceneStateMachine>();
+            return stateMachine != null && stateMachine.TrySetState(stateName);
         }
 
-        /// <summary>后台命令入口：整体设置物品列表（默认不支持；<see cref="SceneObject"/> 实现物品列表）。</summary>
-        public virtual void SetItems(IEnumerable<string> newItems)
+        /// <summary>后台命令入口：整体设置物品列表（转发给物品组件；无物品组件时无操作）。</summary>
+        public void SetItems(IEnumerable<string> newItems)
         {
+            GetComponent<IItemInventory>()?.SetItems(newItems);
         }
 
-        /// <summary>后台命令入口：应用遮罩图像（base64 PNG；默认不支持，<see cref="MaskObject"/> 实现）。</summary>
-        public virtual void ApplyMaskImage(string base64Png)
+        /// <summary>后台命令入口：应用遮罩图像（base64 PNG；转发给遮罩组件）。</summary>
+        public void ApplyMaskImage(string base64Png)
         {
+            GetComponent<IMaskSource>()?.ApplyMaskImage(base64Png);
         }
 
-        /// <summary>后台命令入口：应用 GM 擦除的笔画轨迹（归一化点 + 归一化半径 + 软边比例；默认不支持，<see cref="MaskObject"/> 实现）。</summary>
-        public virtual void ApplyEraseStroke(Vector2[] points, float radius, float softness)
+        /// <summary>后台命令入口：应用 GM 擦除的笔画轨迹（归一化点 + 归一化半径 + 软边比例；转发给遮罩组件）。</summary>
+        public void ApplyEraseStroke(Vector2[] points, float radius, float softness)
         {
+            GetComponent<IMaskSource>()?.ApplyEraseStroke(points, radius, softness);
         }
 
-        /// <summary>状态切换后上报给后台，使 GM 页面同步显示当前状态（子类切换状态后调用）。</summary>
-        protected void ReportStateChanged()
+        /// <summary>状态切换后上报给后台，使 GM 页面同步显示当前状态（状态机组件切换状态后调用）。</summary>
+        public void ReportStateChanged()
         {
             var stateName = CurrentStateName;
             if (string.IsNullOrEmpty(stateName))
@@ -114,8 +195,8 @@ namespace DiceTale
             });
         }
 
-        /// <summary>物品列表变化后上报给后台（子类在增删物品后调用）。</summary>
-        protected void ReportItems()
+        /// <summary>物品列表变化后上报给后台（物品组件在增删物品后调用）。</summary>
+        public void ReportItems()
         {
             SendToBackend(new Server.ReportObjectItemsMessage
             {
@@ -125,7 +206,7 @@ namespace DiceTale
         }
 
         /// <summary>向后台发送一条消息（JSON 自动序列化）。</summary>
-        protected void SendToBackend(object message)
+        public void SendToBackend(object message)
         {
             var connection = Server.ServerConnection.Instance;
             if (connection != null && connection.IsConnected)
@@ -141,7 +222,7 @@ namespace DiceTale
         }
 
         /// <summary>把世界坐标换算为当前地图图片的归一化坐标（y 向下，左上角为原点）。</summary>
-        protected Server.Position NormalizePosition(Vector3 worldPosition)
+        public Server.Position NormalizePosition(Vector3 worldPosition)
         {
             var mapManager = Object.FindFirstObjectByType<MapManager>();
             if (mapManager == null)

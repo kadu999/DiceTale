@@ -4,15 +4,19 @@ using UnityEngine;
 namespace DiceTale
 {
     /// <summary>
-    /// 遮罩对象：继承 <see cref="BackendObject"/>（纯后台通信），只负责持有/更新遮罩纹理，不依赖任何渲染组件。
+    /// 遮罩组件（组件模型下的能力组件，原 MaskObject 的遮罩部分）：
+    /// 只负责持有/更新遮罩纹理，不依赖任何渲染组件。
     /// 场景中代表一张黑色遮罩（临时内存态，不持久化）：
     /// - 运行时生成全黑 <see cref="Texture2D"/>，通过 <see cref="MaskTexture"/> 暴露给外部渲染组件读取
     ///   （如 BoxComposite 的 _MaskTex）。**输出纹理实例创建一次、永不更换**，外部持有引用始终有效；
-    /// - 上报尺寸（maskWidth/maskHeight）给后台，GM 页面在弹框里用鼠标擦除黑色；
+    /// - 上报尺寸（maskWidth/maskHeight）给后台（经 <see cref="BackendObject"/> 枢纽聚合），GM 页面在弹框里用鼠标擦除黑色；
     /// - 擦除结果经 erase_mask 命令（笔画轨迹）同步回来：MaskEraseStamp shader 沿轨迹硬核打点（GPU），
     ///   输出纹理 ReadPixels 同步，外部直接看到结果。
+    /// 对象 ID 由枢纽统一提供（勾选 generateUniqueId 运行时生成唯一 ID，迁移脚本已配置）。
     /// </summary>
-    public class MaskObject : BackendObject
+    [DisallowMultipleComponent]
+    [RequireComponent(typeof(BackendObject))]
+    public class MaskObject : MonoBehaviour, IMaskSource, IBackendDisplayName
     {
         [SerializeField, Tooltip("遮罩纹理宽度（像素），GM 页面据此生成编辑画布")]
         private int maskWidth = 960;
@@ -20,7 +24,7 @@ namespace DiceTale
         [SerializeField, Tooltip("遮罩纹理高度（像素），GM 页面据此生成编辑画布")]
         private int maskHeight = 540;
 
-        [SerializeField, Tooltip("显示名称（GM 页面展示用，标明这个遮罩是什么）；为空时回退到 GameObject 名")]
+        [SerializeField, Tooltip("显示名称（GM 页面展示用，标明这个遮罩是什么）；为空时回退到对象 ID")]
         private string displayName;
 
         private Texture2D outputTexture; // 稳定输出纹理（MaskTexture，创建一次永不更换）
@@ -29,51 +33,33 @@ namespace DiceTale
         private Texture2D loadTexture;   // 复用的加载纹理（整图导入用，LoadImage 原地重设尺寸）
         private Material stampMaterial;  // 硬笔刷材质（MaskEraseStamp，沿轨迹打点用）
 
-        private string maskId;
-
         private static readonly int StampCenterId = Shader.PropertyToID("_StampCenter");
         private static readonly int StampRadiusId = Shader.PropertyToID("_StampRadius");
         private static readonly int MaskSizeId = Shader.PropertyToID("_MaskSize");
 
         private const string StampShaderName = "DiceTale/MaskEraseStamp";
 
-        /// <summary>后台对象 ID：首次访问时自动生成唯一 ID（Guid + 物体名，便于 GM 排查）。</summary>
-        public override string ObjectId
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(maskId))
-                {
-                    maskId = $"{gameObject.name}_{System.Guid.NewGuid():N}";
-                }
-
-                return maskId;
-            }
-        }
-
         /// <summary>遮罩纹理宽度（上报给 GM 页面）。</summary>
-        public override int MaskWidth => maskWidth;
+        public int MaskWidth => maskWidth;
 
         /// <summary>遮罩纹理高度（上报给 GM 页面）。</summary>
-        public override int MaskHeight => maskHeight;
+        public int MaskHeight => maskHeight;
 
         /// <summary>稳定输出遮罩纹理（Texture2D，初始全黑；外部持有引用始终有效）。由外部渲染组件读取。</summary>
         public Texture2D MaskTexture => outputTexture;
 
-        /// <summary>GM 页面显示的名称：优先用配置的显示名，为空时回退到 GameObject 名。</summary>
-        public override string DisplayName => !string.IsNullOrEmpty(displayName) ? displayName : name;
+        /// <summary>GM 页面显示的名称：优先用配置的显示名，为空回退物体名（保持旧行为，不显示唯一 ID）。</summary>
+        public string DisplayName => string.IsNullOrEmpty(displayName) ? name : displayName;
 
-        protected override void OnEnable()
+        private void OnEnable()
         {
-            base.OnEnable(); // 注册到后台（必须调用基类，否则不会上报 GM 页面）
             EnsureOutputTexture();
             EnsureMaskRT();
             EnsureStampMaterial();
         }
 
-        protected override void OnDisable()
+        private void OnDisable()
         {
-            base.OnDisable(); // 必须调用基类：从 BackendRegistry 注销
             ReleaseResources(); // 只释放 RT/材质；outputTexture 保留，身份不变
         }
 
@@ -176,7 +162,7 @@ namespace DiceTale
         }
 
         /// <summary>后台命令入口：整图导入（base64 PNG）——直接替换当前遮罩，无过渡。</summary>
-        public override void ApplyMaskImage(string base64Png)
+        public void ApplyMaskImage(string base64Png)
         {
             if (string.IsNullOrEmpty(base64Png))
             {
@@ -189,19 +175,19 @@ namespace DiceTale
 
             if (!loadTexture.LoadImage(System.Convert.FromBase64String(base64Png)))
             {
-                Debug.LogWarning($"[MaskObject] Failed to decode mask image: {ObjectId}");
+                Debug.LogWarning($"[MaskObject] Failed to decode mask image: {name}");
                 return;
             }
 
             Graphics.Blit(loadTexture, maskRT);
             SyncOutputTexture();
-            Debug.Log($"[MaskObject] {ObjectId}: mask image applied ({loadTexture.width}x{loadTexture.height})");
+            Debug.Log($"[MaskObject] {name}: mask image applied ({loadTexture.width}x{loadTexture.height})");
         }
 
         /// <summary>后台命令入口：应用 GM 擦除的笔画轨迹。
         /// 用 MaskEraseStamp shader 沿线段打硬核圆（destination-out，ping-pong 到 maskRT），
         /// 再同步到稳定输出纹理。边缘统一为硬边（无额外羽化 pass）。</summary>
-        public override void ApplyEraseStroke(Vector2[] points, float radius, float softness)
+        public void ApplyEraseStroke(Vector2[] points, float radius, float softness)
         {
             if (points == null || points.Length < 2)
             {
@@ -213,7 +199,7 @@ namespace DiceTale
             EnsureStampMaterial();
             if (maskRT == null || blendRT == null || outputTexture == null || stampMaterial == null)
             {
-                Debug.LogWarning($"[MaskObject] {ObjectId}: 擦除被跳过（RT/材质未就绪，请检查 MaskEraseStamp Shader 是否导入）");
+                Debug.LogWarning($"[MaskObject] {name}: 擦除被跳过（RT/材质未就绪，请检查 MaskEraseStamp Shader 是否导入）");
                 return;
             }
 
@@ -250,10 +236,10 @@ namespace DiceTale
                 var px = Mathf.Clamp(Mathf.RoundToInt(points[0].x * outputTexture.width), 0, outputTexture.width - 1);
                 var py = Mathf.Clamp(Mathf.RoundToInt(points[0].y * outputTexture.height), 0, outputTexture.height - 1);
                 var sample = outputTexture.GetPixel(px, py);
-                Debug.Log($"[MaskObject] {ObjectId}: 输出纹理采样 alpha={sample.a:F2} (起点 {px},{py})");
+                Debug.Log($"[MaskObject] {name}: 输出纹理采样 alpha={sample.a:F2} (起点 {px},{py})");
             }
 
-            Debug.Log($"[MaskObject] {ObjectId}: erase stroke ({points.Length} points, r={radiusTex}, soft={softness})");
+            Debug.Log($"[MaskObject] {name}: erase stroke ({points.Length} points, r={radiusTex}, soft={softness})");
         }
 
         private void ReleaseResources()

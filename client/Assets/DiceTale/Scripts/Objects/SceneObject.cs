@@ -5,12 +5,17 @@ using UnityEngine.Events;
 namespace DiceTale
 {
     /// <summary>
-    /// 通用场景物体：继承 <see cref="BackendObject"/>（后台通信），
-    /// 提供状态机（Inspector 状态列表）、显示名称与物品列表（与后台同步）。
-    /// 场景中需要后台控制、又有本地行为的物体（门、机关、宝箱等）直接挂这个组件或继承它。
-    /// 后台服务器用 set_object_state / set_object_items 按 ObjectId 控制。
+    /// 状态机组件（组件模型下的能力组件，原 SceneObject 拆分后的状态机部分）：
+    /// 提供 Inspector 状态列表、进入事件（onStateEnter）与状态动作列表（statefulActions）。
+    /// 与 <see cref="BackendObject"/> 枢纽挂同一物体：
+    /// - 状态列表/当前状态由枢纽聚合上报（ISceneStateMachine）；
+    /// - set_object_state 命令由枢纽转发到 TrySetState，切换后经枢纽上报（ReportStateChanged）；
+    /// - 显示名称由枢纽聚合（IBackendDisplayName）；
+    /// - 物品列表已拆分到 <see cref="ItemInventory"/>（需要的物体另挂该组件）。
     /// </summary>
-    public class SceneObject : BackendObject
+    [DisallowMultipleComponent]
+    [RequireComponent(typeof(BackendObject))]
+    public class SceneObject : MonoBehaviour, ISceneStateMachine, IBackendDisplayName
     {
         [SerializeField, Tooltip("显示名称（GM 页面展示用，标明这个物体是什么）；为空时回退到对象 ID")]
         private string displayName;
@@ -27,17 +32,15 @@ namespace DiceTale
         [SerializeField, Tooltip("状态动作列表：进入任意状态时依次调用每个动作的指定函数 OnStateEnter（可挂在任意物体上）")]
         private List<StatefulAction> statefulActions = new List<StatefulAction>();
 
-        private readonly List<string> items = new List<string>();
-
-        /// <summary>GM 页面显示的名称：优先取显示名称，为空时回退对象 ID。</summary>
-        public override string DisplayName => !string.IsNullOrEmpty(displayName) ? displayName : ObjectId;
+        /// <summary>GM 页面显示的名称：优先取显示名称；为空返回 null（由枢纽回退到对象 ID）。</summary>
+        public string DisplayName => string.IsNullOrEmpty(displayName) ? null : displayName;
 
         /// <summary>当前状态名称；未配置状态或尚未启动时为 null。</summary>
-        public override string CurrentStateName =>
+        public string CurrentStateName =>
             currentState >= 0 && currentState < states.Count ? states[currentState].Name : null;
 
         /// <summary>全部可选状态名称（上报给 GM 页面展示与切换）。</summary>
-        public override List<string> StateNames
+        public List<string> StateNames
         {
             get
             {
@@ -51,17 +54,14 @@ namespace DiceTale
             }
         }
 
-        /// <summary>物品列表（只读视图；修改用 AddItem/RemoveItem/SetItems，与后台同步）。</summary>
-        public override IReadOnlyList<string> Items => items;
-
-        protected virtual void Start()
+        private void Start()
         {
             // 进入当前状态（按索引对应状态列表；越界时回退到第 0 个），触发其 Action 与状态动作
             if (states.Count > 0)
             {
                 if (currentState < 0 || currentState >= states.Count)
                 {
-                    Debug.LogWarning($"[SceneObject] {ObjectId}: current state index {currentState} out of range, fallback to first state.");
+                    Debug.LogWarning($"[SceneObject] {name}: current state index {currentState} out of range, fallback to first state.");
                     currentState = 0;
                 }
 
@@ -69,43 +69,12 @@ namespace DiceTale
             }
         }
 
-        public void AddItem(string item)
-        {
-            if (string.IsNullOrEmpty(item) || items.Contains(item))
-            {
-                return;
-            }
-
-            items.Add(item);
-            ReportItems();
-        }
-
-        public void RemoveItem(string item)
-        {
-            if (items.Remove(item))
-            {
-                ReportItems();
-            }
-        }
-
-        /// <summary>整体设置物品列表（后台 set_object_items 命令使用）。</summary>
-        public override void SetItems(IEnumerable<string> newItems)
-        {
-            items.Clear();
-            if (newItems != null)
-            {
-                items.AddRange(newItems);
-            }
-
-            ReportItems();
-        }
-
         /// <summary>
-        /// 按名称切换状态（后台服务器 set_object_state 命令调用）。
+        /// 按名称切换状态（后台服务器 set_object_state 命令经枢纽转发调用）。
         /// 切换到新状态时触发该状态的 Action 并同步 Current State 索引；已是同名状态时不重复触发。
         /// </summary>
         /// <returns>状态存在并切换成功（或已在同状态）返回 true；名称不存在返回 false。</returns>
-        public override bool TrySetState(string stateName)
+        public bool TrySetState(string stateName)
         {
             if (string.IsNullOrEmpty(stateName))
             {
@@ -125,7 +94,7 @@ namespace DiceTale
                 }
 
                 EnterState(i);
-                ReportStateChanged();
+                GetComponent<BackendObject>()?.ReportStateChanged();
                 return true;
             }
 
