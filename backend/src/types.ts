@@ -34,6 +34,15 @@ export type ClientMessage =
       /** 玩家当前所在的地图 */
       mapName: string;
     }
+  /** 通用主体位置上报（门/机关等普通对象移动后更新 objects 中的位置） */
+  | {
+      type: 'report_object_position';
+      objectId: string;
+      /** 归一化图片坐标 [0,1]，y 向下 */
+      position: { x: number; y: number };
+      /** 主体当前所在的地图 */
+      mapName: string;
+    }
   /** 应用层心跳：客户端周期上报，供后台检测连接是否半开 */
   | { type: 'heartbeat' };
 

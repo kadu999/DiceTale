@@ -234,6 +234,37 @@ describe('WebSocket server', () => {
     client.ws.close();
   });
 
+  test('report_object_position updates object position and broadcasts gm_update', async () => {
+    const client = await connect('/client');
+    openSockets.push(client.ws);
+    send(client.ws, { type: 'request_join' });
+    await client.next(); // sync_state
+    send(client.ws, {
+      type: 'register_map_objects',
+      mapName: 'Map001',
+      spawnPoints: [],
+      objects: [{ id: 'Lever_1', kind: 'Lever', position: { x: 0.4, y: 0.3 } }],
+    });
+
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    await gm.next(); // 注册后广播
+
+    send(client.ws, {
+      type: 'report_object_position',
+      objectId: 'Lever_1',
+      position: { x: 0.6, y: 0.7 },
+      mapName: 'Map001',
+    });
+
+    const update = await gm.next();
+    expect(update.type).toBe('gm_update');
+    expect(update.state.objects['Lever_1'].position).toEqual({ x: 0.6, y: 0.7 });
+
+    gm.ws.close();
+    client.ws.close();
+  });
+
   test('register_players lists players in gm snapshot', async () => {
     const client = await connect('/client');
     openSockets.push(client.ws);

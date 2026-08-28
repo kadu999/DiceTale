@@ -30,6 +30,11 @@ export class ClientHandler {
         gameState.setPlayerPosition(message.playerId, message.position, message.mapName);
         this.broadcast();
         break;
+      case 'report_object_position':
+        if (gameState.updateObjectPosition(message.objectId, message.position, message.mapName)) {
+          this.broadcast();
+        }
+        break;
       case 'heartbeat':
         // 应用层心跳：仅用于存活检测（index.ts 的 lastSeen），无状态变更
         break;

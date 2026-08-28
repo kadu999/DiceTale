@@ -57,22 +57,12 @@ namespace DiceTale
 
         /// <summary>
         /// 上报当前玩家位置（归一化图片坐标）。
+        /// 位置同步已统一收口到主体枢纽（所有主体通用），本方法只是便捷转发。
         /// 由 InputManager 在瞬移后调用，传送落点由 MapManager 调用。
         /// </summary>
         public void ReportPosition()
         {
-            SendToBackend(new Server.ReportPlayerPositionMessage
-            {
-                playerId = PlayerId,
-                position = NormalizePosition(transform.position),
-                mapName = GetCurrentMapName()
-            });
-        }
-
-        private string GetCurrentMapName()
-        {
-            var mapManager = Object.FindFirstObjectByType<MapManager>();
-            return mapManager != null ? mapManager.CurrentMapName : null;
+            Hub?.ReportPosition();
         }
     }
 }

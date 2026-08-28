@@ -251,5 +251,41 @@ namespace DiceTale
 
             return mapManager.GetNormalizedPosition(worldPosition);
         }
+
+        /// <summary>
+        /// 位置同步（所有主体通用）：上报自身当前位置（归一化图片坐标）。
+        /// 玩家主体（有 <see cref="IBackendRole"/>）走玩家位置消息（后台 players 名单）；
+        /// 普通主体走通用对象位置消息（后台 objects 位置更新）。
+        /// </summary>
+        public void ReportPosition()
+        {
+            var position = NormalizePosition(transform.position);
+            var mapName = GetCurrentMapName();
+
+            if (FindComponent<IBackendRole>() != null)
+            {
+                SendToBackend(new Server.ReportPlayerPositionMessage
+                {
+                    playerId = ObjectId,
+                    position = position,
+                    mapName = mapName
+                });
+            }
+            else
+            {
+                SendToBackend(new Server.ReportObjectPositionMessage
+                {
+                    objectId = ObjectId,
+                    position = position,
+                    mapName = mapName
+                });
+            }
+        }
+
+        private string GetCurrentMapName()
+        {
+            var mapManager = Object.FindFirstObjectByType<MapManager>();
+            return mapManager != null ? mapManager.CurrentMapName : null;
+        }
     }
 }

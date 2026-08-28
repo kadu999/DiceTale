@@ -68,6 +68,15 @@ export class GameState {
     player.mapName = mapName;
   }
 
+  /** 更新通用后台对象的位置（客户端 report_object_position 上报）；对象不存在时忽略。 */
+  updateObjectPosition(objectId: string, position: { x: number; y: number }, mapName: string): boolean {
+    const obj = this.objects[objectId];
+    if (!obj) return false;
+    obj.position = position;
+    obj.mapName = mapName;
+    return true;
+  }
+
   registerSpawnPoints(mapName: string, spawnPoints: SpawnPointInfo[]) {
     this.spawnPoints[mapName] = spawnPoints;
   }

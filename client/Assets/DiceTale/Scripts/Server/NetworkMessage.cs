@@ -83,6 +83,16 @@ namespace DiceTale.Server
         public string mapName;
     }
 
+    /// <summary>通用主体位置上报（report_object_position）：后台据此更新 objects 中的位置。</summary>
+    [Serializable]
+    public class ReportObjectPositionMessage
+    {
+        public string type = "report_object_position";
+        public string objectId;
+        public Position position;
+        public string mapName;
+    }
+
     /// <summary>请求后台下发 teleport_player 命令切换地图。</summary>
     [Serializable]
     public class RequestTeleportMessage
