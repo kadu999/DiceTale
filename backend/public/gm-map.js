@@ -53,9 +53,9 @@ function renderMap() {
     const marker = document.createElement('button');
     marker.className = 'object-marker kind-' + (obj.kind || 'object') +
       (objectId === selectedObjectId ? ' selected' : '');
-    const smParams = componentParams(obj, 'StateMachine') || {};
+    const smParams = componentParams(obj, 'OptionValue') || {};
     const exParams = exchangeParams(obj);
-    marker.title = `${obj.name || objectId} (${objectId})\n${smParams.currentState ? '当前：' + smParams.currentState : '未配置状态'}`;
+    marker.title = `${obj.name || objectId} (${objectId})\n${smParams.currentOption ? '当前：' + smParams.currentOption : '未配置选项'}`;
     marker.style.left = `${num(obj.position.x, 0.5) * 100}%`;
     marker.style.top = `${num(obj.position.y, 0.5) * 100}%`;
 
@@ -71,10 +71,10 @@ function renderMap() {
     marker.appendChild(label);
 
     // 标记上同时显示当前状态（未配置状态时省略）
-    if (smParams.currentState) {
+    if (smParams.currentOption) {
       const stateEl = document.createElement('span');
       stateEl.className = 'object-marker-state';
-      stateEl.textContent = smParams.currentState;
+      stateEl.textContent = smParams.currentOption;
       marker.appendChild(stateEl);
     }
 

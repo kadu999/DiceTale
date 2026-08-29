@@ -44,8 +44,8 @@ export type ServerMessage =
   | { type: 'sync_state'; state: GameStateSnapshot }
   | { type: 'set_map'; mapName: string; spawnId: string }
   | { type: 'teleport_player'; mapName: string; spawnId: string }
-  /** 按对象 ID 切换客户端后台对象的状态（名称由客户端 Inspector 状态列表定义） */
-  | { type: 'set_object_state'; objectId: string; state: string }
+  /** 按对象 ID 设置客户端后台对象的当前选项（选项由客户端 Inspector 选项列表定义） */
+  | { type: 'set_option'; objectId: string; option: string }
   /** 整体设置对象物品列表 */
   | { type: 'set_object_items'; objectId: string; items: string[] }
   /** 应用 GM 擦除后的遮罩图（base64 PNG，遮罩对象） */
@@ -61,7 +61,7 @@ export type ServerMessage =
 
 export type GmMessage =
   | { type: 'gm_teleport_player'; mapName: string; spawnId: string }
-  | { type: 'gm_set_object_state'; objectId: string; state: string }
+  | { type: 'gm_set_option'; objectId: string; option: string }
   | { type: 'gm_set_object_items'; objectId: string; items: string[] }
   | { type: 'gm_set_mask_image'; objectId: string; image: string }
   /** GM 擦除遮罩的笔画轨迹（软边由客户端 shader 计算） */

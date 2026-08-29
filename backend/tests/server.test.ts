@@ -41,8 +41,8 @@ function send(ws: WebSocket, message: unknown) {
 }
 
 // 组件数据段构造：组件类型 + 组件显示名 + JSON 字符串数据（与客户端 JsonUtility.ToJson 一致）
-function sm(currentState: string, states: string[]) {
-  return { component: 'StateMachine', displayName: '状态机', data: JSON.stringify({ currentState, states }) };
+function sm(currentOption: string, options: string[]) {
+  return { component: 'OptionValue', displayName: '选项值', data: JSON.stringify({ currentOption, options }) };
 }
 function backpack(items: string[]) {
   return { component: 'Backpack', displayName: '背包', data: JSON.stringify({ items }) };
@@ -125,7 +125,7 @@ describe('WebSocket server', () => {
     const update = await gm.next(); // 客户端注册后广播的 gm_update
 
     expect(update.state.spawnPoints['Map001']).toEqual([{ id: 'Default' }]);
-    expect(smData(update.state.objects['Lever_1'].componentData[0]).currentState).toBe('off');
+    expect(smData(update.state.objects['Lever_1'].componentData[0]).currentOption).toBe('off');
   });
 
   test('request_teleport pushes teleport_player to client', async () => {
@@ -167,7 +167,7 @@ describe('WebSocket server', () => {
     expect(msg.spawnId).toBe('Default');
   });
 
-  test('gm_set_object_state pushes set_object_state to connected client', async () => {
+  test('gm_set_option pushes set_option to connected client', async () => {
     const client = await connect('/client');
     openSockets.push(client.ws);
     send(client.ws, { type: 'request_join' });
@@ -176,12 +176,12 @@ describe('WebSocket server', () => {
     const gm = await connect('/gm');
     openSockets.push(gm.ws);
     await gm.next(); // initial gm_update
-    send(gm.ws, { type: 'gm_set_object_state', objectId: 'Chest_1', state: 'open' });
+    send(gm.ws, { type: 'gm_set_option', objectId: 'Chest_1', option: 'open' });
 
     const msg = await client.next();
-    expect(msg.type).toBe('set_object_state');
+    expect(msg.type).toBe('set_option');
     expect(msg.objectId).toBe('Chest_1');
-    expect(msg.state).toBe('open');
+    expect(msg.option).toBe('open');
   });
 
   test('gm_set_float/int/bool push set_* to connected client', async () => {
@@ -235,8 +235,8 @@ describe('WebSocket server', () => {
       componentData: [sm('off', ['off', 'on'])],
     });
     expect(update.state.objects['Chest_2'].name).toBe('东侧宝箱');
-    expect(smData(update.state.objects['Chest_2'].componentData[0]).currentState).toBe('closed');
-    expect(smData(update.state.objects['Chest_2'].componentData[0]).states).toEqual(['closed', 'open']);
+    expect(smData(update.state.objects['Chest_2'].componentData[0]).currentOption).toBe('closed');
+    expect(smData(update.state.objects['Chest_2'].componentData[0]).options).toEqual(['closed', 'open']);
     expect(update.state.objects['Chest_2'].position).toEqual({ x: 0.7, y: 0.5 });
   });
 
@@ -480,7 +480,7 @@ describe('WebSocket server', () => {
     gm.ws.close();
   });
 
-  test('gm_set_object_state updates snapshot optimistically and forwards to client', async () => {
+  test('gm_set_option updates snapshot optimistically and forwards to client', async () => {
     const client = await connect('/client');
     openSockets.push(client.ws);
     send(client.ws, { type: 'request_join' });
@@ -496,18 +496,18 @@ describe('WebSocket server', () => {
     openSockets.push(gm.ws);
     await gm.next(); // initial gm_update（已包含 Lever_1）
 
-    send(gm.ws, { type: 'gm_set_object_state', objectId: 'Lever_1', state: 'on' });
+    send(gm.ws, { type: 'gm_set_option', objectId: 'Lever_1', option: 'on' });
 
     // GM 页面立即看到乐观更新（不等客户端回执）
     const update = await gm.next();
     expect(update.type).toBe('gm_update');
-    expect(smData(update.state.objects['Lever_1'].componentData[0]).currentState).toBe('on');
+    expect(smData(update.state.objects['Lever_1'].componentData[0]).currentOption).toBe('on');
 
     // 客户端收到转发命令
     const cmd = await client.next();
-    expect(cmd.type).toBe('set_object_state');
+    expect(cmd.type).toBe('set_option');
     expect(cmd.objectId).toBe('Lever_1');
-    expect(cmd.state).toBe('on');
+    expect(cmd.option).toBe('on');
 
     gm.ws.close();
     client.ws.close();

@@ -1,10 +1,10 @@
 import { GameState } from '../src/GameState';
 
 // 组件数据段构造：组件类型 + 组件显示名 + JSON 字符串数据（与客户端 JsonUtility.ToJson 一致）
-const sm = (currentState: string, states: string[]) => ({
-  component: 'StateMachine',
-  displayName: '状态机',
-  data: JSON.stringify({ currentState, states }),
+const sm = (currentOption: string, options: string[]) => ({
+  component: 'OptionValue',
+  displayName: '选项值',
+  data: JSON.stringify({ currentOption, options }),
 });
 const backpack = (items: string[]) => ({
   component: 'Backpack',
@@ -54,7 +54,7 @@ describe('GameState', () => {
     state.registerObjects('Map001', [
       { id: 'Lever_1', name: '大厅拉杆', kind: 'Lever', componentData: [sm('off', ['off', 'on'])] },
     ]);
-    state.setObjectState('Lever_1', 'on');
+    state.setObjectOption('Lever_1', 'on');
 
     state.registerObjects('Map001', [{ id: 'Lever_1', kind: 'Lever' }]);
 
@@ -62,16 +62,16 @@ describe('GameState', () => {
     expect(state.objects['Lever_1'].componentData).toEqual([sm('on', ['off', 'on'])]);
   });
 
-  test('setObjectState updates StateMachine currentState; unknown/missing component returns false', () => {
+  test('setObjectOption updates OptionValue currentOption; unknown/missing component returns false', () => {
     state.registerObjects('Map001', [
       { id: 'Lever_1', kind: 'Lever', componentData: [sm('off', ['off', 'on'])] },
       { id: 'Plain_1', kind: 'Lever' },
     ]);
 
-    expect(state.setObjectState('Lever_1', 'on')).toBe(true);
-    expect(state.objects['Lever_1'].componentData![0].data).toBe(JSON.stringify({ currentState: 'on', states: ['off', 'on'] }));
-    expect(state.setObjectState('Plain_1', 'on')).toBe(false); // 没有 StateMachine 组件
-    expect(state.setObjectState('Missing', 'on')).toBe(false);
+    expect(state.setObjectOption('Lever_1', 'on')).toBe(true);
+    expect(state.objects['Lever_1'].componentData![0].data).toBe(JSON.stringify({ currentOption: 'on', options: ['off', 'on'] }));
+    expect(state.setObjectOption('Plain_1', 'on')).toBe(false); // 没有 OptionValue 组件
+    expect(state.setObjectOption('Missing', 'on')).toBe(false);
   });
 
   test('registerObjects stores ItemExchange data when provided, omits otherwise', () => {
@@ -90,7 +90,7 @@ describe('GameState', () => {
       { id: 'Plain_1', kind: 'SceneObject' },
     ]);
 
-    expect(state.objects['Door_1'].componentData!.map((c) => c.component)).toEqual(['StateMachine', 'Backpack']);
+    expect(state.objects['Door_1'].componentData!.map((c) => c.component)).toEqual(['OptionValue', 'Backpack']);
     expect(state.objects['Plain_1'].componentData).toBeUndefined();
   });
 
@@ -186,6 +186,6 @@ describe('GameState', () => {
     snapshot.objects['Lever_1'].componentData![0].data = 'hacked';
     expect(state.players['Player_1'].position.x).toBe(1);
     expect(state.spawnPoints['Map002'][0].id).toBe('Default');
-    expect(state.objects['Lever_1'].componentData![0].data).toBe(JSON.stringify({ currentState: 'off', states: ['off', 'on'] }));
+    expect(state.objects['Lever_1'].componentData![0].data).toBe(JSON.stringify({ currentOption: 'off', options: ['off', 'on'] }));
   });
 });

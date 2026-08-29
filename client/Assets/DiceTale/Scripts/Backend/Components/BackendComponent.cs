@@ -35,7 +35,7 @@ namespace DiceTale
     [RequireComponent(typeof(BackendObject))]
     public abstract class BackendComponent : MonoBehaviour, IBackendComponentData, IBackendCommandHandler
     {
-        /// <summary>组件 ID（通常与客户端组件类同名，如 Backpack / Mask；OptionValue 例外：保持历史 ID "StateMachine" 供后台/GM 契约）。</summary>
+        /// <summary>组件 ID（与客户端组件类同名，如 OptionValue / Backpack / Mask；后台/GM 按此渲染控件）。</summary>
         public abstract string ComponentId { get; }
 
         /// <summary>Inspector 自定义组件显示名（GM 属性面板分区标题；留空用组件类名）。</summary>

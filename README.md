@@ -86,7 +86,7 @@ npm test        # jest：游戏状态、持久化、WebSocket 协议流程
 ## Unity 客户端接入
 
 1. 用 Unity 6（6000.3.x）打开 `client/`。
-2. 为场景中需要后台控制的物体添加 `SceneObject` 组件（继承 `BackendObject` 通信基类），并配置显示名称、物体 ID 与状态列表（后台可用 `set_object_state` 按名称切换）；
+2. 为场景中需要后台控制的物体添加 `SceneObject` 组件（继承 `BackendObject` 通信基类），并配置显示名称、物体 ID 与状态列表（后台可用 `set_option` 按名称切换）；
 3. 先启动后台再运行游戏，`BackendManager` 会自动连接 `ws://localhost:8088/client`，
    加载地图后自动上报出生点与后台物体（含位置）、玩家名单；玩家移动时自动上报位置。
 4. 想离线运行：取消勾选 `BackendManager` 上的 `Use Server`（走本地 Mock）。

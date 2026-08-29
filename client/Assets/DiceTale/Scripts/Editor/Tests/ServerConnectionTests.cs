@@ -22,9 +22,9 @@ namespace DiceTale.Editor.Tests
                 {
                     new ComponentData
                     {
-                        component = "StateMachine",
-                        displayName = "状态机",
-                        data = JsonUtility.ToJson(new StateData { currentState = "off", states = new List<string> { "off", "on" } })
+                        component = "OptionValue",
+                        displayName = "选项值",
+                        data = JsonUtility.ToJson(new StateData { currentOption = "off", options = new List<string> { "off", "on" } })
                     }
                 }
             });
@@ -35,10 +35,10 @@ namespace DiceTale.Editor.Tests
             Assert.IsTrue(json.Contains("\"Default\""));
             Assert.IsTrue(json.Contains("\"Lever_1\""));
             Assert.IsTrue(json.Contains("\"大厅拉杆\""));
-            Assert.IsTrue(json.Contains("\"component\":\"StateMachine\""));
-            Assert.IsTrue(json.Contains("\"displayName\":\"状态机\""));
+            Assert.IsTrue(json.Contains("\"component\":\"OptionValue\""));
+            Assert.IsTrue(json.Contains("\"displayName\":\"选项值\""));
             // 组件数据是 JSON 字符串：内嵌引号被 JsonUtility 转义为 \"，消费端 JSON.parse 还原
-            Assert.IsTrue(json.Contains("\\\"currentState\\\":\\\"off\\\""));
+            Assert.IsTrue(json.Contains("\\\"currentOption\\\":\\\"off\\\""));
             Assert.IsTrue(json.Contains("\"position\":{\"x\":0.4"));
         }
 
@@ -83,7 +83,7 @@ namespace DiceTale.Editor.Tests
             const string json = "{\"type\":\"sync_state\",\"state\":{\"currentMap\":\"Map001\"," +
                                 "\"player\":{\"position\":{\"x\":1.5,\"y\":2.5}}," +
                                 "\"objects\":{\"Lever_1\":{\"kind\":\"Lever\",\"componentData\":" +
-                                "[{\"component\":\"StateMachine\",\"data\":\"{\\\"currentState\\\":\\\"off\\\",\\\"states\\\":[\\\"off\\\",\\\"on\\\"]}\"}]}}," +
+                                "[{\"component\":\"OptionValue\",\"data\":\"{\\\"currentOption\\\":\\\"off\\\",\\\"options\\\":[\\\"off\\\",\\\"on\\\"]}\"}]}}," +
                                 "\"spawnPoints\":{\"Map001\":[{\"id\":\"Default\"}]}}}";
 
             var msg = JsonParser.ParseObject(json);
@@ -105,9 +105,9 @@ namespace DiceTale.Editor.Tests
             Assert.AreEqual(1, componentData.Count);
             var block = componentData[0] as Dictionary<string, object>;
             Assert.IsNotNull(block);
-            Assert.AreEqual("StateMachine", JsonParser.GetString(block, "component"));
+            Assert.AreEqual("OptionValue", JsonParser.GetString(block, "component"));
             var parsed = JsonParser.ParseObject(JsonParser.GetString(block, "data"));
-            Assert.AreEqual("off", JsonParser.GetString(parsed, "currentState"));
+            Assert.AreEqual("off", JsonParser.GetString(parsed, "currentOption"));
 
             var player = JsonParser.GetObject(state, "player");
             var position = JsonParser.GetObject(player, "position");
@@ -139,8 +139,8 @@ namespace DiceTale.Editor.Tests
         [System.Serializable]
         private class StateData
         {
-            public string currentState;
-            public List<string> states;
+            public string currentOption;
+            public List<string> options;
         }
 
         [System.Serializable]

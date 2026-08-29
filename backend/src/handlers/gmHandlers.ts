@@ -15,8 +15,8 @@ export class GmHandler {
       case 'gm_teleport_player':
         this.teleportPlayer(message.mapName, message.spawnId);
         break;
-      case 'gm_set_object_state':
-        this.setObjectState(message.objectId, message.state);
+      case 'gm_set_option':
+        this.setObjectOption(message.objectId, message.option);
         break;
       case 'gm_set_object_items':
         this.setObjectItems(message.objectId, message.items);
@@ -57,17 +57,17 @@ export class GmHandler {
     this.broadcast();
   }
 
-  /** 切换客户端对象状态：乐观更新快照并广播，再转发命令（客户端不回执，后台快照为准）。 */
-  private setObjectState(objectId: string, state: string) {
+  /** 设置客户端对象当前选项：乐观更新快照并广播，再转发命令（客户端不回执，后台快照为准）。 */
+  private setObjectOption(objectId: string, option: string) {
     const clientSocket = this.getClientSocket();
     if (!clientSocket) {
-      this.sendError('客户端未连接，无法切换状态');
+      this.sendError('客户端未连接，无法设置选项');
       return;
     }
-    if (gameState.setObjectState(objectId, state)) {
+    if (gameState.setObjectOption(objectId, option)) {
       this.broadcast();
     }
-    commands.setObjectState(clientSocket, objectId, state);
+    commands.setObjectOption(clientSocket, objectId, option);
   }
 
   /** 设置对象物品列表：立即更新本地快照并广播（不等待客户端回执），再转发给客户端保持一致；超过道具库存时拒绝。 */

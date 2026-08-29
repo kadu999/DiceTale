@@ -6,7 +6,7 @@ namespace DiceTale.Server
 {
     /// <summary>
     /// 解析并执行服务器下发的命令：
-    /// sync_state / set_map / teleport_player / set_object_state / set_object_items / set_mask_image / erase_mask。
+    /// sync_state / set_map / teleport_player / set_option / set_object_items / set_mask_image / erase_mask。
     /// 对象命令按 ObjectId 定位枢纽后，由枢纽路由给对应能力组件处理（组件自己解析参数）。
     /// </summary>
     public class ServerCommandDispatcher : MonoBehaviour
@@ -23,7 +23,7 @@ namespace DiceTale.Server
 
                 switch (JsonParser.GetString(msg, "type"))
                 {
-                    case "set_object_state":
+                    case "set_option":
                     case "set_object_items":
                     case "set_mask_image":
                     case "erase_mask":
@@ -53,7 +53,7 @@ namespace DiceTale.Server
         }
 
         /// <summary>
-        /// 对象命令（set_object_state / set_object_items / set_mask_image / erase_mask）：
+        /// 对象命令（set_option / set_object_items / set_mask_image / erase_mask）：
         /// 按 ObjectId 定位枢纽，由枢纽通用路由给能处理该命令的能力组件（组件自己解析参数并执行）。
         /// </summary>
         private void HandleObjectCommand(Dictionary<string, object> msg)

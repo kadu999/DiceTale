@@ -7,8 +7,8 @@ function renderPropertyPanel() {
 /** 组件 → 属性面板控件渲染器（与客户端组件类同名；新增客户端组件时在此注册渲染器）。
  *  每个渲染器收到：container（面板容器）、objectId、obj（完整对象信息）、title（组件显示名，作分区标题）。 */
 const componentRenderers = {
-  StateMachine: (container, objectId, obj, title) =>
-    renderObjectStates(propertySection(container, title), objectId, obj, null),
+  OptionValue: (container, objectId, obj, title) =>
+    renderOptionValue(propertySection(container, title), objectId, obj, null),
   Backpack: (container, objectId, obj, title) =>
     renderObjectItems(propertySection(container, title), objectId, (componentParams(obj, 'Backpack') || {}).items || []),
   ItemExchange: (container, objectId, obj, title) =>

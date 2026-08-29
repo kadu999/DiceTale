@@ -38,10 +38,10 @@ function renderPlayerList() {
 
     // 状态操作优先：放在物品区之前（未配置状态列表时不显示）；分区标题用组件显示名
     const obj = state.objects && state.objects[playerId];
-    const smBlock = componentBlock(obj, 'StateMachine');
-    const smParams = componentParams(obj, 'StateMachine') || {};
-    if ((smParams.states || []).length > 0) {
-      renderObjectStates(propertySection(list, (smBlock && smBlock.displayName) || '状态'), playerId, obj, null);
+    const smBlock = componentBlock(obj, 'OptionValue');
+    const smParams = componentParams(obj, 'OptionValue') || {};
+    if ((smParams.options || []).length > 0) {
+      renderOptionValue(propertySection(list, (smBlock && smBlock.displayName) || '选项'), playerId, obj, null);
     }
 
     // 物品编辑（与地图页属性面板一致的物品区，section 包裹以带分隔线；标题用组件显示名）

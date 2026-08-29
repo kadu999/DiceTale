@@ -126,10 +126,10 @@ export class GameState {
     return true;
   }
 
-  /** 更新通用后台对象当前状态（GM 下发 set_object_state 时的乐观更新；客户端不回执）。 */
-  setObjectState(objectId: string, state: string): boolean {
-    return this.updateComponentParam(objectId, 'StateMachine', (p) => {
-      p.currentState = state;
+  /** 更新通用后台对象当前选项（GM 下发 set_option 时的乐观更新；客户端不回执）。 */
+  setObjectOption(objectId: string, option: string): boolean {
+    return this.updateComponentParam(objectId, 'OptionValue', (p) => {
+      p.currentOption = option;
     });
   }
 

@@ -155,7 +155,7 @@ namespace DiceTale
         /// <see cref="IBackendCommandHandler"/>，自己解析参数并执行；本处不写任何具体命令逻辑，
         /// 新增命令只需在对应组件实现接口，无需改动主体与分派器。
         /// </summary>
-        /// <param name="commandType">后台消息 type（如 "set_object_state"）。</param>
+        /// <param name="commandType">后台消息 type（如 "set_option"）。</param>
         /// <param name="msg">后台消息字典（组件自己解析参数）。</param>
         /// <returns>有组件处理并执行成功返回 true；无组件处理返回 false。</returns>
         public bool DispatchCommand(string commandType, Dictionary<string, object> msg)
