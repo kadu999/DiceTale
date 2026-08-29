@@ -174,7 +174,14 @@ namespace DiceTale
 
                 if (handler.CanHandle(commandType))
                 {
-                    return handler.HandleCommand(msg);
+                    var ok = handler.HandleCommand(msg);
+                    if (ok)
+                    {
+                        // 命令成功处理后的统一通知（子类钩子 OnCommandHandled；Changed 由组件修改方法自己触发）
+                        comp.NotifyCommandHandled(commandType, msg);
+                    }
+
+                    return ok;
                 }
             }
 

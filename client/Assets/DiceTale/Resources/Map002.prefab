@@ -277,6 +277,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8cca1f58fcd94431aeeaacc485347d31, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.ShowHideAction
+  source: {fileID: 5533735694493956684}
   activeStateName: "\u5173\u95ED"
   target: {fileID: 0}
 --- !u!212 &112627203853156086
@@ -530,12 +531,7 @@ MonoBehaviour:
   states:
   - name: "\u5173\u95ED"
   - name: "\u5F00\u542F"
-  currentState: 0
-  onStateEnter:
-    m_PersistentCalls:
-      m_Calls: []
-  statefulActions:
-  - {fileID: 324196991457225583}
+  selectedIndex: 0
 --- !u!1 &9166112083032446475
 GameObject:
   m_ObjectHideFlags: 0

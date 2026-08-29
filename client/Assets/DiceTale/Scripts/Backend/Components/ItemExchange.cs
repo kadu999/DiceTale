@@ -50,7 +50,8 @@ namespace DiceTale
             RefreshQuantity();
         }
 
-        /// <summary>重新计算剩余数量：总数 − 所有玩家已持有该道具的数量（客户端本地状态，随 GM 分配命令更新）。</summary>
+        /// <summary>重新计算剩余数量：总数 − 所有玩家已持有该道具的数量（客户端本地状态，随 GM 分配命令更新）；
+        /// 剩余实际变化时触发基类 <see cref="BackendComponent.Changed"/>。</summary>
         public void RefreshQuantity()
         {
             var held = 0;
@@ -80,7 +81,14 @@ namespace DiceTale
                 }
             }
 
-            remaining = Mathf.Max(0, quantity - held);
+            var next = Mathf.Max(0, quantity - held);
+            if (next == remaining)
+            {
+                return;
+            }
+
+            remaining = next;
+            NotifyChanged();
         }
 
         /// <summary>刷新场景中所有道具交换组件的剩余数量并重新上报（玩家物品列表变化后调用）。</summary>

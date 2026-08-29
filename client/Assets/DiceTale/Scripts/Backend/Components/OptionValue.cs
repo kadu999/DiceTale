@@ -1,37 +1,31 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Events;
 
 namespace DiceTale
 {
     /// <summary>
-    /// 状态组件（状态机）：提供 Inspector 状态列表、进入事件（onStateEnter）与状态动作列表（statefulActions）。
+    /// 选项值组件（历史类名 StateMachine）：持有选项列表与当前选项（单选数据组件，GM 面板渲染为单选按钮组）。
     /// 继承 <see cref="BackendComponent"/>，与 <see cref="BackendObject"/> 枢纽挂同一物体：
-    /// - 状态列表/当前状态由组件自己上报（IBackendComponentData → GM 状态单选组）；
+    /// - 组件 ID 保持 "StateMachine"（后台/GM 契约，勿改；类名已随职责更名）；
+    /// - 选项列表/当前选项由组件自己上报（IBackendComponentData → GM 单选按钮组）；
     /// - set_object_state 命令由枢纽路由到本组件（TrySetState），执行后不回执上报（数据由后台维护）；
-    /// - 显示名称在枢纽上配置（BackendObject.displayName，后台看名字识别对象）；
-    /// - 背包（道具存储）已拆分到 <see cref="Backpack"/>（需要的物体另挂该组件）。
+    /// - 切换选项时调用基类 NotifyChanged()（代码事件 Changed；动作类经 BackendChangeAction.source 订阅本组件）；
+    /// - 显示名称在枢纽上配置（BackendObject.displayName，后台看名字识别对象）。
     /// </summary>
-    public class StateMachine : BackendComponent
+    public class OptionValue : BackendComponent
     {
-        /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染状态单选组）。</summary>
+        /// <summary>组件 ID：保持 "StateMachine"（后台 updateComponentParam 与 GM 面板渲染按此字符串识别，勿改）。</summary>
         public override string ComponentId => "StateMachine";
 
         [SerializeField, Tooltip("状态列表（仅状态名称）；后台可用 set_object_state 按名称切换")]
         private List<SceneObjectState> states = new List<SceneObjectState>();
 
-        [SerializeField, Tooltip("当前状态索引（对应状态列表中的位置，从 0 开始；越界时回退到第 0 个状态）")]
-        private int currentState;
+        [SerializeField, Tooltip("目前选择的索引（对应选项列表中的位置，从 0 开始；越界时回退到第 0 个选项）")]
+        private int selectedIndex;
 
-        [SerializeField, Tooltip("状态进入事件：进入任意状态时触发，携带进入的状态（SceneObjectState）")]
-        private UnityEvent<SceneObjectState> onStateEnter;
-
-        [SerializeField, Tooltip("状态动作列表：进入任意状态时依次调用每个动作的指定函数 OnStateEnter（可挂在任意物体上）")]
-        private List<StatefulAction> statefulActions = new List<StatefulAction>();
-
-        /// <summary>当前状态名称；未配置状态或尚未启动时为 null。</summary>
+        /// <summary>当前选项名称；未配置选项或尚未启动时为 null。</summary>
         public string CurrentStateName =>
-            currentState >= 0 && currentState < states.Count ? states[currentState].Name : null;
+            selectedIndex >= 0 && selectedIndex < states.Count ? states[selectedIndex].Name : null;
 
         /// <summary>全部可选状态名称（上报给 GM 页面展示与切换）。</summary>
         public List<string> StateNames
@@ -48,7 +42,7 @@ namespace DiceTale
             }
         }
 
-        /// <summary>组件数据上报：状态列表与当前状态（GM 属性面板的状态单选组）。</summary>
+        /// <summary>组件数据上报：选项列表与当前选项名称（GM 属性面板的单选按钮组；JSON 键 currentState/states 为后台/GM 契约）。</summary>
         public override void AppendToInfo(Server.ServerObjectInfo info)
         {
             AppendData(info, new StateData { currentState = CurrentStateName, states = StateNames });
@@ -57,11 +51,11 @@ namespace DiceTale
         [System.Serializable]
         private class StateData
         {
-            public string currentState;
-            public List<string> states;
+            public string currentState; // JSON 键（契约，勿改）：当前选项名称
+            public List<string> states; // JSON 键（契约，勿改）：选项列表
         }
 
-        /// <summary>命令处理：set_object_state（状态切换由本组件自己解析并执行，不再经枢纽转发）。</summary>
+        /// <summary>命令处理：set_object_state（选项切换由本组件自己解析并执行，不再经枢纽转发）。</summary>
         public override bool CanHandle(string commandType) => commandType == "set_object_state";
 
         public override bool HandleCommand(Dictionary<string, object> msg)
@@ -72,24 +66,24 @@ namespace DiceTale
 
         private void Start()
         {
-            // 进入当前状态（按索引对应状态列表；越界时回退到第 0 个），触发其 Action 与状态动作
+            // 进入当前选项（按索引对应选项列表；越界时回退到第 0 个），触发基类变更通知
             if (states.Count > 0)
             {
-                if (currentState < 0 || currentState >= states.Count)
+                if (selectedIndex < 0 || selectedIndex >= states.Count)
                 {
-                    Debug.LogWarning($"[StateMachine] {name}: current state index {currentState} out of range, fallback to first state.");
-                    currentState = 0;
+                    Debug.LogWarning($"[OptionValue] {name}: selected index {selectedIndex} out of range, fallback to first option.");
+                    selectedIndex = 0;
                 }
 
-                EnterState(currentState);
+                EnterState(selectedIndex);
             }
         }
 
         /// <summary>
-        /// 按名称切换状态（后台服务器 set_object_state 命令经枢纽转发调用）。
-        /// 切换到新状态时触发该状态的 Action 并同步 Current State 索引；已是同名状态时不重复触发。
+        /// 按名称切换选项（后台服务器 set_object_state 命令经枢纽转发调用）。
+        /// 切换到新选项时触发基类变更通知并同步 selectedIndex；已是同名选项时不重复触发。
         /// </summary>
-        /// <returns>状态存在并切换成功（或已在同状态）返回 true；名称不存在返回 false。</returns>
+        /// <returns>选项存在并切换成功（或已在同选项）返回 true；名称不存在返回 false。</returns>
         public bool TrySetState(string stateName)
         {
             if (string.IsNullOrEmpty(stateName))
@@ -104,7 +98,7 @@ namespace DiceTale
                     continue;
                 }
 
-                if (currentState == i)
+                if (selectedIndex == i)
                 {
                     return true;
                 }
@@ -135,24 +129,19 @@ namespace DiceTale
             return false;
         }
 
-        /// <summary>进入指定状态：触发 onStateEnter（携带进入的状态）与状态动作列表（所有状态进入都会触发）。</summary>
+        /// <summary>进入指定选项：同步目前选择的索引并触发基类变更通知（代码事件 Changed；
+        /// 后台切换与初始 Start 进入都会触发）。</summary>
         private void EnterState(int index)
         {
-            currentState = index;
-            var state = states[index];
-            onStateEnter?.Invoke(state);
-
-            foreach (var action in statefulActions)
-            {
-                action?.OnStateEnter(state);
-            }
+            selectedIndex = index;
+            NotifyChanged();
         }
     }
 
     /// <summary>
     /// 场景物体的一个状态：只包含状态名称（供后台 set_object_state 按名称切换）。
-    /// 进入状态的 onStateEnter 事件与状态动作（<see cref="StatefulAction"/>）
-    /// 在 StateMachine 上统一配置，进入任意状态都会触发（并携带该状态）。
+    /// 状态变化经基类变更通知统一分发（代码事件 Changed；动作类经 BackendChangeAction.source 订阅），
+    /// 动作按 <see cref="OptionValue.CurrentStateName"/> 判断当前状态。
     /// </summary>
     [System.Serializable]
     public class SceneObjectState

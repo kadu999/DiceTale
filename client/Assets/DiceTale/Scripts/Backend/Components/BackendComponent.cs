@@ -1,10 +1,11 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace DiceTale
 {
     /// <summary>
-    /// 后台能力组件基类：所有能力组件（StateMachine 状态机 / Backpack 背包 / ItemExchange 道具交换 /
+    /// 后台能力组件基类：所有能力组件（OptionValue 选项值 / Backpack 背包 / ItemExchange 道具交换 /
     /// Mask 遮罩）的统一基类。
     ///
     /// 基类已实现组件公共契约，子类只需声明自己的能力接口：
@@ -21,11 +22,19 @@ namespace DiceTale
     /// - 同一物体可挂多个能力组件（BackendObject 枢纽 + 任意个组件组合，如 状态机+背包+数值），
     ///   多个组件各自上报数据段，GM 面板按组件类型分行渲染；
     /// - 要求同物体必须有 BackendObject 枢纽（RequireComponent）。
+    ///
+    /// 变更通知（数据被修改后的统一出口，所有组件通用）：
+    /// - <see cref="Changed"/>：代码订阅事件——数据真正改变处触发（后台命令或本地修改都会），
+    ///   订阅/退订建议放在 OnEnable/OnDisable（退订勿漏，避免悬挂引用）；
+    ///   动作类（<see cref="BackendChangeAction"/>）用其 source 字段订阅本事件，无需组件侧配置；
+    /// - <see cref="NotifyCommandHandled"/>：后台命令成功处理后由枢纽调用（触发子类钩子
+    ///   <see cref="OnCommandHandled"/>）；Changed 不在此触发，避免命令路径双触发——
+    ///   各组件在自己的公共修改方法里主动调 <see cref="NotifyChanged"/>。
     /// </summary>
     [RequireComponent(typeof(BackendObject))]
     public abstract class BackendComponent : MonoBehaviour, IBackendComponentData, IBackendCommandHandler
     {
-        /// <summary>组件 ID（与客户端组件类同名，如 StateMachine / Backpack / ItemExchange / Mask）。</summary>
+        /// <summary>组件 ID（通常与客户端组件类同名，如 Backpack / Mask；OptionValue 例外：保持历史 ID "StateMachine" 供后台/GM 契约）。</summary>
         public abstract string ComponentId { get; }
 
         /// <summary>Inspector 自定义组件显示名（GM 属性面板分区标题；留空用组件类名）。</summary>
@@ -71,11 +80,43 @@ namespace DiceTale
 
         // ---------- IBackendCommandHandler（默认不处理命令，有命令要处理的子类覆写） ----------
 
-        /// <summary>是否处理该命令类型（默认 false；StateMachine/Backpack/Mask 覆写声明自己处理的命令）。</summary>
+        /// <summary>是否处理该命令类型（默认 false；OptionValue/Backpack/Mask 覆写声明自己处理的命令）。</summary>
         public virtual bool CanHandle(string commandType) => false;
 
         /// <summary>执行命令（默认不处理；覆写 CanHandle 的组件在此解析参数并执行）。</summary>
         public virtual bool HandleCommand(Dictionary<string, object> msg) => false;
+
+        // ---------- 变更通知（数据被修改后的统一出口） ----------
+
+        /// <summary>
+        /// 数据变更事件：组件数据真正改变处触发（后台命令或本地修改都会），订阅者据此做响应。
+        /// 载荷为本组件，订阅端可强转具体组件读取最新属性（如 (BoolValue)comp → Value）。
+        /// 建议在 OnEnable 订阅、OnDisable 退订（退订勿漏，避免悬挂引用）。
+        /// </summary>
+        public event Action<BackendComponent> Changed;
+
+        /// <summary>
+        /// 后台命令成功处理后的通知入口（由 <see cref="BackendObject.DispatchCommand"/> 在组件
+        /// HandleCommand 返回 true 后调用）：触发子类钩子 <see cref="OnCommandHandled"/>。
+        /// 注意本方法不触发 <see cref="Changed"/>（避免命令路径双触发）——组件在自己的公共
+        /// 修改方法里主动调 <see cref="NotifyChanged"/>，本地修改与后台命令统一走同一出口。
+        /// </summary>
+        public void NotifyCommandHandled(string commandType, Dictionary<string, object> msg)
+        {
+            OnCommandHandled(commandType, msg);
+        }
+
+        /// <summary>后台命令成功处理后的子类钩子（想感知具体命令类型的组件覆写；默认空实现）。</summary>
+        protected virtual void OnCommandHandled(string commandType, Dictionary<string, object> msg)
+        {
+        }
+
+        /// <summary>触发代码订阅事件 <see cref="Changed"/>（组件在数据真正改变处调用；值未变时不要调用）。
+        /// 后台命令与本地修改统一走这一出口，不会重复触发；动作类经 BackendChangeAction.source 订阅。</summary>
+        protected void NotifyChanged()
+        {
+            Changed?.Invoke(this);
+        }
 
         // ---------- 上报触发（统一经主体枢纽） ----------
 

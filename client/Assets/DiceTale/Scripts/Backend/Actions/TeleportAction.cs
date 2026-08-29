@@ -4,16 +4,16 @@ using UnityEngine;
 namespace DiceTale
 {
     /// <summary>
-    /// 传送动作：继承 <see cref="StatefulAction"/>。
-    /// 后台触发传送：状态进入（OnStateEnter：初始状态 Start 或后台 set_object_state 切换）时，
+    /// 传送动作：继承 <see cref="BackendChangeAction"/>。
+    /// 后台触发传送：组件数据改变（OnComponentChanged：OptionValue 选项切换，或 base 的 source 组件数据改变）时，
     /// 把目标玩家传送到目标地图上 <see cref="MapMarker"/> 标记的位置（targetMapName + targetMarkerId）。
     /// 目标玩家默认是 <see cref="range"/> 半径范围内（以自身为中心）的玩家；
     /// 勾选 <see cref="teleportAllPlayers"/> 时忽略半径，传送当前地图上的所有玩家。
-    /// 挂到 StateMachine 的「状态动作列表」即可，进入任意状态都会触发；
+    /// 把基类 BackendChangeAction 的 source 字段指向目标组件即可，任意选项切换都会触发；
     /// <see cref="triggerStateName"/> 非空时仅在该名称的状态下触发。
     /// 若要后台开/关传送区域（开启后玩家进入才传送），用 <see cref="TeleportZoneAction"/>。
     /// </summary>
-    public class TeleportAction : StatefulAction
+    public class TeleportAction : BackendChangeAction
     {
         [SerializeField, Tooltip("传送范围半径（世界单位），以自身为中心")]
         private float range = 1f;
@@ -30,10 +30,15 @@ namespace DiceTale
         [SerializeField, Tooltip("触发状态名：非空时仅在该名称的状态下触发传送；留空则任意状态切换都触发")]
         private string triggerStateName;
 
-        public override void OnStateEnter(SceneObjectState state)
+        public override void OnComponentChanged(BackendComponent component)
         {
+            if (!(component is OptionValue sm))
+            {
+                return;
+            }
+
             if (!string.IsNullOrEmpty(triggerStateName) &&
-                !string.Equals(state.Name, triggerStateName, System.StringComparison.OrdinalIgnoreCase))
+                !string.Equals(sm.CurrentStateName, triggerStateName, System.StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }

@@ -222,7 +222,8 @@ namespace DiceTale
             RenderTexture.active = prev;
         }
 
-        /// <summary>后台命令入口：整图导入（base64 PNG）——直接替换当前遮罩，无过渡。</summary>
+        /// <summary>后台命令入口：整图导入（base64 PNG）——直接替换当前遮罩，无过渡。
+        /// 应用成功时触发基类 <see cref="BackendComponent.Changed"/>。</summary>
         public void ApplyMaskImage(string base64Png)
         {
             if (string.IsNullOrEmpty(base64Png))
@@ -242,12 +243,14 @@ namespace DiceTale
 
             Graphics.Blit(loadTexture, maskRT);
             SyncOutputTexture();
+            NotifyChanged();
             Debug.Log($"[Mask] {name}: mask image applied ({loadTexture.width}x{loadTexture.height})");
         }
 
         /// <summary>后台命令入口：应用 GM 擦除的笔画轨迹。
         /// 用 MaskEraseStamp shader 沿线段打硬核圆（destination-out，ping-pong 到 maskRT），
-        /// 再同步到稳定输出纹理。边缘统一为硬边（无额外羽化 pass）。</summary>
+        /// 再同步到稳定输出纹理。边缘统一为硬边（无额外羽化 pass）。
+        /// 应用成功时触发基类 <see cref="BackendComponent.Changed"/>。</summary>
         public void ApplyEraseStroke(Vector2[] points, float radius, float softness)
         {
             if (points == null || points.Length < 2)
@@ -290,6 +293,7 @@ namespace DiceTale
             }
 
             SyncOutputTexture();
+            NotifyChanged();
 
             // 诊断：采样笔画起点附近的输出纹理 alpha——0 说明 shader 擦除已写入输出，1 说明链路有问题
             if (points.Length > 0 && outputTexture != null)

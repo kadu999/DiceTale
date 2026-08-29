@@ -105,6 +105,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8cca1f58fcd94431aeeaacc485347d31, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.ShowHideAction
+  source: {fileID: 3847467109664341175}
   activeStateName: "\u6BC1\u574F"
   target: {fileID: 0}
 --- !u!212 &5380705975816317989
@@ -354,16 +355,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5f079cd2b5b47898ac2228c012d11de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.SceneObject
+  displayName: 
   states:
   - name: "\u672A\u89E3\u9501"
   - name: "\u89E3\u9501"
   - name: "\u8FDB\u5165"
-  currentState: 0
-  onStateEnter:
-    m_PersistentCalls:
-      m_Calls: []
-  statefulActions:
-  - {fileID: 90111590232480573}
+  selectedIndex: 0
 --- !u!1 &3890056362384748944
 GameObject:
   m_ObjectHideFlags: 0
@@ -426,16 +423,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5f079cd2b5b47898ac2228c012d11de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.SceneObject
+  displayName: 
   states:
   - name: "\u6BC1\u574F"
   - name: "\u4FEE\u590D"
-  currentState: 0
-  onStateEnter:
-    m_PersistentCalls:
-      m_Calls: []
-  statefulActions:
-  - {fileID: 7865490019946216524}
-  - {fileID: 4986186018652317216}
+  selectedIndex: 0
 --- !u!1 &3944054351576381290
 GameObject:
   m_ObjectHideFlags: 0
@@ -496,6 +488,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e27285285179494fa5990940f6797a75, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.ItemObject
+  displayName: 
   itemName: "\u7EF4\u4FEE\u5DE5\u5177"
   quantity: 4
   remaining: 0
@@ -677,6 +670,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7af5b7f75a0b46cebdddd8e642cfbd74, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.TeleportAction
+  source: {fileID: 3615305867695832250}
   range: 1
   teleportAllPlayers: 1
   targetMapName: Map002
@@ -1150,6 +1144,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8cca1f58fcd94431aeeaacc485347d31, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.ShowHideAction
+  source: {fileID: 3847467109664341175}
   activeStateName: "\u4FEE\u590D"
   target: {fileID: 0}
 --- !u!1 &8725336608045207518

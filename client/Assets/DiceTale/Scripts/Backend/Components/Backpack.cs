@@ -53,7 +53,7 @@ namespace DiceTale
             return true;
         }
 
-        /// <summary>添加道具（重复添加忽略；本地修改，不回执）。</summary>
+        /// <summary>添加道具（重复添加忽略；本地修改，不回执）；实际添加时触发 <see cref="BackendComponent.Changed"/>。</summary>
         public void AddItem(string item)
         {
             if (string.IsNullOrEmpty(item) || items.Contains(item))
@@ -62,22 +62,55 @@ namespace DiceTale
             }
 
             items.Add(item);
+            NotifyChanged();
         }
 
-        /// <summary>移除道具（不存在时无操作；本地修改，不回执）。</summary>
+        /// <summary>移除道具（不存在时无操作；本地修改，不回执）；实际移除时触发 <see cref="BackendComponent.Changed"/>。</summary>
         public void RemoveItem(string item)
         {
-            items.Remove(item);
+            if (items.Remove(item))
+            {
+                NotifyChanged();
+            }
         }
 
-        /// <summary>整体设置道具列表（后台 set_object_items 命令经枢纽路由调用；本地修改，不回执）。</summary>
+        /// <summary>整体设置道具列表（后台 set_object_items 命令经枢纽路由调用；本地修改，不回执）；
+        /// 列表实际变化时触发 <see cref="BackendComponent.Changed"/>。</summary>
         public void SetItems(IEnumerable<string> newItems)
         {
-            items.Clear();
+            var next = new List<string>();
             if (newItems != null)
             {
-                items.AddRange(newItems);
+                next.AddRange(newItems);
             }
+
+            if (ItemsEqual(items, next))
+            {
+                return;
+            }
+
+            items.Clear();
+            items.AddRange(next);
+            NotifyChanged();
+        }
+
+        /// <summary>两个道具列表是否完全一致（顺序敏感；一致时不触发变更通知）。</summary>
+        private static bool ItemsEqual(List<string> a, List<string> b)
+        {
+            if (a.Count != b.Count)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < a.Count; i++)
+            {
+                if (a[i] != b[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }
