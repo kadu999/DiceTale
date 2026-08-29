@@ -1,7 +1,6 @@
-// 组件渲染器：FloatValue（浮点参数）——与客户端组件类同名，属性面板按 components 清单调用。
-// 控件：数字输入框（可小数），值变化发 gm_set_float。
+// 组件渲染器：FloatValue（浮点参数）——与客户端组件类同名，属性面板按 componentData 调用。
+// 控件：数字输入框（可小数），值变化发 gm_set_float。container 是已带分区标题（组件显示名）的 section。
 function renderFloatValue(container, objectId, obj) {
-  const section = propertySection(container, '浮点参数');
   const row = document.createElement('div');
   row.className = 'property-row';
   const label = document.createElement('span');
@@ -19,5 +18,5 @@ function renderFloatValue(container, objectId, obj) {
   });
   row.appendChild(label);
   row.appendChild(input);
-  section.appendChild(row);
+  container.appendChild(row);
 }

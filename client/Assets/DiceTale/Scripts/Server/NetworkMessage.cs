@@ -48,11 +48,13 @@ namespace DiceTale.Server
         public List<ComponentData> componentData = new List<ComponentData>();
     }
 
-    /// <summary>组件数据段：组件类型 + JSON 字符串数据（GM/后端按组件类型解析出最终数据）。</summary>
+    /// <summary>组件数据段：组件类型 + 组件显示名 + JSON 字符串数据（GM/后端按组件类型解析出最终数据）。</summary>
     [Serializable]
     public class ComponentData
     {
         public string component;
+        /// <summary>组件显示名（GM 属性面板分区标题，如「状态机」「背包」）。</summary>
+        public string displayName;
         public string data;
     }
 

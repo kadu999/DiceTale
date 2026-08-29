@@ -12,6 +12,8 @@ export interface PlayerInfo {
 
 export interface ComponentBlock {
   component: string;
+  /** 组件显示名（GM 属性面板分区标题，如「状态机」「背包」） */
+  displayName?: string;
   data: string;
 }
 

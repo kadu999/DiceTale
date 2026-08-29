@@ -15,6 +15,9 @@ namespace DiceTale
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染数字输入框）。</summary>
         public override string ComponentId => "FloatValue";
 
+        /// <summary>组件显示名（GM 属性面板分区标题）。</summary>
+        public override string DisplayName => "浮点参数";
+
         /// <summary>当前值。</summary>
         public float Value => value;
 

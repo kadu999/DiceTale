@@ -1,16 +1,19 @@
 import { GameState } from '../src/GameState';
 
-// 组件数据段构造：组件类型 + JSON 字符串数据（与客户端 JsonUtility.ToJson 一致）
+// 组件数据段构造：组件类型 + 组件显示名 + JSON 字符串数据（与客户端 JsonUtility.ToJson 一致）
 const sm = (currentState: string, states: string[]) => ({
   component: 'StateMachine',
+  displayName: '状态机',
   data: JSON.stringify({ currentState, states }),
 });
 const backpack = (items: string[]) => ({
   component: 'Backpack',
+  displayName: '背包',
   data: JSON.stringify({ items }),
 });
 const exchange = (itemName: string, quantity: number) => ({
   component: 'ItemExchange',
+  displayName: '道具交换',
   data: JSON.stringify({ itemName, quantity }),
 });
 

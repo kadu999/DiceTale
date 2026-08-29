@@ -23,6 +23,7 @@ namespace DiceTale.Editor.Tests
                     new ComponentData
                     {
                         component = "StateMachine",
+                        displayName = "状态机",
                         data = JsonUtility.ToJson(new StateData { currentState = "off", states = new List<string> { "off", "on" } })
                     }
                 }
@@ -35,6 +36,7 @@ namespace DiceTale.Editor.Tests
             Assert.IsTrue(json.Contains("\"Lever_1\""));
             Assert.IsTrue(json.Contains("\"大厅拉杆\""));
             Assert.IsTrue(json.Contains("\"component\":\"StateMachine\""));
+            Assert.IsTrue(json.Contains("\"displayName\":\"状态机\""));
             // 组件数据是 JSON 字符串：内嵌引号被 JsonUtility 转义为 \"，消费端 JSON.parse 还原
             Assert.IsTrue(json.Contains("\\\"currentState\\\":\\\"off\\\""));
             Assert.IsTrue(json.Contains("\"position\":{\"x\":0.4"));

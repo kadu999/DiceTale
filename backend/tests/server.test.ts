@@ -40,15 +40,15 @@ function send(ws: WebSocket, message: unknown) {
   ws.send(JSON.stringify(message));
 }
 
-// 组件数据段构造：组件类型 + JSON 字符串数据（与客户端 JsonUtility.ToJson 一致）
+// 组件数据段构造：组件类型 + 组件显示名 + JSON 字符串数据（与客户端 JsonUtility.ToJson 一致）
 function sm(currentState: string, states: string[]) {
-  return { component: 'StateMachine', data: JSON.stringify({ currentState, states }) };
+  return { component: 'StateMachine', displayName: '状态机', data: JSON.stringify({ currentState, states }) };
 }
 function backpack(items: string[]) {
-  return { component: 'Backpack', data: JSON.stringify({ items }) };
+  return { component: 'Backpack', displayName: '背包', data: JSON.stringify({ items }) };
 }
 function exchange(itemName: string, quantity: number) {
-  return { component: 'ItemExchange', data: JSON.stringify({ itemName, quantity }) };
+  return { component: 'ItemExchange', displayName: '道具交换', data: JSON.stringify({ itemName, quantity }) };
 }
 function smData(block: any): any {
   return JSON.parse(block.data);

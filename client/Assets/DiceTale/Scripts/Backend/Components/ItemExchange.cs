@@ -14,6 +14,9 @@ namespace DiceTale
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染道具分配区）。</summary>
         public override string ComponentId => "ItemExchange";
 
+        /// <summary>组件显示名（GM 属性面板分区标题）。</summary>
+        public override string DisplayName => "道具交换";
+
         [SerializeField, Tooltip("道具名（GM 页面显示名，也是分配给玩家的物品名）")]
         private string itemName;
 

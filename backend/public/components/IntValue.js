@@ -1,7 +1,6 @@
-// 组件渲染器：IntValue（整数参数）——与客户端组件类同名，属性面板按 components 清单调用。
-// 控件：整数输入框，值变化发 gm_set_int。
+// 组件渲染器：IntValue（整数参数）——与客户端组件类同名，属性面板按 componentData 调用。
+// 控件：整数输入框，值变化发 gm_set_int。container 是已带分区标题（组件显示名）的 section。
 function renderIntValue(container, objectId, obj) {
-  const section = propertySection(container, '整数参数');
   const row = document.createElement('div');
   row.className = 'property-row';
   const label = document.createElement('span');
@@ -19,5 +18,5 @@ function renderIntValue(container, objectId, obj) {
   });
   row.appendChild(label);
   row.appendChild(input);
-  section.appendChild(row);
+  container.appendChild(row);
 }

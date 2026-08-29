@@ -4,22 +4,23 @@
 function renderPropertyPanel() {
   renderPropertyPanelInto('propertyListMap');
 }
-/** 组件 → 属性面板控件渲染器（与客户端组件类同名；新增客户端组件时在此注册渲染器）。 */
+/** 组件 → 属性面板控件渲染器（与客户端组件类同名；新增客户端组件时在此注册渲染器）。
+ *  每个渲染器收到：container（面板容器）、objectId、obj（完整对象信息）、title（组件显示名，作分区标题）。 */
 const componentRenderers = {
-  StateMachine: (container, objectId, obj) =>
-    renderObjectStates(propertySection(container, '状态'), objectId, obj, null),
-  Backpack: (container, objectId, obj) =>
-    renderObjectItems(propertySection(container), objectId, (componentParams(obj, 'Backpack') || {}).items || [], '物品'),
-  ItemExchange: (container, objectId, obj) =>
-    renderItemDistribution(propertySection(container), obj),
-  Mask: (container, objectId) =>
-    renderMaskControl(propertySection(container, '遮罩'), objectId),
-  FloatValue: (container, objectId, obj) =>
-    renderFloatValue(container, objectId, obj),
-  IntValue: (container, objectId, obj) =>
-    renderIntValue(container, objectId, obj),
-  BoolValue: (container, objectId, obj) =>
-    renderBoolValue(container, objectId, obj),
+  StateMachine: (container, objectId, obj, title) =>
+    renderObjectStates(propertySection(container, title), objectId, obj, null),
+  Backpack: (container, objectId, obj, title) =>
+    renderObjectItems(propertySection(container, title), objectId, (componentParams(obj, 'Backpack') || {}).items || []),
+  ItemExchange: (container, objectId, obj, title) =>
+    renderItemDistribution(propertySection(container, title), obj),
+  Mask: (container, objectId, obj, title) =>
+    renderMaskControl(propertySection(container, title), objectId),
+  FloatValue: (container, objectId, obj, title) =>
+    renderFloatValue(propertySection(container, title), objectId, obj),
+  IntValue: (container, objectId, obj, title) =>
+    renderIntValue(propertySection(container, title), objectId, obj),
+  BoolValue: (container, objectId, obj, title) =>
+    renderBoolValue(propertySection(container, title), objectId, obj),
 };
 
 /** 取对象某组件的数据段（componentData 中按组件类型找；无则 null）。 */
@@ -62,18 +63,19 @@ function renderPropertyPanelInto(id) {
   addPropertyRow(info, '位置', fmtPos((obj && obj.position) || (player && player.position)));
   if (player) addPropertyRow(info, '地图', player.mapName || '-');
 
-  // 按组件数据段渲染属性控件（component = 组件类型，data = JSON 字符串，各渲染器自己解析）
+  // 按组件数据段渲染属性控件（component = 组件类型，displayName = 分区标题，data = JSON 字符串，各渲染器自己解析）
   const data = (obj && obj.componentData) || [];
   for (const block of data) {
     const renderer = componentRenderers[block.component];
+    const title = block.displayName || block.component;
     if (renderer) {
-      renderer(container, selectedObjectId, obj);
+      renderer(container, selectedObjectId, obj, title);
     } else {
-      renderUnknownComponent(container, block.component);
+      renderUnknownComponent(container, title);
     }
   }
 }
-function renderUnknownComponent(container, comp) {
+function renderUnknownComponent(container, displayName) {
   const section = propertySection(container);
   const row = document.createElement('div');
   row.className = 'property-row';
@@ -82,7 +84,7 @@ function renderUnknownComponent(container, comp) {
   label.textContent = '组件';
   const val = document.createElement('span');
   val.className = 'property-value';
-  val.textContent = comp + '（客户端已上报，后台暂未支持）';
+  val.textContent = displayName + '（客户端已上报，后台暂未支持）';
   row.appendChild(label);
   row.appendChild(val);
   section.appendChild(row);

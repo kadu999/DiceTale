@@ -28,6 +28,9 @@ namespace DiceTale
         /// <summary>组件 ID（与客户端组件类同名，如 StateMachine / Backpack / ItemExchange / Mask）。</summary>
         public abstract string ComponentId { get; }
 
+        /// <summary>组件显示名（GM 属性面板的分区标题，如「状态机」「背包」；未覆写时回退为组件 ID）。</summary>
+        public virtual string DisplayName => ComponentId;
+
         /// <summary>GM 属性面板是否渲染该组件的编辑控件（默认 true；角色组件覆写为 false）。</summary>
         public virtual bool GmEditable => true;
 
@@ -48,7 +51,8 @@ namespace DiceTale
         }
 
         /// <summary>
-        /// 把组件数据以 JSON 字符串追加到上报信息：component = 组件类型（ComponentId），data = JsonUtility 序列化。
+        /// 把组件数据以 JSON 字符串追加到上报信息：
+        /// component = 组件类型（ComponentId），displayName = 组件显示名（GM 面板分区标题），data = JsonUtility 序列化。
         /// 谁要用谁解析（GM/后端按组件类型 JSON.parse）。覆写 AppendToInfo 时调用。
         /// </summary>
         protected void AppendData(Server.ServerObjectInfo info, object data)
@@ -56,6 +60,7 @@ namespace DiceTale
             info.componentData.Add(new Server.ComponentData
             {
                 component = ComponentId,
+                displayName = DisplayName,
                 data = JsonUtility.ToJson(data)
             });
         }

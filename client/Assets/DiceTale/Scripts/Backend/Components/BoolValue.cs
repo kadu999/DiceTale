@@ -15,6 +15,9 @@ namespace DiceTale
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染开关）。</summary>
         public override string ComponentId => "BoolValue";
 
+        /// <summary>组件显示名（GM 属性面板分区标题）。</summary>
+        public override string DisplayName => "布尔参数";
+
         /// <summary>当前值。</summary>
         public bool Value => value;
 

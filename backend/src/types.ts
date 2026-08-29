@@ -14,8 +14,8 @@ export type ClientMessage =
         mapName?: string;
         /** 归一化位置 [0,1]，y 向下（用于在地图上定位目标） */
         position?: { x: number; y: number } | null;
-        /** 能力组件数据段：组件类型 + JSON 字符串数据（GM/后端按组件类型解析） */
-        componentData?: Array<{ component: string; data: string }>;
+        /** 能力组件数据段：组件类型 + 组件显示名 + JSON 字符串数据（GM/后端按组件类型解析） */
+        componentData?: Array<{ component: string; displayName?: string; data: string }>;
       }>;
     }
   | { type: 'register_players'; players: Array<{ id: string; name: string }> }
@@ -100,8 +100,8 @@ export interface ObjectStateSnapshot {
   mapName: string;
   /** 归一化位置 [0,1]，y 向下；未上报时为 null */
   position: { x: number; y: number } | null;
-  /** 能力组件数据段：组件类型 + JSON 字符串数据（GM 按组件类型解析渲染控件） */
-  componentData?: Array<{ component: string; data: string }>;
+  /** 能力组件数据段：组件类型 + 组件显示名 + JSON 字符串数据（GM 按组件类型解析渲染控件） */
+  componentData?: Array<{ component: string; displayName?: string; data: string }>;
 }
 
 export interface GameStateSnapshot {

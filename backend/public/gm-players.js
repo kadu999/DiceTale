@@ -36,15 +36,17 @@ function renderPlayerList() {
     addPropertyRow(info, '地图', player.mapName || '-');
     addPropertyRow(info, '位置', fmtPos(player.position));
 
-    // 状态操作优先：放在物品区之前（未配置状态列表时不显示）
+    // 状态操作优先：放在物品区之前（未配置状态列表时不显示）；分区标题用组件显示名
     const obj = state.objects && state.objects[playerId];
+    const smBlock = componentBlock(obj, 'StateMachine');
     const smParams = componentParams(obj, 'StateMachine') || {};
     if ((smParams.states || []).length > 0) {
-      renderObjectStates(propertySection(list, '状态'), playerId, obj, null);
+      renderObjectStates(propertySection(list, (smBlock && smBlock.displayName) || '状态'), playerId, obj, null);
     }
 
-    // 物品编辑（与地图页属性面板一致的物品区，section 包裹以带分隔线）
-    renderObjectItems(propertySection(list), playerId, backpackItemsOf(obj), '物品');
+    // 物品编辑（与地图页属性面板一致的物品区，section 包裹以带分隔线；标题用组件显示名）
+    const bpBlock = componentBlock(obj, 'Backpack');
+    renderObjectItems(propertySection(list, (bpBlock && bpBlock.displayName) || '物品'), playerId, backpackItemsOf(obj));
 
     container.appendChild(card);
   }
