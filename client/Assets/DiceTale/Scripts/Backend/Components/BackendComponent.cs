@@ -28,8 +28,15 @@ namespace DiceTale
         /// <summary>组件 ID（与客户端组件类同名，如 StateMachine / Backpack / ItemExchange / Mask）。</summary>
         public abstract string ComponentId { get; }
 
-        /// <summary>组件显示名（GM 属性面板的分区标题，如「状态机」「背包」；未覆写时回退为组件 ID）。</summary>
-        public virtual string DisplayName => ComponentId;
+        /// <summary>Inspector 自定义组件显示名（GM 属性面板分区标题；留空用组件默认显示名）。</summary>
+        [SerializeField, Tooltip("组件显示名（GM 属性面板分区标题）；留空使用组件默认显示名")]
+        private string displayName;
+
+        /// <summary>组件默认显示名（子类覆写，如「状态机」「背包」；未覆写时回退为组件 ID）。</summary>
+        public virtual string DefaultDisplayName => ComponentId;
+
+        /// <summary>组件显示名（GM 属性面板的分区标题）：Inspector 可覆盖（displayName 字段），留空时用默认显示名。</summary>
+        public string DisplayName => string.IsNullOrEmpty(displayName) ? DefaultDisplayName : displayName;
 
         /// <summary>GM 属性面板是否渲染该组件的编辑控件（默认 true；角色组件覆写为 false）。</summary>
         public virtual bool GmEditable => true;
