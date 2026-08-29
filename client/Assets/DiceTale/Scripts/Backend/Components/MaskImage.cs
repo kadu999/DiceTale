@@ -4,7 +4,7 @@ using UnityEngine;
 namespace DiceTale
 {
     /// <summary>
-    /// 遮罩组件（Mask）：只负责持有/更新遮罩纹理，不依赖任何渲染组件。
+    /// 遮罩图组件（MaskImage）：只负责持有/更新遮罩纹理，不依赖任何渲染组件。
     /// 场景中代表一张黑色遮罩（临时内存态，不持久化）：
     /// - 运行时生成全黑 <see cref="Texture2D"/>，通过 <see cref="MaskTexture"/> 暴露给外部渲染组件读取
     ///   （如 BoxComposite 的 _MaskTex）。**输出纹理实例创建一次、永不更换**，外部持有引用始终有效；
@@ -13,10 +13,10 @@ namespace DiceTale
     ///   输出纹理 ReadPixels 同步，外部直接看到结果。
     /// 对象 ID 与显示名称由枢纽统一提供（默认自动生成唯一 ID；显示名在 BackendObject.displayName 配置）。
     /// </summary>
-    public class Mask : BackendComponent
+    public class MaskImage : BackendComponent
     {
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染遮罩编辑区）。</summary>
-        public override string ComponentId => "Mask";
+        public override string ComponentId => "MaskImage";
 
         [SerializeField, Tooltip("遮罩纹理宽度（像素），GM 页面据此生成编辑画布")]
         private int maskWidth = 960;
@@ -78,7 +78,8 @@ namespace DiceTale
             }
         }
 
-        /// <summary>解析 GM 擦除笔画轨迹（归一化点 + 归一化半径 + 软边比例）并应用。少于两个点没有线段，忽略。</summary>
+        /// <summary>解析 GM 擦除笔画轨迹（归一化点 + 归一化半径 + 软边比例）并应用。
+        /// 单点（单击/笔画尾部）也接受：在点处打一个擦除圆。</summary>
         private bool HandleEraseStroke(Dictionary<string, object> msg)
         {
             var stroke = Server.JsonParser.GetObject(msg, "stroke");
@@ -88,7 +89,7 @@ namespace DiceTale
             }
 
             var rawPoints = Server.JsonParser.GetArray(stroke, "points");
-            if (rawPoints == null || rawPoints.Count < 2)
+            if (rawPoints == null || rawPoints.Count < 1)
             {
                 return false;
             }
@@ -199,7 +200,7 @@ namespace DiceTale
             var shader = Shader.Find(StampShaderName);
             if (shader == null)
             {
-                Debug.LogError($"[Mask] 找不到 Shader：{StampShaderName}");
+                Debug.LogError($"[MaskImage] 找不到 Shader：{StampShaderName}");
                 return;
             }
 
@@ -237,23 +238,25 @@ namespace DiceTale
 
             if (!loadTexture.LoadImage(System.Convert.FromBase64String(base64Png)))
             {
-                Debug.LogWarning($"[Mask] Failed to decode mask image: {name}");
+                Debug.LogWarning($"[MaskImage] Failed to decode mask image: {name}");
                 return;
             }
 
             Graphics.Blit(loadTexture, maskRT);
             SyncOutputTexture();
             NotifyChanged();
-            Debug.Log($"[Mask] {name}: mask image applied ({loadTexture.width}x{loadTexture.height})");
+            Debug.Log($"[MaskImage] {name}: mask image applied ({loadTexture.width}x{loadTexture.height})");
         }
 
         /// <summary>后台命令入口：应用 GM 擦除的笔画轨迹。
         /// 用 MaskEraseStamp shader 沿线段打硬核圆（destination-out，ping-pong 到 maskRT），
         /// 再同步到稳定输出纹理。边缘统一为硬边（无额外羽化 pass）。
+        /// 坐标约定：GM 画布为左上原点、y 向下（归一化 0=顶 1=底）；shader 的 Blit 空间是
+        /// 自下而上（UV 0,0 在左下），因此映射到纹理像素时 y 要翻转（1 - y）。
         /// 应用成功时触发基类 <see cref="BackendComponent.Changed"/>。</summary>
         public void ApplyEraseStroke(Vector2[] points, float radius, float softness)
         {
-            if (points == null || points.Length < 2)
+            if (points == null || points.Length < 1)
             {
                 return;
             }
@@ -263,7 +266,7 @@ namespace DiceTale
             EnsureStampMaterial();
             if (maskRT == null || blendRT == null || outputTexture == null || stampMaterial == null)
             {
-                Debug.LogWarning($"[Mask] {name}: 擦除被跳过（RT/材质未就绪，请检查 MaskEraseStamp Shader 是否导入）");
+                Debug.LogWarning($"[MaskImage] {name}: 擦除被跳过（RT/材质未就绪，请检查 MaskEraseStamp Shader 是否导入）");
                 return;
             }
 
@@ -273,22 +276,33 @@ namespace DiceTale
             stampMaterial.SetVector(MaskSizeId, maskSize);
             stampMaterial.SetFloat(StampRadiusId, radiusTex);
 
-            // 硬核擦除：沿线段打硬圆（shader：d < radius 全擦）
-            var step = Mathf.Max(1f, radiusTex * 0.5f);
-            for (int i = 0; i < points.Length - 1; i++)
+            // 单点（单击/笔画尾部）：只打一个擦除圆；多点：沿线段打硬圆（shader：d < radius 全擦）。
+            // 归一化 y（GM 上→下）翻转为 shader 的自下而上像素坐标，避免擦除轨迹上下镜像。
+            if (points.Length == 1)
             {
-                var from = new Vector2(points[i].x * maskRT.width, points[i].y * maskRT.height);
-                var to = new Vector2(points[i + 1].x * maskRT.width, points[i + 1].y * maskRT.height);
-                var distance = (to - from).magnitude;
-                var samples = Mathf.Max(1, Mathf.CeilToInt(distance / step));
-                for (int s = 0; s <= samples; s++)
+                var dot = new Vector2(points[0].x * maskRT.width, (1f - points[0].y) * maskRT.height);
+                stampMaterial.SetVector(StampCenterId, dot);
+                Graphics.Blit(maskRT, blendRT, stampMaterial);
+                Graphics.Blit(blendRT, maskRT);
+            }
+            else
+            {
+                var step = Mathf.Max(1f, radiusTex * 0.5f);
+                for (int i = 0; i < points.Length - 1; i++)
                 {
-                    var center = Vector2.Lerp(from, to, s / (float)samples);
+                    var from = new Vector2(points[i].x * maskRT.width, (1f - points[i].y) * maskRT.height);
+                    var to = new Vector2(points[i + 1].x * maskRT.width, (1f - points[i + 1].y) * maskRT.height);
+                    var distance = (to - from).magnitude;
+                    var samples = Mathf.Max(1, Mathf.CeilToInt(distance / step));
+                    for (int s = 0; s <= samples; s++)
+                    {
+                        var center = Vector2.Lerp(from, to, s / (float)samples);
 
-                    // destination-out 打点：ping-pong（读 maskRT 写 blendRT，再拷回 maskRT）
-                    stampMaterial.SetVector(StampCenterId, center);
-                    Graphics.Blit(maskRT, blendRT, stampMaterial);
-                    Graphics.Blit(blendRT, maskRT);
+                        // destination-out 打点：ping-pong（读 maskRT 写 blendRT，再拷回 maskRT）
+                        stampMaterial.SetVector(StampCenterId, center);
+                        Graphics.Blit(maskRT, blendRT, stampMaterial);
+                        Graphics.Blit(blendRT, maskRT);
+                    }
                 }
             }
 
@@ -299,12 +313,12 @@ namespace DiceTale
             if (points.Length > 0 && outputTexture != null)
             {
                 var px = Mathf.Clamp(Mathf.RoundToInt(points[0].x * outputTexture.width), 0, outputTexture.width - 1);
-                var py = Mathf.Clamp(Mathf.RoundToInt(points[0].y * outputTexture.height), 0, outputTexture.height - 1);
+                var py = Mathf.Clamp(Mathf.RoundToInt((1f - points[0].y) * outputTexture.height), 0, outputTexture.height - 1);
                 var sample = outputTexture.GetPixel(px, py);
-                Debug.Log($"[Mask] {name}: 输出纹理采样 alpha={sample.a:F2} (起点 {px},{py})");
+                Debug.Log($"[MaskImage] {name}: 输出纹理采样 alpha={sample.a:F2} (起点 {px},{py})");
             }
 
-            Debug.Log($"[Mask] {name}: erase stroke ({points.Length} points, r={radiusTex}, soft={softness})");
+            Debug.Log($"[MaskImage] {name}: erase stroke ({points.Length} points, r={radiusTex}, soft={softness})");
         }
 
         private void ReleaseResources()

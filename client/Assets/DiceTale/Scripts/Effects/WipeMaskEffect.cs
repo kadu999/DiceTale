@@ -3,7 +3,7 @@ using UnityEngine;
 namespace DiceTale
 {
     /// <summary>
-    /// 参考 BoxMaskEffect 的左右擦除（Mask）效果，不依赖 boxSprites：
+    /// 参考 BoxMaskEffect 的左右擦除（MaskImage）效果，不依赖 boxSprites：
     /// 遮罩是一条从左到右（或从右到左）推进的边界——覆盖侧显示效果纹理（纹理2），
     /// 未覆盖侧显示背景纹理（纹理1）；交界带（blendWidth）内两张纹理平滑交叉混合，不透明。
     /// 与 BoxMaskEffect 同款管线：WipeMask 一次 Graphics.Blit 把进度边界画进 maskRT，
@@ -186,7 +186,7 @@ namespace DiceTale
             maskRT.wrapMode = TextureWrapMode.Clamp;
             maskRT.name = "WipeMaskRT";
 
-            // 设置 Mask（与 BoxMaskEffect 一致：直接写到输出材质的 _MaskTex）
+            // 设置 MaskImage（与 BoxMaskEffect 一致：直接写到输出材质的 _MaskTex）
             meshRenderer.material.SetTexture("_MaskTex", maskRT);
         }
 

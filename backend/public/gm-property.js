@@ -13,7 +13,7 @@ const componentRenderers = {
     renderObjectItems(propertySection(container, title), objectId, (componentParams(obj, 'Backpack') || {}).items || []),
   ItemExchange: (container, objectId, obj, title) =>
     renderItemDistribution(propertySection(container, title), obj),
-  Mask: (container, objectId, obj, title) =>
+  MaskImage: (container, objectId, obj, title) =>
     renderMaskControl(propertySection(container, title), objectId),
   FloatValue: (container, objectId, obj, title) =>
     renderFloatValue(propertySection(container, title), objectId, obj),

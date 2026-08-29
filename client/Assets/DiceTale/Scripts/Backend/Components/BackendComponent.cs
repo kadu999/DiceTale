@@ -6,7 +6,7 @@ namespace DiceTale
 {
     /// <summary>
     /// 后台能力组件基类：所有能力组件（OptionValue 选项值 / Backpack 背包 / ItemExchange 道具交换 /
-    /// Mask 遮罩）的统一基类。
+    /// MaskImage 遮罩图）的统一基类。
     ///
     /// 基类已实现组件公共契约，子类只需声明自己的能力接口：
     /// - <see cref="IBackendCommandHandler"/>：命令处理（CanHandle/HandleCommand 默认不处理，子类按需覆写）；
@@ -35,7 +35,7 @@ namespace DiceTale
     [RequireComponent(typeof(BackendObject))]
     public abstract class BackendComponent : MonoBehaviour, IBackendComponentData, IBackendCommandHandler
     {
-        /// <summary>组件 ID（与客户端组件类同名，如 OptionValue / Backpack / Mask；后台/GM 按此渲染控件）。</summary>
+        /// <summary>组件 ID（与客户端组件类同名，如 OptionValue / Backpack / MaskImage；后台/GM 按此渲染控件）。</summary>
         public abstract string ComponentId { get; }
 
         /// <summary>Inspector 自定义组件显示名（GM 属性面板分区标题；留空用组件类名）。</summary>
@@ -86,7 +86,7 @@ namespace DiceTale
 
         // ---------- IBackendCommandHandler（默认不处理命令，有命令要处理的子类覆写） ----------
 
-        /// <summary>是否处理该命令类型（默认 false；OptionValue/Backpack/Mask 覆写声明自己处理的命令）。</summary>
+        /// <summary>是否处理该命令类型（默认 false；OptionValue/Backpack/MaskImage 覆写声明自己处理的命令）。</summary>
         public virtual bool CanHandle(string commandType) => false;
 
         /// <summary>执行命令（默认不处理；覆写 CanHandle 的组件在此解析参数并执行）。</summary>

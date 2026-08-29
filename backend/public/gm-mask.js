@@ -11,7 +11,7 @@ let maskCanvasFor = null; // 当前画布内容对应的对象 ID（同对象重
 /** 打开遮罩编辑弹框：为对象生成/保留黑色画布，可拖拽擦除。 */
 function openMaskEditor(objectId) {
   const obj = state.objects && state.objects[objectId];
-  const params = componentParams(obj, 'Mask') || {};
+  const params = componentParams(obj, 'MaskImage') || {};
   if (!obj || !params.maskWidth || !params.maskHeight) {
     showToast('该对象没有遮罩尺寸信息');
     return;
@@ -106,7 +106,8 @@ function pushStrokePoint(p) {
   maskStroke.points.push({ x: p.x, y: p.y });
 }
 
-/** 发送一段轨迹（增量）：包含上一段最后一个点，客户端可连线；done=true 表示笔画结束。 */
+/** 发送一段轨迹（增量）：包含上一段最后一个点，客户端可连线；done=true 表示笔画结束。
+ *  done 段放宽到单点：单击/笔画尾部也必须同步到客户端，否则网页擦了客户端不动（尾部被掐）。 */
 function sendMaskStrokeSegment(done) {
   if (!maskEditorObjectId || !maskStroke) {
     maskStroke = null;
@@ -115,7 +116,7 @@ function sendMaskStrokeSegment(done) {
 
   const all = maskStroke.points;
   const start = Math.max(0, maskStrokeSent - 1);
-  if (all.length - start < 2) {
+  if (all.length - start < (done ? 1 : 2)) {
     if (done) maskStroke = null;
     return;
   }

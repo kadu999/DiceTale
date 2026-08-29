@@ -3,17 +3,17 @@ using UnityEngine;
 namespace DiceTale
 {
     /// <summary>
-    /// 遮罩显示：把 <see cref="Mask"/> 的遮罩纹理推送到输出渲染器材质的遮罩槽（默认 _MaskTex，如 BoxComposite）。
+    /// 遮罩显示：把 <see cref="MaskImage"/> 的遮罩纹理推送到输出渲染器材质的遮罩槽（默认 _MaskTex，如 BoxComposite）。
     /// 只推送纹理，不创建/替换材质——材质（如 DiceTale/BoxComposite）由使用方自行配置在 outputRenderer 上。
     /// 遮罩初始为黑色，GM 在后台弹框擦除后纹理原地更新（LoadImage 保持实例不变），本组件自动跟随。
-    /// 用法：挂到任意物体，Inspector 指定 mask 与输出 renderer（缺省取本物体上的 Mask / Renderer）。
+    /// 用法：挂到任意物体，Inspector 指定 mask 与输出 renderer（缺省取本物体上的 MaskImage / Renderer）。
     /// </summary>
     public class MaskObjectDisplay : MonoBehaviour
     {
         [Header("数据源")]
-        [Tooltip("遮罩组件（提供 MaskTexture）；为空时取本物体上的 Mask")]
+        [Tooltip("遮罩图组件（提供 MaskTexture）；为空时取本物体上的 MaskImage")]
         [SerializeField]
-        private Mask mask;
+        private MaskImage mask;
 
         [Header("输出")]
         [Tooltip("输出渲染器（其材质需含遮罩纹理槽，如 BoxComposite 的 _MaskTex）；为空时取本物体上的 Renderer")]
@@ -28,7 +28,7 @@ namespace DiceTale
         {
             if (mask == null)
             {
-                mask = GetComponent<Mask>();
+                mask = GetComponent<MaskImage>();
             }
 
             if (outputRenderer == null)

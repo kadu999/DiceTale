@@ -145,7 +145,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &5487441980065225645
 Transform:
   m_ObjectHideFlags: 0
@@ -279,7 +279,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 647ad449b391b7446a939bd3cecbab28, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.MaskObject
-  displayName: 
+  displayName: "\u706B\u7130\u71C3\u70E7"
   actions: []
   maskWidth: 960
   maskHeight: 540
@@ -516,7 +516,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6178994360348360327}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1

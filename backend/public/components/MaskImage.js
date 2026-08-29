@@ -1,4 +1,4 @@
-// 组件渲染器：Mask（遮罩）——与客户端组件类同名，属性面板按 components 清单调用。
+// 组件渲染器：MaskImage（遮罩图）——与客户端组件类同名，属性面板按 components 清单调用。
 // 控件：修改按钮 → 遮罩编辑弹框（gm_erase_mask / gm_set_mask_image）。
 function renderMaskControl(container, objectId) {
   const maskSection = propertySection(container, '遮罩');
