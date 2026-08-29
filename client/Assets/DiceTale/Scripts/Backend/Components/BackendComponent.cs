@@ -18,9 +18,10 @@ namespace DiceTale
     /// - 激活时自动通知 <see cref="BackendObject"/> 枢纽刷新能力组件缓存（OnEnable 内置）；
     /// - <see cref="SendToBackend"/> / <see cref="NormalizePosition"/>：上报触发，统一转发给主体枢纽，
     ///   组件不直接接触通信层；数据修改由后台命令驱动，前端只在初始化上报；
+    /// - 同一物体可挂多个能力组件（BackendObject 枢纽 + 任意个组件组合，如 状态机+背包+数值），
+    ///   多个组件各自上报数据段，GM 面板按组件类型分行渲染；
     /// - 要求同物体必须有 BackendObject 枢纽（RequireComponent）。
     /// </summary>
-    [DisallowMultipleComponent]
     [RequireComponent(typeof(BackendObject))]
     public abstract class BackendComponent : MonoBehaviour, IBackendComponentData, IBackendCommandHandler
     {
