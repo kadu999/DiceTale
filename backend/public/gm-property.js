@@ -14,6 +14,12 @@ const componentRenderers = {
     renderItemDistribution(propertySection(container), obj),
   Mask: (container, objectId) =>
     renderMaskControl(propertySection(container, '遮罩'), objectId),
+  FloatValue: (container, objectId, obj) =>
+    renderFloatValue(container, objectId, obj),
+  IntValue: (container, objectId, obj) =>
+    renderIntValue(container, objectId, obj),
+  BoolValue: (container, objectId, obj) =>
+    renderBoolValue(container, objectId, obj),
 };
 
 function inferComponents(obj) {

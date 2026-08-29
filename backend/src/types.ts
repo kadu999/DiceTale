@@ -24,6 +24,12 @@ export type ClientMessage =
         position?: { x: number; y: number } | null;
         /** 物品列表（字符串） */
         items?: string[];
+        /** 浮点参数（FloatValue 组件上报） */
+        floatValue?: number;
+        /** 整数参数（IntValue 组件上报） */
+        intValue?: number;
+        /** 布尔参数（BoolValue 组件上报） */
+        boolValue?: boolean;
         /** 能力组件清单（与客户端组件类同名：StateMachine/Backpack/ItemExchange/Mask），GM 页面据此渲染属性控件 */
         components?: string[];
       }>;
@@ -61,7 +67,13 @@ export type ServerMessage =
   /** 应用 GM 擦除后的遮罩图（base64 PNG，遮罩对象） */
   | { type: 'set_mask_image'; objectId: string; image: string }
   /** 转发 GM 擦除遮罩的笔画轨迹（客户端 shader 计算软边） */
-  | { type: 'erase_mask'; objectId: string; stroke: EraseStroke };
+  | { type: 'erase_mask'; objectId: string; stroke: EraseStroke }
+  /** 设置对象浮点参数（FloatValue 组件） */
+  | { type: 'set_float'; objectId: string; value: number }
+  /** 设置对象整数参数（IntValue 组件） */
+  | { type: 'set_int'; objectId: string; value: number }
+  /** 设置对象布尔参数（BoolValue 组件） */
+  | { type: 'set_bool'; objectId: string; value: boolean };
 
 export type GmMessage =
   | { type: 'gm_teleport_player'; mapName: string; spawnId: string }
@@ -69,7 +81,13 @@ export type GmMessage =
   | { type: 'gm_set_object_items'; objectId: string; items: string[] }
   | { type: 'gm_set_mask_image'; objectId: string; image: string }
   /** GM 擦除遮罩的笔画轨迹（软边由客户端 shader 计算） */
-  | { type: 'gm_erase_mask'; objectId: string; stroke: EraseStroke };
+  | { type: 'gm_erase_mask'; objectId: string; stroke: EraseStroke }
+  /** GM 设置对象浮点参数（FloatValue 组件） */
+  | { type: 'gm_set_float'; objectId: string; value: number }
+  /** GM 设置对象整数参数（IntValue 组件） */
+  | { type: 'gm_set_int'; objectId: string; value: number }
+  /** GM 设置对象布尔参数（BoolValue 组件） */
+  | { type: 'gm_set_bool'; objectId: string; value: boolean };
 
 /** 遮罩擦除笔画：归一化轨迹点 + 归一化半径（相对纹理宽度）+ 软边羽化比例。
  *  done：拖动中增量发送时为 false，笔画结束时最后一帧为 true（客户端当前不区分）。 */
@@ -112,6 +130,12 @@ export interface ObjectStateSnapshot {
   position: { x: number; y: number } | null;
   /** 物品列表（字符串） */
   items: string[];
+  /** 浮点参数（FloatValue 组件） */
+  floatValue?: number;
+  /** 整数参数（IntValue 组件） */
+  intValue?: number;
+  /** 布尔参数（BoolValue 组件） */
+  boolValue?: boolean;
   /** 能力组件清单（与客户端组件类同名），GM 页面据此渲染属性控件；旧客户端未上报时不设置 */
   components?: string[];
 }

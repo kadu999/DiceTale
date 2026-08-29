@@ -49,6 +49,21 @@ export function eraseMask(ws: WebSocket, objectId: string, stroke: EraseStroke) 
   send(ws, { type: 'erase_mask', objectId, stroke });
 }
 
+/** 下发 GM 设置的浮点参数（FloatValue 组件）。 */
+export function setFloat(ws: WebSocket, objectId: string, value: number) {
+  send(ws, { type: 'set_float', objectId, value });
+}
+
+/** 下发 GM 设置的整数参数（IntValue 组件）。 */
+export function setInt(ws: WebSocket, objectId: string, value: number) {
+  send(ws, { type: 'set_int', objectId, value });
+}
+
+/** 下发 GM 设置的布尔参数（BoolValue 组件）。 */
+export function setBool(ws: WebSocket, objectId: string, value: boolean) {
+  send(ws, { type: 'set_bool', objectId, value });
+}
+
 /** 向所有 GM 控制台广播最新快照（含客户端在线状态）。 */
 export function broadcastGmUpdate(
   gmSockets: Set<WebSocket>,

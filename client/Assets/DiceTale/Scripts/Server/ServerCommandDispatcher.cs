@@ -27,6 +27,9 @@ namespace DiceTale.Server
                     case "set_object_items":
                     case "set_mask_image":
                     case "erase_mask":
+                    case "set_float":
+                    case "set_int":
+                    case "set_bool":
                         HandleObjectCommand(msg);
                         break;
                     case "teleport_player":

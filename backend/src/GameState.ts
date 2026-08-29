@@ -22,6 +22,12 @@ export interface ObjectInfo {
   mapName: string;
   position: { x: number; y: number } | null;
   items: string[];
+  /** 浮点参数（FloatValue 组件） */
+  floatValue?: number;
+  /** 整数参数（IntValue 组件） */
+  intValue?: number;
+  /** 布尔参数（BoolValue 组件） */
+  boolValue?: boolean;
   /** 能力组件清单（与客户端组件类同名），GM 页面据此渲染属性控件；旧客户端未上报时不设置 */
   components?: string[];
 }
@@ -105,6 +111,9 @@ export class GameState {
         mapName: obj.mapName ?? mapName,
         position: obj.position ?? existing?.position ?? null,
         items: obj.items ?? existing?.items ?? [],
+        floatValue: obj.floatValue ?? existing?.floatValue,
+        intValue: obj.intValue ?? existing?.intValue,
+        boolValue: obj.boolValue ?? existing?.boolValue,
         components: obj.components ?? existing?.components,
       };
     }
@@ -124,6 +133,30 @@ export class GameState {
     const obj = this.objects[objectId];
     if (!obj) return false;
     obj.items = items;
+    return true;
+  }
+
+  /** 更新对象浮点参数（GM 下发 set_float 时的乐观更新；客户端不回执）。 */
+  setObjectFloat(objectId: string, value: number): boolean {
+    const obj = this.objects[objectId];
+    if (!obj) return false;
+    obj.floatValue = value;
+    return true;
+  }
+
+  /** 更新对象整数参数（GM 下发 set_int 时的乐观更新；客户端不回执）。 */
+  setObjectInt(objectId: string, value: number): boolean {
+    const obj = this.objects[objectId];
+    if (!obj) return false;
+    obj.intValue = value;
+    return true;
+  }
+
+  /** 更新对象布尔参数（GM 下发 set_bool 时的乐观更新；客户端不回执）。 */
+  setObjectBool(objectId: string, value: boolean): boolean {
+    const obj = this.objects[objectId];
+    if (!obj) return false;
+    obj.boolValue = value;
     return true;
   }
 

@@ -170,6 +170,29 @@ describe('WebSocket server', () => {
     expect(msg.state).toBe('open');
   });
 
+  test('gm_set_float/int/bool push set_* to connected client', async () => {
+    const client = await connect('/client');
+    openSockets.push(client.ws);
+    send(client.ws, { type: 'request_join' });
+    await client.next(); // sync_state
+
+    const gm = await connect('/gm');
+    openSockets.push(gm.ws);
+    await gm.next(); // initial gm_update
+
+    send(gm.ws, { type: 'gm_set_float', objectId: 'Obj_1', value: 1.5 });
+    const f = await client.next();
+    expect(f).toEqual({ type: 'set_float', objectId: 'Obj_1', value: 1.5 });
+
+    send(gm.ws, { type: 'gm_set_int', objectId: 'Obj_1', value: 3 });
+    const i = await client.next();
+    expect(i).toEqual({ type: 'set_int', objectId: 'Obj_1', value: 3 });
+
+    send(gm.ws, { type: 'gm_set_bool', objectId: 'Obj_1', value: true });
+    const b = await client.next();
+    expect(b).toEqual({ type: 'set_bool', objectId: 'Obj_1', value: true });
+  });
+
   test('register_map_objects objects appear in gm snapshot with state list', async () => {
     const client = await connect('/client');
     openSockets.push(client.ws);

@@ -55,8 +55,14 @@ namespace DiceTale.Server
         public Position position;
         /// <summary>物品列表（字符串），与后台同步。</summary>
         public List<string> items = new List<string>();
-        /// <summary>能力组件清单（与客户端组件类同名：StateMachine/Backpack/ItemExchange/Mask），
-        /// GM 页面据此渲染属性控件（状态单选组/物品编辑/道具分配/遮罩编辑）。</summary>
+        /// <summary>浮点参数（FloatValue 组件上报，GM 页面数字输入框修改；非该组件对象为 0）。</summary>
+        public float floatValue;
+        /// <summary>整数参数（IntValue 组件上报，GM 页面整数输入框修改；非该组件对象为 0）。</summary>
+        public int intValue;
+        /// <summary>布尔参数（BoolValue 组件上报，GM 页面开关修改；非该组件对象为 false）。</summary>
+        public bool boolValue;
+        /// <summary>能力组件清单（与客户端组件类同名：StateMachine/Backpack/ItemExchange/Mask/FloatValue/IntValue/BoolValue），
+        /// GM 页面据此渲染属性控件（状态单选组/物品编辑/道具分配/遮罩编辑/数字输入/开关）。</summary>
         public List<string> components = new List<string>();
     }
 

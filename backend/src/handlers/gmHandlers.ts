@@ -27,6 +27,15 @@ export class GmHandler {
       case 'gm_erase_mask':
         this.eraseMask(message.objectId, message.stroke);
         break;
+      case 'gm_set_float':
+        this.setFloat(message.objectId, message.value);
+        break;
+      case 'gm_set_int':
+        this.setInt(message.objectId, message.value);
+        break;
+      case 'gm_set_bool':
+        this.setBool(message.objectId, message.value);
+        break;
       default:
         console.warn('[GmHandler] Unknown message:', (message as any).type);
     }
@@ -101,6 +110,45 @@ export class GmHandler {
       return;
     }
     commands.eraseMask(clientSocket, objectId, stroke);
+  }
+
+  /** 设置对象浮点参数：乐观更新快照并广播，再转发命令（客户端不回执）。 */
+  private setFloat(objectId: string, value: number) {
+    const clientSocket = this.getClientSocket();
+    if (!clientSocket) {
+      this.sendError('客户端未连接，无法设置参数');
+      return;
+    }
+    if (gameState.setObjectFloat(objectId, value)) {
+      this.broadcast();
+    }
+    commands.setFloat(clientSocket, objectId, value);
+  }
+
+  /** 设置对象整数参数：乐观更新快照并广播，再转发命令（客户端不回执）。 */
+  private setInt(objectId: string, value: number) {
+    const clientSocket = this.getClientSocket();
+    if (!clientSocket) {
+      this.sendError('客户端未连接，无法设置参数');
+      return;
+    }
+    if (gameState.setObjectInt(objectId, value)) {
+      this.broadcast();
+    }
+    commands.setInt(clientSocket, objectId, value);
+  }
+
+  /** 设置对象布尔参数：乐观更新快照并广播，再转发命令（客户端不回执）。 */
+  private setBool(objectId: string, value: boolean) {
+    const clientSocket = this.getClientSocket();
+    if (!clientSocket) {
+      this.sendError('客户端未连接，无法设置参数');
+      return;
+    }
+    if (gameState.setObjectBool(objectId, value)) {
+      this.broadcast();
+    }
+    commands.setBool(clientSocket, objectId, value);
   }
 
   /** 道具名 -> 总库存（多个同名道具对象的 quantity 累加）。 */
