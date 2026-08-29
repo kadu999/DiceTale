@@ -222,8 +222,19 @@ namespace DiceTale
                 }
                 else
                 {
-                    Debug.LogWarning($"[MapManager] Spawn point not found: {spawnId ?? "(default)"} (map={CurrentMapName})");
-                    return;
+                    // 最终兜底：网格锚点（网格原点 + 半格）。没有出生点/标记的地图也能落位，
+                    // 否则玩家会全部停在 Player 预制体的同一位置（出生叠人 BUG 的根因）
+                    var grid = CurrentMap != null ? CurrentMap.GetComponent<GridMap>() : null;
+                    if (grid != null)
+                    {
+                        target = grid.GridOrigin + new Vector3(grid.CellSize * 0.5f, grid.CellSize * 0.5f, 0f);
+                        targetDesc = "grid anchor (no spawn point / marker)";
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[MapManager] Spawn point not found: {spawnId ?? "(default)"} (map={CurrentMapName})");
+                        return;
+                    }
                 }
             }
 
@@ -373,8 +384,8 @@ namespace DiceTale
         }
 
         /// <summary>只在当前地图上按名字查找出生点：优先找名为「Spawn_{spawnId}」的子物体（忽略大小写），
-        /// 找不到回退到第一个名字以 Spawn_ 开头的子物体；没有则返回 null。
-        /// 出生点是普通 GameObject（无需任何组件），命名约定如 Spawn_Default / Spawn_North。
+        /// 找不到回退到第一个名字以 Spawn_ 开头或名为 SpawnPoint 的子物体；没有则返回 null。
+        /// 出生点是普通 GameObject（无需任何组件），命名约定如 Spawn_Default / Spawn_North / SpawnPoint。
         /// 注意只搜当前地图：切图时旧地图虽已 Destroy 但销毁延迟到帧末，全局搜索会拿到旧地图的出生点。</summary>
         private Transform FindSpawn(string spawnId)
         {
@@ -392,7 +403,10 @@ namespace DiceTale
                     return t;
                 }
 
-                if (fallback == null && t.name.StartsWith("Spawn_", System.StringComparison.OrdinalIgnoreCase))
+                // 兜底：任意 Spawn_* 前缀物体，或名为 SpawnPoint 的物体（旧命名约定，如 Map001）
+                if (fallback == null &&
+                    (t.name.StartsWith("Spawn_", System.StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(t.name, "SpawnPoint", System.StringComparison.OrdinalIgnoreCase)))
                 {
                     fallback = t;
                 }
@@ -415,6 +429,10 @@ namespace DiceTale
                 if (t.name.StartsWith("Spawn_", System.StringComparison.OrdinalIgnoreCase))
                 {
                     mapMsg.spawnPoints.Add(new Server.SpawnInfo { id = t.name.Substring("Spawn_".Length) });
+                }
+                else if (string.Equals(t.name, "SpawnPoint", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    mapMsg.spawnPoints.Add(new Server.SpawnInfo { id = "SpawnPoint" });
                 }
             }
         }
