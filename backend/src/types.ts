@@ -10,28 +10,12 @@ export type ClientMessage =
         /** 显示名称（GM 页面标明这是什么物体） */
         name?: string;
         kind?: string;
-        currentState?: string | null;
-        states?: string[];
-        /** 道具名（道具对象上报，供 GM 页面分配道具） */
-        itemName?: string;
-        /** 道具总数量（道具对象固定库存） */
-        quantity?: number;
-        /** 遮罩纹理宽度（遮罩对象上报，GM 页面据此生成编辑画布；非遮罩对象不设置） */
-        maskWidth?: number;
-        /** 遮罩纹理高度（遮罩对象上报，GM 页面据此生成编辑画布；非遮罩对象不设置） */
-        maskHeight?: number;
+        /** 对象所在的地图 */
+        mapName?: string;
         /** 归一化位置 [0,1]，y 向下（用于在地图上定位目标） */
         position?: { x: number; y: number } | null;
-        /** 物品列表（字符串） */
-        items?: string[];
-        /** 浮点参数（FloatValue 组件上报） */
-        floatValue?: number;
-        /** 整数参数（IntValue 组件上报） */
-        intValue?: number;
-        /** 布尔参数（BoolValue 组件上报） */
-        boolValue?: boolean;
-        /** 能力组件清单（与客户端组件类同名：StateMachine/Backpack/ItemExchange/Mask），GM 页面据此渲染属性控件 */
-        components?: string[];
+        /** 能力组件数据段：组件类型 + JSON 字符串数据（GM/后端按组件类型解析） */
+        componentData?: Array<{ component: string; data: string }>;
       }>;
     }
   | { type: 'register_players'; players: Array<{ id: string; name: string }> }
@@ -112,32 +96,12 @@ export interface ObjectStateSnapshot {
   name: string;
   /** 对象类型显示名（SceneObject / Player / Item / Event） */
   kind: string;
-  /** 当前状态名称；未配置状态时为 null */
-  currentState: string | null;
-  /** 全部可选状态名称 */
-  states: string[];
-  /** 道具名（道具对象上报，供 GM 页面分配道具；非道具对象不设置） */
-  itemName?: string;
-  /** 道具总数量（道具对象固定库存） */
-  quantity?: number;
-  /** 遮罩纹理宽度（遮罩对象上报，GM 页面据此生成编辑画布；非遮罩对象不设置） */
-  maskWidth?: number;
-  /** 遮罩纹理高度（遮罩对象上报，GM 页面据此生成编辑画布；非遮罩对象不设置） */
-  maskHeight?: number;
   /** 对象所在的地图 */
   mapName: string;
   /** 归一化位置 [0,1]，y 向下；未上报时为 null */
   position: { x: number; y: number } | null;
-  /** 物品列表（字符串） */
-  items: string[];
-  /** 浮点参数（FloatValue 组件） */
-  floatValue?: number;
-  /** 整数参数（IntValue 组件） */
-  intValue?: number;
-  /** 布尔参数（BoolValue 组件） */
-  boolValue?: boolean;
-  /** 能力组件清单（与客户端组件类同名），GM 页面据此渲染属性控件；旧客户端未上报时不设置 */
-  components?: string[];
+  /** 能力组件数据段：组件类型 + JSON 字符串数据（GM 按组件类型解析渲染控件） */
+  componentData?: Array<{ component: string; data: string }>;
 }
 
 export interface GameStateSnapshot {

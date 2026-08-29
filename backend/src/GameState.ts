@@ -10,26 +10,18 @@ export interface PlayerInfo {
   mapName: string;
 }
 
+export interface ComponentBlock {
+  component: string;
+  data: string;
+}
+
 export interface ObjectInfo {
   name: string;
   kind: string;
-  currentState: string | null;
-  states: string[];
-  itemName?: string;
-  quantity?: number;
-  maskWidth?: number;
-  maskHeight?: number;
   mapName: string;
   position: { x: number; y: number } | null;
-  items: string[];
-  /** 浮点参数（FloatValue 组件） */
-  floatValue?: number;
-  /** 整数参数（IntValue 组件） */
-  intValue?: number;
-  /** 布尔参数（BoolValue 组件） */
-  boolValue?: boolean;
-  /** 能力组件清单（与客户端组件类同名），GM 页面据此渲染属性控件；旧客户端未上报时不设置 */
-  components?: string[];
+  /** 能力组件数据段：组件类型 + JSON 字符串数据（后端透传，GM 按组件类型解析） */
+  componentData?: ComponentBlock[];
 }
 
 export class GameState {
@@ -102,62 +94,69 @@ export class GameState {
       next[obj.id] = {
         name: obj.name ?? existing?.name ?? obj.id,
         kind: obj.kind ?? existing?.kind ?? 'object',
-        currentState: obj.currentState ?? existing?.currentState ?? null,
-        states: obj.states ?? existing?.states ?? [],
-        itemName: obj.itemName ?? existing?.itemName,
-        quantity: obj.quantity ?? existing?.quantity,
-        maskWidth: obj.maskWidth ?? existing?.maskWidth,
-        maskHeight: obj.maskHeight ?? existing?.maskHeight,
-        mapName: obj.mapName ?? mapName,
+        mapName: obj.mapName ?? existing?.mapName ?? mapName,
         position: obj.position ?? existing?.position ?? null,
-        items: obj.items ?? existing?.items ?? [],
-        floatValue: obj.floatValue ?? existing?.floatValue,
-        intValue: obj.intValue ?? existing?.intValue,
-        boolValue: obj.boolValue ?? existing?.boolValue,
-        components: obj.components ?? existing?.components,
+        componentData: obj.componentData ?? existing?.componentData,
       };
     }
     this.objects = next;
   }
 
+  /** 更新对象指定组件的一个 JSON 字段并回写 data 字符串（乐观更新；客户端不回执）。
+   *  组件数据是「组件类型 + JSON 字符串」，按组件定位后解析、改字段、再序列化。 */
+  private updateComponentParam(
+    objectId: string,
+    component: string,
+    mutate: (params: any) => void
+  ): boolean {
+    const obj = this.objects[objectId];
+    if (!obj || !obj.componentData) return false;
+    const block = obj.componentData.find((c) => c.component === component);
+    if (!block) return false;
+    let params: any;
+    try {
+      params = JSON.parse(block.data || '{}');
+    } catch {
+      return false;
+    }
+    mutate(params);
+    block.data = JSON.stringify(params);
+    return true;
+  }
+
   /** 更新通用后台对象当前状态（GM 下发 set_object_state 时的乐观更新；客户端不回执）。 */
   setObjectState(objectId: string, state: string): boolean {
-    const obj = this.objects[objectId];
-    if (!obj) return false;
-    obj.currentState = state;
-    return true;
+    return this.updateComponentParam(objectId, 'StateMachine', (p) => {
+      p.currentState = state;
+    });
   }
 
   /** 更新通用后台对象物品列表（GM 下发 set_object_items 时的乐观更新；客户端不回执）。 */
   setObjectItems(objectId: string, items: string[]): boolean {
-    const obj = this.objects[objectId];
-    if (!obj) return false;
-    obj.items = items;
-    return true;
+    return this.updateComponentParam(objectId, 'Backpack', (p) => {
+      p.items = items;
+    });
   }
 
   /** 更新对象浮点参数（GM 下发 set_float 时的乐观更新；客户端不回执）。 */
   setObjectFloat(objectId: string, value: number): boolean {
-    const obj = this.objects[objectId];
-    if (!obj) return false;
-    obj.floatValue = value;
-    return true;
+    return this.updateComponentParam(objectId, 'FloatValue', (p) => {
+      p.value = value;
+    });
   }
 
   /** 更新对象整数参数（GM 下发 set_int 时的乐观更新；客户端不回执）。 */
   setObjectInt(objectId: string, value: number): boolean {
-    const obj = this.objects[objectId];
-    if (!obj) return false;
-    obj.intValue = value;
-    return true;
+    return this.updateComponentParam(objectId, 'IntValue', (p) => {
+      p.value = value;
+    });
   }
 
   /** 更新对象布尔参数（GM 下发 set_bool 时的乐观更新；客户端不回执）。 */
   setObjectBool(objectId: string, value: boolean): boolean {
-    const obj = this.objects[objectId];
-    if (!obj) return false;
-    obj.boolValue = value;
-    return true;
+    return this.updateComponentParam(objectId, 'BoolValue', (p) => {
+      p.value = value;
+    });
   }
 
   getSnapshot(): GameStateSnapshot {

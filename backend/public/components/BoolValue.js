@@ -9,7 +9,7 @@ function renderBoolValue(container, objectId, obj) {
   label.textContent = '值';
   const input = document.createElement('input');
   input.type = 'checkbox';
-  input.checked = !!obj.boolValue;
+  input.checked = !!(componentParams(obj, 'BoolValue') || {}).value;
   input.addEventListener('change', () => {
     send({ type: 'gm_set_bool', objectId, value: input.checked });
   });

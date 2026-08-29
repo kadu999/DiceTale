@@ -151,12 +151,28 @@ export class GmHandler {
     commands.setBool(clientSocket, objectId, value);
   }
 
-  /** 道具名 -> 总库存（多个同名道具对象的 quantity 累加）。 */
+  /** 取对象某组件的解析后数据（组件类型 + JSON 字符串数据；无组件或解析失败返回 null）。 */
+  private componentParams(
+    obj: { componentData?: Array<{ component: string; data: string }> } | undefined,
+    component: string
+  ): any {
+    if (!obj || !obj.componentData) return null;
+    const block = obj.componentData.find((c) => c.component === component);
+    if (!block) return null;
+    try {
+      return JSON.parse(block.data || '{}');
+    } catch {
+      return null;
+    }
+  }
+
+  /** 道具名 -> 总库存（多个同名 ItemExchange 组件的 quantity 累加）。 */
   private itemStock(): Record<string, number> {
     const stock: Record<string, number> = {};
     for (const obj of Object.values(gameState.objects)) {
-      if (obj.itemName && obj.quantity) {
-        stock[obj.itemName] = (stock[obj.itemName] || 0) + obj.quantity;
+      const params = this.componentParams(obj, 'ItemExchange');
+      if (params && params.itemName && params.quantity) {
+        stock[params.itemName] = (stock[params.itemName] || 0) + params.quantity;
       }
     }
     return stock;
@@ -171,7 +187,8 @@ export class GmHandler {
     for (const pid of Object.keys(gameState.players)) {
       if (pid === objectId) continue;
       const obj = gameState.objects[pid];
-      for (const it of obj?.items ?? []) counts[it] = (counts[it] || 0) + 1;
+      const params = this.componentParams(obj, 'Backpack');
+      for (const it of params?.items ?? []) counts[it] = (counts[it] || 0) + 1;
     }
     for (const it of newItems) counts[it] = (counts[it] || 0) + 1;
 

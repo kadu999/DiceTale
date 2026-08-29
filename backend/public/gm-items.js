@@ -55,7 +55,8 @@ function fillCategoryTags(container, active, onSelect) {
 function itemNameStock(name) {
   let stock = 0;
   for (const obj of Object.values(state.objects || {})) {
-    if (obj.itemName === name) stock += obj.quantity || 0;
+    const params = exchangeParams(obj);
+    if (params.itemName === name) stock += params.quantity || 0;
   }
   return stock;
 }
@@ -67,7 +68,7 @@ function canAddItem(name) {
 
   let held = 0;
   for (const playerId of Object.keys(state.players || {})) {
-    const items = (state.objects[playerId] && state.objects[playerId].items) || [];
+    const items = backpackItemsOf(state.objects[playerId]);
     for (const it of items) {
       if (it === name) held++;
     }
@@ -196,7 +197,7 @@ function renderItemAssign(container, item) {
   }
 
   for (const [playerId, player] of players) {
-    const playerItems = (state.objects[playerId] && state.objects[playerId].items) || [];
+    const playerItems = backpackItemsOf(state.objects[playerId]);
     const count = playerItems.filter((i) => i === name).length;
 
     const line = document.createElement('div');
@@ -243,7 +244,7 @@ function renderItemAssign(container, item) {
 function heldItemCount(name) {
   let held = 0;
   for (const playerId of Object.keys(state.players || {})) {
-    const items = (state.objects[playerId] && state.objects[playerId].items) || [];
+    const items = backpackItemsOf(state.objects[playerId]);
     for (const it of items) {
       if (it === name) held++;
     }
@@ -281,7 +282,7 @@ function openItemPicker(objectId) {
   }
 
   pickerTargetId = objectId;
-  pickerCurrentItems = (obj.items || []).slice();
+  pickerCurrentItems = backpackItemsOf(obj).slice();
   pickerSelectedItem = null;
   pickerSearch = '';
   pickerCategory = '';

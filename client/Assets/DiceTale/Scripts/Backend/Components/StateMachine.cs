@@ -51,8 +51,14 @@ namespace DiceTale
         /// <summary>组件数据上报：状态列表与当前状态（GM 属性面板的状态单选组）。</summary>
         public override void AppendToInfo(Server.ServerObjectInfo info)
         {
-            info.currentState = CurrentStateName;
-            info.states = StateNames;
+            AppendData(info, new StateData { currentState = CurrentStateName, states = StateNames });
+        }
+
+        [System.Serializable]
+        private class StateData
+        {
+            public string currentState;
+            public List<string> states;
         }
 
         /// <summary>命令处理：set_object_state（状态切换由本组件自己解析并执行，不再经枢纽转发）。</summary>

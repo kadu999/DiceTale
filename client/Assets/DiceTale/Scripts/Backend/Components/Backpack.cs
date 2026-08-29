@@ -22,7 +22,13 @@ namespace DiceTale
         /// <summary>组件数据上报（初始化）：道具列表（GM 属性面板的物品编辑区）。</summary>
         public override void AppendToInfo(Server.ServerObjectInfo info)
         {
-            info.items = new List<string>(items);
+            AppendData(info, new BackpackData { items = new List<string>(items) });
+        }
+
+        [System.Serializable]
+        private class BackpackData
+        {
+            public List<string> items;
         }
 
         /// <summary>命令处理：set_object_items（道具列表由本组件自己解析并执行）。</summary>

@@ -27,7 +27,13 @@ namespace DiceTale
         /// <summary>组件数据上报：整数参数值。</summary>
         public override void AppendToInfo(Server.ServerObjectInfo info)
         {
-            info.intValue = value;
+            AppendData(info, new ValueData { value = value });
+        }
+
+        [System.Serializable]
+        private class ValueData
+        {
+            public int value;
         }
 
         /// <summary>命令处理：set_int（GM 整数输入框修改，本组件自己解析并执行）。</summary>

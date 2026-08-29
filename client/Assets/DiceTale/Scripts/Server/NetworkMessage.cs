@@ -30,8 +30,9 @@ namespace DiceTale.Server
     }
 
     /// <summary>
-    /// 通用后台对象状态信息：对象 ID、显示名称、类型显示名、当前状态、全部可选状态名称、
-    /// 归一化位置与物品列表。由 BackendRegistry 对每个 BackendObject 统一收集。
+    /// 通用后台对象状态信息：对象 ID、显示名称、类型显示名、所属地图、归一化位置，
+    /// 以及各能力组件的数据段（组件类型 + JSON 字符串，谁要用谁解析）。
+    /// 由 BackendRegistry 对每个 BackendObject 统一收集。
     /// </summary>
     [Serializable]
     public class ServerObjectInfo
@@ -39,31 +40,20 @@ namespace DiceTale.Server
         public string id;
         public string name;
         public string kind;
-        public string currentState;
-        public List<string> states = new List<string>();
         /// <summary>对象所属地图名（客户端按对象实际所在的地图上报，避免跨图串图）。</summary>
         public string mapName;
-        /// <summary>道具名（道具对象上报，供 GM 页面分配道具使用；非道具对象为空）。</summary>
-        public string itemName;
-        /// <summary>道具总数量（道具对象固定库存，供 GM 页面计算剩余）。</summary>
-        public int quantity;
-        /// <summary>遮罩纹理宽度（遮罩对象上报，供 GM 页面生成/编辑遮罩；非遮罩对象为 0）。</summary>
-        public int maskWidth;
-        /// <summary>遮罩纹理高度（遮罩对象上报，供 GM 页面生成/编辑遮罩；非遮罩对象为 0）。</summary>
-        public int maskHeight;
         /// <summary>对象在地图图片上的归一化位置 [0,1]，y 向下（左上角为原点）。</summary>
         public Position position;
-        /// <summary>物品列表（字符串），与后台同步。</summary>
-        public List<string> items = new List<string>();
-        /// <summary>浮点参数（FloatValue 组件上报，GM 页面数字输入框修改；非该组件对象为 0）。</summary>
-        public float floatValue;
-        /// <summary>整数参数（IntValue 组件上报，GM 页面整数输入框修改；非该组件对象为 0）。</summary>
-        public int intValue;
-        /// <summary>布尔参数（BoolValue 组件上报，GM 页面开关修改；非该组件对象为 false）。</summary>
-        public bool boolValue;
-        /// <summary>能力组件清单（与客户端组件类同名：StateMachine/Backpack/ItemExchange/Mask/FloatValue/IntValue/BoolValue），
-        /// GM 页面据此渲染属性控件（状态单选组/物品编辑/道具分配/遮罩编辑/数字输入/开关）。</summary>
-        public List<string> components = new List<string>();
+        /// <summary>能力组件数据段：每个组件一段（component=组件类型，data=该组件数据的 JSON 字符串）。</summary>
+        public List<ComponentData> componentData = new List<ComponentData>();
+    }
+
+    /// <summary>组件数据段：组件类型 + JSON 字符串数据（GM/后端按组件类型解析出最终数据）。</summary>
+    [Serializable]
+    public class ComponentData
+    {
+        public string component;
+        public string data;
     }
 
     [Serializable]

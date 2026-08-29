@@ -99,16 +99,15 @@ namespace DiceTale
 
                 obj.AppendToReport(mapMsg, playerMsg);
 
-                // 通用对象状态信息：枢纽只填身份/位置/组件清单；
-                // 能力数据（状态/物品/道具/遮罩）由各能力组件自己填充（FillReportData → IBackendComponentData）
+                // 通用对象状态信息：枢纽只填身份/位置；组件数据由各能力组件自己填充
+                // （FillReportData → AppendData：组件类型 + JSON 字符串数据段）
                 var info = new Server.ServerObjectInfo
                 {
                     id = obj.ObjectId,
                     name = obj.DisplayName,
                     kind = obj.ObjectKind,
                     mapName = mapName,
-                    position = obj.GetNormalizedPosition(),
-                    components = obj.Components
+                    position = obj.GetNormalizedPosition()
                 };
 
                 obj.FillReportData(info);

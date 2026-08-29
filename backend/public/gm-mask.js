@@ -11,7 +11,8 @@ let maskCanvasFor = null; // 当前画布内容对应的对象 ID（同对象重
 /** 打开遮罩编辑弹框：为对象生成/保留黑色画布，可拖拽擦除。 */
 function openMaskEditor(objectId) {
   const obj = state.objects && state.objects[objectId];
-  if (!obj || !obj.maskWidth || !obj.maskHeight) {
+  const params = componentParams(obj, 'Mask') || {};
+  if (!obj || !params.maskWidth || !params.maskHeight) {
     showToast('该对象没有遮罩尺寸信息');
     return;
   }
@@ -23,9 +24,9 @@ function openMaskEditor(objectId) {
   if (!modal || !canvas) return;
 
   // 同对象重开或尺寸变化时才重置画布（保留上次擦除结果，避免覆盖客户端已有擦除）
-  if (maskCanvasFor !== objectId || canvas.width !== obj.maskWidth || canvas.height !== obj.maskHeight) {
-    canvas.width = obj.maskWidth;
-    canvas.height = obj.maskHeight;
+  if (maskCanvasFor !== objectId || canvas.width !== params.maskWidth || canvas.height !== params.maskHeight) {
+    canvas.width = params.maskWidth;
+    canvas.height = params.maskHeight;
     const ctx = canvas.getContext('2d');
     ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = '#000';

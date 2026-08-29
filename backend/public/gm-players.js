@@ -38,12 +38,13 @@ function renderPlayerList() {
 
     // 状态操作优先：放在物品区之前（未配置状态列表时不显示）
     const obj = state.objects && state.objects[playerId];
-    if (obj && ((obj.states) || []).length > 0) {
+    const smParams = componentParams(obj, 'StateMachine') || {};
+    if ((smParams.states || []).length > 0) {
       renderObjectStates(propertySection(list, '状态'), playerId, obj, null);
     }
 
     // 物品编辑（与地图页属性面板一致的物品区，section 包裹以带分隔线）
-    renderObjectItems(propertySection(list), playerId, (obj && obj.items) || [], '物品');
+    renderObjectItems(propertySection(list), playerId, backpackItemsOf(obj), '物品');
 
     container.appendChild(card);
   }

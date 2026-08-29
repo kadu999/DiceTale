@@ -32,8 +32,14 @@ namespace DiceTale
         /// <summary>组件数据上报：道具名与固定库存（GM 属性面板的道具分配区）。</summary>
         public override void AppendToInfo(Server.ServerObjectInfo info)
         {
-            info.itemName = itemName;
-            info.quantity = quantity;
+            AppendData(info, new ExchangeData { itemName = itemName, quantity = quantity });
+        }
+
+        [System.Serializable]
+        private class ExchangeData
+        {
+            public string itemName;
+            public int quantity;
         }
 
         protected override void OnEnable()

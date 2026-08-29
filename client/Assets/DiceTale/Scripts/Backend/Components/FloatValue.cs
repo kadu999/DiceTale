@@ -27,7 +27,13 @@ namespace DiceTale
         /// <summary>组件数据上报：浮点参数值。</summary>
         public override void AppendToInfo(Server.ServerObjectInfo info)
         {
-            info.floatValue = value;
+            AppendData(info, new ValueData { value = value });
+        }
+
+        [System.Serializable]
+        private class ValueData
+        {
+            public float value;
         }
 
         /// <summary>命令处理：set_float（GM 数字输入框修改，本组件自己解析并执行）。</summary>

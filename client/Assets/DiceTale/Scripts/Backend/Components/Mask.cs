@@ -45,8 +45,14 @@ namespace DiceTale
         /// <summary>组件数据上报：遮罩尺寸（GM 属性面板的遮罩编辑区）。</summary>
         public override void AppendToInfo(Server.ServerObjectInfo info)
         {
-            info.maskWidth = maskWidth;
-            info.maskHeight = maskHeight;
+            AppendData(info, new MaskData { maskWidth = maskWidth, maskHeight = maskHeight });
+        }
+
+        [System.Serializable]
+        private class MaskData
+        {
+            public int maskWidth;
+            public int maskHeight;
         }
 
         /// <summary>稳定输出遮罩纹理（Texture2D，初始全黑；外部持有引用始终有效）。由外部渲染组件读取。</summary>

@@ -17,9 +17,15 @@ namespace DiceTale.Editor.Tests
                 id = "Lever_1",
                 name = "大厅拉杆",
                 kind = "Lever",
-                currentState = "off",
-                states = new List<string> { "off", "on" },
-                position = new Position { x = 0.4f, y = 0.3f }
+                position = new Position { x = 0.4f, y = 0.3f },
+                componentData = new List<ComponentData>
+                {
+                    new ComponentData
+                    {
+                        component = "StateMachine",
+                        data = JsonUtility.ToJson(new StateData { currentState = "off", states = new List<string> { "off", "on" } })
+                    }
+                }
             });
 
             var json = JsonUtility.ToJson(msg);
@@ -28,7 +34,9 @@ namespace DiceTale.Editor.Tests
             Assert.IsTrue(json.Contains("\"Default\""));
             Assert.IsTrue(json.Contains("\"Lever_1\""));
             Assert.IsTrue(json.Contains("\"大厅拉杆\""));
-            Assert.IsTrue(json.Contains("\"currentState\":\"off\""));
+            Assert.IsTrue(json.Contains("\"component\":\"StateMachine\""));
+            // 组件数据是 JSON 字符串：内嵌引号被 JsonUtility 转义为 \"，消费端 JSON.parse 还原
+            Assert.IsTrue(json.Contains("\\\"currentState\\\":\\\"off\\\""));
             Assert.IsTrue(json.Contains("\"position\":{\"x\":0.4"));
         }
 
@@ -43,7 +51,7 @@ namespace DiceTale.Editor.Tests
         }
 
         [Test]
-        public void ServerObjectInfo_SerializesItems()
+        public void ServerObjectInfo_SerializesBackpackComponentData()
         {
             var msg = new RegisterMapObjectsMessage { mapName = "Map001" };
             msg.objects.Add(new ServerObjectInfo
@@ -51,12 +59,20 @@ namespace DiceTale.Editor.Tests
                 id = "Player_1",
                 name = "小明",
                 kind = "Player",
-                items = new List<string> { "小刀", "草药" }
+                componentData = new List<ComponentData>
+                {
+                    new ComponentData
+                    {
+                        component = "Backpack",
+                        data = JsonUtility.ToJson(new BackpackData { items = new List<string> { "小刀", "草药" } })
+                    }
+                }
             });
 
             var json = JsonUtility.ToJson(msg);
             Assert.IsTrue(json.Contains("\"type\":\"register_map_objects\""));
-            Assert.IsTrue(json.Contains("\"items\":[\"小刀\",\"草药\"]"));
+            Assert.IsTrue(json.Contains("\"component\":\"Backpack\""));
+            Assert.IsTrue(json.Contains("\\\"items\\\":[\\\"小刀\\\",\\\"草药\\\"]"));
         }
 
         [Test]
@@ -64,8 +80,8 @@ namespace DiceTale.Editor.Tests
         {
             const string json = "{\"type\":\"sync_state\",\"state\":{\"currentMap\":\"Map001\"," +
                                 "\"player\":{\"position\":{\"x\":1.5,\"y\":2.5}}," +
-                                "\"objects\":{\"Lever_1\":{\"kind\":\"Lever\",\"currentState\":\"off\"," +
-                                "\"states\":[\"off\",\"on\"]}}," +
+                                "\"objects\":{\"Lever_1\":{\"kind\":\"Lever\",\"componentData\":" +
+                                "[{\"component\":\"StateMachine\",\"data\":\"{\\\"currentState\\\":\\\"off\\\",\\\"states\\\":[\\\"off\\\",\\\"on\\\"]}\"}]}}," +
                                 "\"spawnPoints\":{\"Map001\":[{\"id\":\"Default\"}]}}}";
 
             var msg = JsonParser.ParseObject(json);
@@ -80,7 +96,16 @@ namespace DiceTale.Editor.Tests
             var objState = objects["Lever_1"] as Dictionary<string, object>;
             Assert.IsNotNull(objState);
             Assert.AreEqual("Lever", JsonParser.GetString(objState, "kind"));
-            Assert.AreEqual("off", JsonParser.GetString(objState, "currentState"));
+
+            // 组件数据段：component = 组件类型，data = JSON 字符串（解析后得到组件参数）
+            var componentData = JsonParser.GetArray(objState, "componentData");
+            Assert.IsNotNull(componentData);
+            Assert.AreEqual(1, componentData.Count);
+            var block = componentData[0] as Dictionary<string, object>;
+            Assert.IsNotNull(block);
+            Assert.AreEqual("StateMachine", JsonParser.GetString(block, "component"));
+            var parsed = JsonParser.ParseObject(JsonParser.GetString(block, "data"));
+            Assert.AreEqual("off", JsonParser.GetString(parsed, "currentState"));
 
             var player = JsonParser.GetObject(state, "player");
             var position = JsonParser.GetObject(player, "position");
@@ -106,6 +131,20 @@ namespace DiceTale.Editor.Tests
         {
             Assert.IsNull(JsonParser.ParseObject("not json"));
             Assert.IsNull(JsonParser.ParseObject("{ broken"));
+        }
+
+        // 组件数据载体（与客户端组件内部数据形状一致：组件类型 + JSON 字符串）
+        [System.Serializable]
+        private class StateData
+        {
+            public string currentState;
+            public List<string> states;
+        }
+
+        [System.Serializable]
+        private class BackpackData
+        {
+            public List<string> items;
         }
     }
 }

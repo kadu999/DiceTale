@@ -40,6 +40,20 @@ function send(ws: WebSocket, message: unknown) {
   ws.send(JSON.stringify(message));
 }
 
+// 组件数据段构造：组件类型 + JSON 字符串数据（与客户端 JsonUtility.ToJson 一致）
+function sm(currentState: string, states: string[]) {
+  return { component: 'StateMachine', data: JSON.stringify({ currentState, states }) };
+}
+function backpack(items: string[]) {
+  return { component: 'Backpack', data: JSON.stringify({ items }) };
+}
+function exchange(itemName: string, quantity: number) {
+  return { component: 'ItemExchange', data: JSON.stringify({ itemName, quantity }) };
+}
+function smData(block: any): any {
+  return JSON.parse(block.data);
+}
+
 function httpGet(path: string): Promise<{ status: number; body: any }> {
   return new Promise((resolve, reject) => {
     http
@@ -103,7 +117,7 @@ describe('WebSocket server', () => {
       type: 'register_map_objects',
       mapName: 'Map001',
       spawnPoints: [{ id: 'Default' }],
-      objects: [{ id: 'Lever_1', kind: 'Lever', currentState: 'off', states: ['off', 'on'] }],
+      objects: [{ id: 'Lever_1', kind: 'Lever', componentData: [sm('off', ['off', 'on'])] }],
     });
 
     const gm = await connect('/gm');
@@ -111,7 +125,7 @@ describe('WebSocket server', () => {
     const update = await gm.next(); // 客户端注册后广播的 gm_update
 
     expect(update.state.spawnPoints['Map001']).toEqual([{ id: 'Default' }]);
-    expect(update.state.objects['Lever_1'].currentState).toBe('off');
+    expect(smData(update.state.objects['Lever_1'].componentData[0]).currentState).toBe('off');
   });
 
   test('request_teleport pushes teleport_player to client', async () => {
@@ -204,8 +218,8 @@ describe('WebSocket server', () => {
       mapName: 'Map001',
       spawnPoints: [{ id: 'Default' }],
       objects: [
-        { id: 'Lever_1', name: '大厅拉杆', kind: 'Lever', currentState: 'off', states: ['off', 'on'], position: { x: 0.4, y: 0.3 } },
-        { id: 'Chest_2', name: '东侧宝箱', kind: 'Chest', currentState: 'closed', states: ['closed', 'open'], position: { x: 0.7, y: 0.5 } },
+        { id: 'Lever_1', name: '大厅拉杆', kind: 'Lever', position: { x: 0.4, y: 0.3 }, componentData: [sm('off', ['off', 'on'])] },
+        { id: 'Chest_2', name: '东侧宝箱', kind: 'Chest', position: { x: 0.7, y: 0.5 }, componentData: [sm('closed', ['closed', 'open'])] },
       ],
     });
 
@@ -216,15 +230,13 @@ describe('WebSocket server', () => {
     expect(update.state.objects['Lever_1']).toEqual({
       name: '大厅拉杆',
       kind: 'Lever',
-      currentState: 'off',
-      states: ['off', 'on'],
       mapName: 'Map001',
       position: { x: 0.4, y: 0.3 },
-      items: [],
+      componentData: [sm('off', ['off', 'on'])],
     });
     expect(update.state.objects['Chest_2'].name).toBe('东侧宝箱');
-    expect(update.state.objects['Chest_2'].currentState).toBe('closed');
-    expect(update.state.objects['Chest_2'].states).toEqual(['closed', 'open']);
+    expect(smData(update.state.objects['Chest_2'].componentData[0]).currentState).toBe('closed');
+    expect(smData(update.state.objects['Chest_2'].componentData[0]).states).toEqual(['closed', 'open']);
     expect(update.state.objects['Chest_2'].position).toEqual({ x: 0.7, y: 0.5 });
   });
 
@@ -324,16 +336,16 @@ describe('WebSocket server', () => {
       mapName: 'Map001',
       spawnPoints: [],
       objects: [
-        { id: 'Player_1', name: '小明', kind: 'Player', items: ['小刀', '草药'] },
-        { id: 'Lever_1', name: '大厅拉杆', kind: 'Lever', items: ['扳手'] },
+        { id: 'Player_1', name: '小明', kind: 'Player', componentData: [backpack(['小刀', '草药'])] },
+        { id: 'Lever_1', name: '大厅拉杆', kind: 'Lever', componentData: [backpack(['扳手'])] },
       ],
     });
 
     const gm = await connect('/gm');
     openSockets.push(gm.ws);
     const update = await gm.next();
-    expect(update.state.objects['Player_1'].items).toEqual(['小刀', '草药']);
-    expect(update.state.objects['Lever_1'].items).toEqual(['扳手']);
+    expect(smData(update.state.objects['Player_1'].componentData[0]).items).toEqual(['小刀', '草药']);
+    expect(smData(update.state.objects['Lever_1'].componentData[0]).items).toEqual(['扳手']);
 
     gm.ws.close();
     client.ws.close();
@@ -367,7 +379,7 @@ describe('WebSocket server', () => {
       type: 'register_map_objects',
       mapName: 'Map001',
       spawnPoints: [{ id: 'Default' }],
-      objects: [{ id: 'Lever_1', name: '大厅拉杆', kind: 'Lever', currentState: 'off', states: ['off', 'on'] }],
+      objects: [{ id: 'Lever_1', name: '大厅拉杆', kind: 'Lever', componentData: [sm('off', ['off', 'on'])] }],
     });
 
     const gm = await connect('/gm');
@@ -398,22 +410,22 @@ describe('WebSocket server', () => {
       mapName: 'Map001',
       spawnPoints: [],
       objects: [
-        { id: 'Item_1', name: '铁剑', kind: 'ItemObject', itemName: '铁剑', quantity: 4, position: { x: 0.5, y: 0.5 } },
-        { id: 'Player_1', name: '小明', kind: 'Player', items: [] },
+        { id: 'Item_1', name: '铁剑', kind: 'Item', position: { x: 0.5, y: 0.5 }, componentData: [exchange('铁剑', 4)] },
+        { id: 'Player_1', name: '小明', kind: 'Player', componentData: [backpack([])] },
       ],
     });
 
     const gm = await connect('/gm');
     openSockets.push(gm.ws);
     const initial = await gm.next();
-    expect(initial.state.objects['Item_1'].quantity).toBe(4); // 总数
-    expect(initial.state.objects['Player_1'].items).toEqual([]);
+    expect(smData(initial.state.objects['Item_1'].componentData[0]).quantity).toBe(4); // 总数
+    expect(smData(initial.state.objects['Player_1'].componentData[0]).items).toEqual([]);
 
     // GM 分配 1 个给 Player_1：玩家物品立即更新，道具总数不变（GM 页面推导剩余 = 4 - 1）
     send(gm.ws, { type: 'gm_set_object_items', objectId: 'Player_1', items: ['铁剑'] });
     const after1 = await gm.next();
-    expect(after1.state.objects['Player_1'].items).toEqual(['铁剑']);
-    expect(after1.state.objects['Item_1'].quantity).toBe(4);
+    expect(smData(after1.state.objects['Player_1'].componentData[0]).items).toEqual(['铁剑']);
+    expect(smData(after1.state.objects['Item_1'].componentData[0]).quantity).toBe(4);
 
     // 连续分配到 4 个（库存上限）
     for (let i = 2; i <= 4; i++) {
@@ -424,7 +436,7 @@ describe('WebSocket server', () => {
     // 第 5 个超过库存：应被拒绝，玩家仍只有 4 个
     send(gm.ws, { type: 'gm_set_object_items', objectId: 'Player_1', items: ['铁剑', '铁剑', '铁剑', '铁剑', '铁剑'] });
     const rejected = await gm.next();
-    expect(rejected.state.objects['Player_1'].items).toEqual(['铁剑', '铁剑', '铁剑', '铁剑']);
+    expect(smData(rejected.state.objects['Player_1'].componentData[0]).items).toEqual(['铁剑', '铁剑', '铁剑', '铁剑']);
 
     gm.ws.close();
     client.ws.close();
@@ -477,7 +489,7 @@ describe('WebSocket server', () => {
       type: 'register_map_objects',
       mapName: 'Map001',
       spawnPoints: [],
-      objects: [{ id: 'Lever_1', kind: 'Lever', currentState: 'off', states: ['off', 'on'] }],
+      objects: [{ id: 'Lever_1', kind: 'Lever', componentData: [sm('off', ['off', 'on'])] }],
     });
 
     const gm = await connect('/gm');
@@ -489,7 +501,7 @@ describe('WebSocket server', () => {
     // GM 页面立即看到乐观更新（不等客户端回执）
     const update = await gm.next();
     expect(update.type).toBe('gm_update');
-    expect(update.state.objects['Lever_1'].currentState).toBe('on');
+    expect(smData(update.state.objects['Lever_1'].componentData[0]).currentState).toBe('on');
 
     // 客户端收到转发命令
     const cmd = await client.next();

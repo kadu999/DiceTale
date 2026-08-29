@@ -89,26 +89,6 @@ namespace DiceTale
             }
         }
 
-        /// <summary>可编辑能力清单（上报给 GM 页面，据此渲染属性控件）：取每个能力组件自己的 ComponentId。</summary>
-        public List<string> Components
-        {
-            get
-            {
-                var components = new List<string>();
-                foreach (var comp in capabilityComponents)
-                {
-                    if (comp == null || !comp.GmEditable)
-                    {
-                        continue;
-                    }
-
-                    components.Add(comp.ComponentId);
-                }
-
-                return components;
-            }
-        }
-
         private void OnEnable()
         {
             RefreshCapabilityComponents();

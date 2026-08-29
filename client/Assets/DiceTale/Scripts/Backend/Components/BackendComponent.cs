@@ -41,9 +41,22 @@ namespace DiceTale
 
         // ---------- IBackendComponentData（默认空实现，有数据要上报的子类覆写） ----------
 
-        /// <summary>把本组件的参数填充到上报信息（默认空实现；StateMachine/Backpack/ItemExchange/Mask 覆写）。</summary>
+        /// <summary>把本组件的参数填充到上报信息（默认空实现；各能力组件覆写）。</summary>
         public virtual void AppendToInfo(Server.ServerObjectInfo info)
         {
+        }
+
+        /// <summary>
+        /// 把组件数据以 JSON 字符串追加到上报信息：component = 组件类型（ComponentId），data = JsonUtility 序列化。
+        /// 谁要用谁解析（GM/后端按组件类型 JSON.parse）。覆写 AppendToInfo 时调用。
+        /// </summary>
+        protected void AppendData(Server.ServerObjectInfo info, object data)
+        {
+            info.componentData.Add(new Server.ComponentData
+            {
+                component = ComponentId,
+                data = JsonUtility.ToJson(data)
+            });
         }
 
         // ---------- IBackendCommandHandler（默认不处理命令，有命令要处理的子类覆写） ----------

@@ -1,7 +1,8 @@
-// 组件渲染器：StateMachine（状态机）——与客户端组件类同名，属性面板按 components 清单调用。
+// 组件渲染器：StateMachine（状态机）——与客户端组件类同名，属性面板按 componentData 调用。
 // 控件：状态单选组（点击发 gm_set_object_state，客户端枢纽路由到 StateMachine.TrySetState）。
 function renderObjectStates(container, objectId, obj, labelText) {
-  const states = (obj && obj.states) || [];
+  const params = componentParams(obj, 'StateMachine') || {};
+  const states = params.states || [];
   if (states.length === 0) {
     return; // 未配置状态列表：整个「切换状态」区都不显示
   }
@@ -19,7 +20,7 @@ function renderObjectStates(container, objectId, obj, labelText) {
 
   for (const stateName of states) {
     const btn = document.createElement('button');
-    btn.className = 'state-btn' + (stateName === obj.currentState ? ' active' : '');
+    btn.className = 'state-btn' + (stateName === params.currentState ? ' active' : '');
     btn.textContent = stateName;
     btn.onclick = () => {
       send({ type: 'gm_set_object_state', objectId, state: stateName });

@@ -27,7 +27,13 @@ namespace DiceTale
         /// <summary>组件数据上报：布尔参数值。</summary>
         public override void AppendToInfo(Server.ServerObjectInfo info)
         {
-            info.boolValue = value;
+            AppendData(info, new ValueData { value = value });
+        }
+
+        [System.Serializable]
+        private class ValueData
+        {
+            public bool value;
         }
 
         /// <summary>命令处理：set_bool（GM 开关修改，本组件自己解析并执行）。</summary>

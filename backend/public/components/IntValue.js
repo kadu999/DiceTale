@@ -11,7 +11,7 @@ function renderIntValue(container, objectId, obj) {
   input.type = 'number';
   input.step = '1';
   input.className = 'property-item-qty';
-  input.value = String(obj.intValue ?? 0);
+  input.value = String((componentParams(obj, 'IntValue') || {}).value ?? 0);
   input.addEventListener('change', () => {
     const v = parseInt(input.value, 10);
     if (Number.isNaN(v)) return;

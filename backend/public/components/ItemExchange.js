@@ -1,20 +1,34 @@
-// 组件渲染器：ItemExchange（道具交换）——与客户端组件类同名，属性面板按 components 清单调用。
+// 组件渲染器：ItemExchange（道具交换）——与客户端组件类同名，属性面板按 componentData 清单调用。
 // 控件：道具分配列表（剩余数量 + 每玩家 −/+，走 gm_set_object_items）。
+
+function exchangeParams(obj) {
+  return componentParams(obj, 'ItemExchange') || {};
+}
+
+// 玩家背包（Backpack 组件）里的道具名清单
+function backpackItemsOf(playerObj) {
+  const params = componentParams(playerObj, 'Backpack');
+  return (params && Array.isArray(params.items)) ? params.items : [];
+}
+
 function itemRemaining(obj) {
-  if (!obj || !obj.itemName) return null;
-  const total = obj.quantity || 0;
+  if (!obj) return null;
+  const params = exchangeParams(obj);
+  if (!params.itemName) return null;
+  const total = params.quantity || 0;
   let held = 0;
   for (const playerId of Object.keys(state.players || {})) {
-    const items = (state.objects[playerId] && state.objects[playerId].items) || [];
+    const items = backpackItemsOf(state.objects[playerId]);
     for (const it of items) {
-      if (it === obj.itemName) held++;
+      if (it === params.itemName) held++;
     }
   }
   return Math.max(0, total - held);
 }
 
 function renderItemDistribution(container, obj) {
-  const itemName = obj.itemName;
+  const params = exchangeParams(obj);
+  const itemName = params.itemName;
   const remaining = itemRemaining(obj);
 
   // 标题单独一行
@@ -41,7 +55,7 @@ function renderItemDistribution(container, obj) {
   }
 
   for (const [playerId, player] of players) {
-    const playerItems = (state.objects[playerId] && state.objects[playerId].items) || [];
+    const playerItems = backpackItemsOf(state.objects[playerId]);
     const count = playerItems.filter((i) => i === itemName).length;
 
     const line = document.createElement('div');

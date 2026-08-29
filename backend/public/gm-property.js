@@ -9,7 +9,7 @@ const componentRenderers = {
   StateMachine: (container, objectId, obj) =>
     renderObjectStates(propertySection(container, '状态'), objectId, obj, null),
   Backpack: (container, objectId, obj) =>
-    renderObjectItems(propertySection(container), objectId, (obj && obj.items) || [], '物品'),
+    renderObjectItems(propertySection(container), objectId, (componentParams(obj, 'Backpack') || {}).items || [], '物品'),
   ItemExchange: (container, objectId, obj) =>
     renderItemDistribution(propertySection(container), obj),
   Mask: (container, objectId) =>
@@ -22,14 +22,20 @@ const componentRenderers = {
     renderBoolValue(container, objectId, obj),
 };
 
-function inferComponents(obj) {
-  const list = [];
-  if (!obj) return list;
-  if ((obj.states || []).length > 0) list.push('StateMachine');
-  if (obj.maskWidth > 0 && obj.maskHeight > 0) list.push('Mask');
-  if (obj.itemName) list.push('ItemExchange');
-  else if ((obj.items || []).length > 0) list.push('Backpack');
-  return list;
+/** 取对象某组件的数据段（componentData 中按组件类型找；无则 null）。 */
+function componentBlock(obj, component) {
+  return ((obj && obj.componentData) || []).find((c) => c.component === component) || null;
+}
+
+/** 解析对象某组件的 JSON 数据（无组件或解析失败返回 null）。 */
+function componentParams(obj, component) {
+  const block = componentBlock(obj, component);
+  if (!block || !block.data) return null;
+  try {
+    return JSON.parse(block.data);
+  } catch (e) {
+    return null;
+  }
 }
 
 function renderPropertyPanelInto(id) {
@@ -56,16 +62,14 @@ function renderPropertyPanelInto(id) {
   addPropertyRow(info, '位置', fmtPos((obj && obj.position) || (player && player.position)));
   if (player) addPropertyRow(info, '地图', player.mapName || '-');
 
-  // 按组件清单渲染属性控件（与客户端组件类同名：状态=单选组、物品=编辑、道具=分配、遮罩=修改弹框）
-  const components = (obj && obj.components && obj.components.length > 0)
-    ? obj.components
-    : inferComponents(obj);
-  for (const comp of components) {
-    const renderer = componentRenderers[comp];
+  // 按组件数据段渲染属性控件（component = 组件类型，data = JSON 字符串，各渲染器自己解析）
+  const data = (obj && obj.componentData) || [];
+  for (const block of data) {
+    const renderer = componentRenderers[block.component];
     if (renderer) {
       renderer(container, selectedObjectId, obj);
     } else {
-      renderUnknownComponent(container, comp);
+      renderUnknownComponent(container, block.component);
     }
   }
 }

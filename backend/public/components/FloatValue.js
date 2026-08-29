@@ -11,7 +11,7 @@ function renderFloatValue(container, objectId, obj) {
   input.type = 'number';
   input.step = 'any';
   input.className = 'property-item-qty';
-  input.value = String(obj.floatValue ?? 0);
+  input.value = String((componentParams(obj, 'FloatValue') || {}).value ?? 0);
   input.addEventListener('change', () => {
     const v = parseFloat(input.value);
     if (Number.isNaN(v)) return;
