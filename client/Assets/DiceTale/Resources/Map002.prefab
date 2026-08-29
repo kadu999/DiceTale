@@ -278,7 +278,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.ShowHideAction
   source: {fileID: 5533735694493956684}
-  activeStateName: "\u5173\u95ED"
+  showCondition:
+    op: 0
+    targetBool: false
+    targetString: "\u5173\u95ED"
+    targetNumber: 0
   target: {fileID: 0}
 --- !u!212 &112627203853156086
 SpriteRenderer:

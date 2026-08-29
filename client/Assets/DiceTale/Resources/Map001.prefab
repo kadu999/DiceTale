@@ -106,7 +106,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.ShowHideAction
   source: {fileID: 3847467109664341175}
-  activeStateName: "\u6BC1\u574F"
+  showCondition:
+    op: 0
+    targetBool: false
+    targetString: "\u6BC1\u574F"
+    targetNumber: 0
   target: {fileID: 0}
 --- !u!212 &5380705975816317989
 SpriteRenderer:
@@ -675,7 +679,11 @@ MonoBehaviour:
   teleportAllPlayers: 1
   targetMapName: Map002
   targetMarkerId: 001
-  triggerStateName: "\u8FDB\u5165"
+  triggerCondition:
+    op: 0
+    targetBool: false
+    targetString: "\u8FDB\u5165"
+    targetNumber: 0
 --- !u!1 &4634471694792598124
 GameObject:
   m_ObjectHideFlags: 0
@@ -1145,7 +1153,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.ShowHideAction
   source: {fileID: 3847467109664341175}
-  activeStateName: "\u4FEE\u590D"
+  showCondition:
+    op: 0
+    targetBool: false
+    targetString: "\u4FEE\u590D"
+    targetNumber: 0
   target: {fileID: 0}
 --- !u!1 &8725336608045207518
 GameObject:

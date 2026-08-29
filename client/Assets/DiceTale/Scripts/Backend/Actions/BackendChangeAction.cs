@@ -9,7 +9,7 @@ namespace DiceTale
     ///
     /// 触发方式：把 <see cref="source"/> 指向任意 <see cref="BackendComponent"/>——该组件数据改变
     /// （NotifyChanged → Changed 事件，后台命令或本地修改都会触发）时被调用，component 即触发源；
-    /// 选项组件场景即 <see cref="OptionValue"/>，可用 CurrentStateName 判断当前选项。
+    /// 是否执行效果由子类的 <see cref="ComponentCondition"/> 决定（对任意 IBackendValue 组件通用）。
     /// </summary>
     public abstract class BackendChangeAction : MonoBehaviour
     {

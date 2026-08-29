@@ -4,12 +4,12 @@ namespace DiceTale
 {
     /// <summary>
     /// 传送区域动作：继承 <see cref="BackendChangeAction"/>。
-    /// 后台用 set_object_state 开启/关闭传送：组件数据改变（OnComponentChanged：OptionValue 选项切换，
-    /// 或 base 的 source 组件数据改变）时评估，切到 <see cref="enabledStateName"/> 状态则激活传送区域，
+    /// 后台操作组件值开启/关闭传送：组件数据改变（OnComponentChanged）时用 <see cref="enabledCondition"/>
+    /// 评估 source 组件的当前值，满足条件则激活传送区域，
     /// 激活后玩家进入圆形范围（CircleCollider2D，自动设为 Trigger）即被传送到
     /// 目标地图上 <see cref="MapMarker"/> 标记的位置（targetMapName + targetMarkerId）；
-    /// 切到其他状态时关闭传送（进入不传送）。
-    /// 把基类 BackendChangeAction 的 source 字段指向目标组件即可：任意选项切换都会重新评估开/关。
+    /// 不满足条件时关闭传送（进入不传送）。条件支持任意 IBackendValue 组件；留空则始终开启。
+    /// 把基类 BackendChangeAction 的 source 字段指向目标组件即可。
     /// 若要后台切状态时直接传送圆内玩家（不等进入），用 <see cref="TeleportAction"/>。
     /// </summary>
     [RequireComponent(typeof(CircleCollider2D))]
@@ -21,8 +21,8 @@ namespace DiceTale
         [SerializeField, Tooltip("目标位置标记 ID：目标地图上的 MapMarker 的 Id")]
         private string targetMarkerId;
 
-        [SerializeField, Tooltip("开启状态名：后台切到该状态时激活传送；切到其他状态时关闭（留空则始终开启）")]
-        private string enabledStateName;
+        [SerializeField, Tooltip("开启条件：source 组件满足条件时激活传送；留空则始终开启")]
+        private ComponentCondition enabledCondition;
 
         private bool zoneEnabled;
         private CircleCollider2D circleCollider;
@@ -35,19 +35,13 @@ namespace DiceTale
         private void Awake()
         {
             SetTrigger();
-            // 未配置开启状态名时默认始终开启；配置了则先关闭，等进入开启状态再激活
-            zoneEnabled = string.IsNullOrEmpty(enabledStateName);
+            // 未配置开启条件时默认始终开启；配置了则先关闭，等条件满足再激活
+            zoneEnabled = enabledCondition == null;
         }
 
         public override void OnComponentChanged(BackendComponent component)
         {
-            if (!(component is OptionValue sm))
-            {
-                return;
-            }
-
-            zoneEnabled = string.IsNullOrEmpty(enabledStateName) ||
-                string.Equals(sm.CurrentStateName, enabledStateName, System.StringComparison.OrdinalIgnoreCase);
+            zoneEnabled = enabledCondition == null || enabledCondition.Evaluate(component);
         }
 
         private void OnTriggerEnter2D(Collider2D other)

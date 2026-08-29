@@ -7,7 +7,7 @@ namespace DiceTale
     /// 浮点参数组件：存一个 float 值（纯参数存储，数据变化经基类 <see cref="BackendComponent.Changed"/> 通知）。
     /// 初始化时经枢纽上报（floatValue 字段），GM 页面用数字输入框修改（set_float 命令）。
     /// </summary>
-    public class FloatValue : BackendComponent
+    public class FloatValue : BackendComponent, IBackendValue
     {
         [SerializeField, Tooltip("浮点参数值（GM 页面可修改）")]
         private float value;
@@ -17,6 +17,16 @@ namespace DiceTale
 
         /// <summary>当前值。</summary>
         public float Value => value;
+
+        // ---------- IBackendValue（值查询：Number 形态，供 ComponentCondition 通用条件比较） ----------
+
+        public BackendValueKind ValueKind => BackendValueKind.Number;
+
+        public bool BoolValue => false;
+
+        public string StringValue => null;
+
+        public float NumberValue => value;
 
         /// <summary>本地设置值（客户端本地修改，不回执上报）；值变化时触发 <see cref="BackendComponent.Changed"/>。</summary>
         public void SetValue(float newValue)

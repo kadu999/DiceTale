@@ -9,8 +9,8 @@ namespace DiceTale
     /// 把目标玩家传送到目标地图上 <see cref="MapMarker"/> 标记的位置（targetMapName + targetMarkerId）。
     /// 目标玩家默认是 <see cref="range"/> 半径范围内（以自身为中心）的玩家；
     /// 勾选 <see cref="teleportAllPlayers"/> 时忽略半径，传送当前地图上的所有玩家。
-    /// 把基类 BackendChangeAction 的 source 字段指向目标组件即可，任意选项切换都会触发；
-    /// <see cref="triggerStateName"/> 非空时仅在该名称的状态下触发。
+    /// 把基类 BackendChangeAction 的 source 字段指向目标组件即可，任意数据改变都会触发；
+    /// <see cref="triggerCondition"/> 非空时仅在该条件下触发（支持任意 IBackendValue 组件）。
     /// 若要后台开/关传送区域（开启后玩家进入才传送），用 <see cref="TeleportZoneAction"/>。
     /// </summary>
     public class TeleportAction : BackendChangeAction
@@ -27,18 +27,12 @@ namespace DiceTale
         [SerializeField, Tooltip("目标位置标记 ID：目标地图上的 MapMarker 的 Id")]
         private string targetMarkerId;
 
-        [SerializeField, Tooltip("触发状态名：非空时仅在该名称的状态下触发传送；留空则任意状态切换都触发")]
-        private string triggerStateName;
+        [SerializeField, Tooltip("触发条件：source 组件满足条件时才传送；留空则任意数据改变都触发")]
+        private ComponentCondition triggerCondition;
 
         public override void OnComponentChanged(BackendComponent component)
         {
-            if (!(component is OptionValue sm))
-            {
-                return;
-            }
-
-            if (!string.IsNullOrEmpty(triggerStateName) &&
-                !string.Equals(sm.CurrentStateName, triggerStateName, System.StringComparison.OrdinalIgnoreCase))
+            if (triggerCondition != null && !triggerCondition.Evaluate(component))
             {
                 return;
             }

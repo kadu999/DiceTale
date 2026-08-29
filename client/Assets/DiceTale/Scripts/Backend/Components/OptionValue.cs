@@ -12,7 +12,7 @@ namespace DiceTale
     /// - 切换选项时调用基类 NotifyChanged()（代码事件 Changed；动作类经 BackendChangeAction.source 订阅本组件）；
     /// - 显示名称在枢纽上配置（BackendObject.displayName，后台看名字识别对象）。
     /// </summary>
-    public class OptionValue : BackendComponent
+    public class OptionValue : BackendComponent, IBackendValue
     {
         /// <summary>组件 ID：保持 "StateMachine"（后台 updateComponentParam 与 GM 面板渲染按此字符串识别，勿改）。</summary>
         public override string ComponentId => "StateMachine";
@@ -26,6 +26,16 @@ namespace DiceTale
         /// <summary>当前选项名称；未配置选项或尚未启动时为 null。</summary>
         public string CurrentStateName =>
             selectedIndex >= 0 && selectedIndex < states.Count ? states[selectedIndex].Name : null;
+
+        // ---------- IBackendValue（值查询：String 形态 = 当前选项名，供 ComponentCondition 通用条件比较） ----------
+
+        public BackendValueKind ValueKind => BackendValueKind.String;
+
+        public bool BoolValue => false;
+
+        public string StringValue => CurrentStateName;
+
+        public float NumberValue => 0f;
 
         /// <summary>全部可选状态名称（上报给 GM 页面展示与切换）。</summary>
         public List<string> StateNames
