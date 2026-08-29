@@ -105,12 +105,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8cca1f58fcd94431aeeaacc485347d31, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.ShowHideAction
-  source: {fileID: 3847467109664341175}
-  showCondition:
+  condition:
+    valueType: 1
     op: 0
-    targetBool: false
+    targetBool: 0
     targetString: "\u6BC1\u574F"
     targetNumber: 0
+    targetInteger: 0
   target: {fileID: 0}
 --- !u!212 &5380705975816317989
 SpriteRenderer:
@@ -360,6 +361,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.SceneObject
   displayName: 
+  actions:
+  - {fileID: 90111590232480573}
   states:
   - name: "\u672A\u89E3\u9501"
   - name: "\u89E3\u9501"
@@ -428,6 +431,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.SceneObject
   displayName: 
+  actions:
+  - {fileID: 7865490019946216524}
+  - {fileID: 4986186018652317216}
   states:
   - name: "\u6BC1\u574F"
   - name: "\u4FEE\u590D"
@@ -493,6 +499,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.ItemObject
   displayName: 
+  actions: []
   itemName: "\u7EF4\u4FEE\u5DE5\u5177"
   quantity: 4
   remaining: 0
@@ -674,16 +681,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7af5b7f75a0b46cebdddd8e642cfbd74, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.TeleportAction
-  source: {fileID: 3615305867695832250}
+  condition:
+    valueType: 1
+    op: 0
+    targetBool: 0
+    targetString: "\u8FDB\u5165"
+    targetNumber: 0
+    targetInteger: 0
   range: 1
   teleportAllPlayers: 1
   targetMapName: Map002
   targetMarkerId: 001
-  triggerCondition:
-    op: 0
-    targetBool: false
-    targetString: "\u8FDB\u5165"
-    targetNumber: 0
 --- !u!1 &4634471694792598124
 GameObject:
   m_ObjectHideFlags: 0
@@ -1152,12 +1160,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8cca1f58fcd94431aeeaacc485347d31, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.ShowHideAction
-  source: {fileID: 3847467109664341175}
-  showCondition:
+  condition:
+    valueType: 1
     op: 0
-    targetBool: false
+    targetBool: 0
     targetString: "\u4FEE\u590D"
     targetNumber: 0
+    targetInteger: 0
   target: {fileID: 0}
 --- !u!1 &8725336608045207518
 GameObject:

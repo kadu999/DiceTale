@@ -24,11 +24,12 @@ namespace DiceTale
     /// - 要求同物体必须有 BackendObject 枢纽（RequireComponent）。
     ///
     /// 变更通知（数据被修改后的统一出口，所有组件通用）：
+    /// - <see cref="actions"/>：变更动作列表——本组件数据改变时依次调用每个动作的 OnComponentChanged
+    ///   （动作可挂在任意物体上；顺序确定、不依赖动作启用状态）；
     /// - <see cref="Changed"/>：代码订阅事件——数据真正改变处触发（后台命令或本地修改都会），
     ///   订阅/退订建议放在 OnEnable/OnDisable（退订勿漏，避免悬挂引用）；
-    ///   动作类（<see cref="BackendChangeAction"/>）用其 source 字段订阅本事件，无需组件侧配置；
     /// - <see cref="NotifyCommandHandled"/>：后台命令成功处理后由枢纽调用（触发子类钩子
-    ///   <see cref="OnCommandHandled"/>）；Changed 不在此触发，避免命令路径双触发——
+    ///   <see cref="OnCommandHandled"/>）；actions/Changed 不在此触发，避免命令路径双触发——
     ///   各组件在自己的公共修改方法里主动调 <see cref="NotifyChanged"/>。
     /// </summary>
     [RequireComponent(typeof(BackendObject))]
@@ -43,6 +44,11 @@ namespace DiceTale
 
         /// <summary>组件显示名（GM 属性面板的分区标题）：Inspector 可覆盖（displayName 字段），留空时用组件类名（ComponentId）。</summary>
         public string DisplayName => string.IsNullOrEmpty(displayName) ? ComponentId : displayName;
+
+        /// <summary>变更动作列表：本组件数据改变时（NotifyChanged）依次调用每个动作的 OnComponentChanged（传入本组件）。
+        /// 动作可挂在任意物体上；顺序确定、不依赖动作启用状态。</summary>
+        [SerializeField, Tooltip("变更动作列表：本组件数据改变时依次调用每个动作的 OnComponentChanged（可挂在任意物体上）")]
+        private List<BackendChangeAction> actions = new List<BackendChangeAction>();
 
         /// <summary>GM 属性面板是否渲染该组件的编辑控件（默认 true；角色组件覆写为 false）。</summary>
         public virtual bool GmEditable => true;
@@ -111,11 +117,26 @@ namespace DiceTale
         {
         }
 
-        /// <summary>触发代码订阅事件 <see cref="Changed"/>（组件在数据真正改变处调用；值未变时不要调用）。
-        /// 后台命令与本地修改统一走这一出口，不会重复触发；动作类经 BackendChangeAction.source 订阅。</summary>
+        /// <summary>触发变更通知（组件在数据真正改变处调用；值未变时不要调用）：
+        /// 依次执行变更动作列表（actions）→ 代码订阅事件（Changed）。
+        /// 后台命令与本地修改统一走这一出口，不会重复触发。</summary>
         protected void NotifyChanged()
         {
+            foreach (var action in actions)
+            {
+                action?.OnComponentChanged(this);
+            }
+
             Changed?.Invoke(this);
+        }
+
+        // ---------- 条件比较（值组件子类覆写，动作的触发条件统一经此判定） ----------
+
+        /// <summary>组件当前值是否满足条件（默认不满足；BoolValue/IntValue/FloatValue/OptionValue
+        /// 覆写，用自己类型的值调用 condition.Compare）。</summary>
+        public virtual bool Satisfies(ComponentCondition condition)
+        {
+            return false;
         }
 
         // ---------- 上报触发（统一经主体枢纽） ----------

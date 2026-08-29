@@ -4,16 +4,15 @@ using UnityEngine;
 namespace DiceTale
 {
     /// <summary>
-    /// 传送动作：继承 <see cref="BackendChangeAction"/>。
-    /// 后台触发传送：组件数据改变（OnComponentChanged：OptionValue 选项切换，或 base 的 source 组件数据改变）时，
+    /// 传送动作：继承 <see cref="ConditionalBackendChangeAction"/>。
+    /// 后台触发传送：组件数据改变（OnComponentChanged）且基类条件满足时，
     /// 把目标玩家传送到目标地图上 <see cref="MapMarker"/> 标记的位置（targetMapName + targetMarkerId）。
     /// 目标玩家默认是 <see cref="range"/> 半径范围内（以自身为中心）的玩家；
     /// 勾选 <see cref="teleportAllPlayers"/> 时忽略半径，传送当前地图上的所有玩家。
-    /// 把基类 BackendChangeAction 的 source 字段指向目标组件即可，任意数据改变都会触发；
-    /// <see cref="triggerCondition"/> 非空时仅在该条件下触发（支持任意 IBackendValue 组件）。
+    /// 挂到组件的「变更动作列表」（actions）即可；基类条件留空则任意数据改变都触发。
     /// 若要后台开/关传送区域（开启后玩家进入才传送），用 <see cref="TeleportZoneAction"/>。
     /// </summary>
-    public class TeleportAction : BackendChangeAction
+    public class TeleportAction : ConditionalBackendChangeAction
     {
         [SerializeField, Tooltip("传送范围半径（世界单位），以自身为中心")]
         private float range = 1f;
@@ -27,12 +26,9 @@ namespace DiceTale
         [SerializeField, Tooltip("目标位置标记 ID：目标地图上的 MapMarker 的 Id")]
         private string targetMarkerId;
 
-        [SerializeField, Tooltip("触发条件：source 组件满足条件时才传送；留空则任意数据改变都触发")]
-        private ComponentCondition triggerCondition;
-
         public override void OnComponentChanged(BackendComponent component)
         {
-            if (triggerCondition != null && !triggerCondition.Evaluate(component))
+            if (!ConditionMet(component))
             {
                 return;
             }

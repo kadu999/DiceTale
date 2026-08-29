@@ -510,6 +510,14 @@ main.layout {
   text-align: center;
 }
 
+/* 数值滑动条：IntValue/FloatValue 的滑动条控件（与数字输入框同一行） */
+.property-item-slider {
+  flex: 1 1 auto;
+  min-width: 8rem;
+  margin: 0 0.25rem;
+  accent-color: #3b82f6;
+}
+
 /* 添加道具按钮：在属性行内靠右（属性面板 UI 规则：左名字右控件） */
 .property-item-add-btn {
   margin-left: auto;

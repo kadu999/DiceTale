@@ -7,8 +7,8 @@ namespace DiceTale
     /// 后台能力接口集合（组件模型）：
     /// <see cref="IBackendComponentData"/>（数据上报）与 <see cref="IBackendCommandHandler"/>（命令处理）
     /// 由 <see cref="BackendComponent"/> 基类实现，子类覆写；
-    /// <see cref="IBackendValue"/>（值查询）由各值组件（BoolValue/IntValue/FloatValue/OptionValue）实现，
-    /// 供 <see cref="ComponentCondition"/> 通用条件比较。
+    /// 条件比较由 <see cref="BackendComponent.Satisfies"/> 虚方法承载（值组件子类覆写），
+    /// 配合 <see cref="ComponentCondition"/> 的单一 Compare 方法。
     /// </summary>
 
     /// <summary>
@@ -35,33 +35,5 @@ namespace DiceTale
 
         /// <summary>执行命令（msg 为后台消息字典，组件自己解析参数）；返回是否成功处理。</summary>
         bool HandleCommand(Dictionary<string, object> msg);
-    }
-
-    /// <summary>值形态：<see cref="ComponentCondition"/> 按形态选择比较分支。</summary>
-    public enum BackendValueKind
-    {
-        Bool,
-        String,
-        Number
-    }
-
-    /// <summary>
-    /// 值组件能力：可被 <see cref="ComponentCondition"/> 查询当前值（动作通用触发条件的入口）。
-    /// 各值组件声明自己的值形态并实现对应 getter，条件侧不认识任何具体组件类型——
-    /// 新增值组件只需实现本接口，条件与动作零改动。
-    /// </summary>
-    public interface IBackendValue
-    {
-        /// <summary>值的形态（决定用哪个 getter 比较）。</summary>
-        BackendValueKind ValueKind { get; }
-
-        /// <summary>Bool 形态的值（BoolValue）；其他形态返回默认值。</summary>
-        bool BoolValue { get; }
-
-        /// <summary>String 形态的值（OptionValue → 当前选项名）；其他形态返回 null。</summary>
-        string StringValue { get; }
-
-        /// <summary>Number 形态的值（IntValue/FloatValue）；其他形态返回 0。</summary>
-        float NumberValue { get; }
     }
 }

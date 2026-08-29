@@ -7,7 +7,7 @@ namespace DiceTale
     /// 布尔参数组件：存一个 bool 值（纯参数存储，数据变化经基类 <see cref="BackendComponent.Changed"/> 通知）。
     /// 初始化时经枢纽上报（boolValue 字段），GM 页面用开关修改（set_bool 命令）。
     /// </summary>
-    public class BoolValue : BackendComponent, IBackendValue
+    public class BoolValue : BackendComponent
     {
         [SerializeField, Tooltip("布尔参数值（GM 页面可修改）")]
         private bool value;
@@ -18,16 +18,11 @@ namespace DiceTale
         /// <summary>当前值。</summary>
         public bool Value => value;
 
-        // ---------- IBackendValue（值查询：Bool 形态，供 ComponentCondition 通用条件比较） ----------
+        // ---------- 条件比较（值类型：Bool，供动作触发条件判定） ----------
 
-        public BackendValueKind ValueKind => BackendValueKind.Bool;
-
-        // 显式接口实现：避免与类名 BoolValue 同名冲突（调用方经 IBackendValue 访问）
-        bool IBackendValue.BoolValue => value;
-
-        public string StringValue => null;
-
-        public float NumberValue => 0f;
+        public override bool Satisfies(ComponentCondition condition)
+            => condition.ValueType == BackendValueKind.Bool &&
+               condition.Compare(condition.ValueType, condition.Operator, value);
 
         /// <summary>本地设置值（客户端本地修改，不回执上报）；值变化时触发 <see cref="BackendComponent.Changed"/>。</summary>
         public void SetValue(bool newValue)

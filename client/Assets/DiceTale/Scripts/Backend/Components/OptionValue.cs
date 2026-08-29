@@ -9,10 +9,10 @@ namespace DiceTale
     /// - 组件 ID 保持 "StateMachine"（后台/GM 契约，勿改；类名已随职责更名）；
     /// - 选项列表/当前选项由组件自己上报（IBackendComponentData → GM 单选按钮组）；
     /// - set_object_state 命令由枢纽路由到本组件（TrySetState），执行后不回执上报（数据由后台维护）；
-    /// - 切换选项时调用基类 NotifyChanged()（代码事件 Changed；动作类经 BackendChangeAction.source 订阅本组件）；
+    /// - 切换选项时调用基类 NotifyChanged()（变更动作列表 actions / 代码事件 Changed；动作类挂在本组件的「变更动作列表」上）；
     /// - 显示名称在枢纽上配置（BackendObject.displayName，后台看名字识别对象）。
     /// </summary>
-    public class OptionValue : BackendComponent, IBackendValue
+    public class OptionValue : BackendComponent
     {
         /// <summary>组件 ID：保持 "StateMachine"（后台 updateComponentParam 与 GM 面板渲染按此字符串识别，勿改）。</summary>
         public override string ComponentId => "StateMachine";
@@ -27,15 +27,25 @@ namespace DiceTale
         public string CurrentStateName =>
             selectedIndex >= 0 && selectedIndex < states.Count ? states[selectedIndex].Name : null;
 
-        // ---------- IBackendValue（值查询：String 形态 = 当前选项名，供 ComponentCondition 通用条件比较） ----------
+        /// <summary>目前选择的索引（对应选项列表中的位置，从 0 开始）。</summary>
+        public int SelectedIndex => selectedIndex;
 
-        public BackendValueKind ValueKind => BackendValueKind.String;
+        // ---------- 条件比较（String = 当前选项名；Integer = 当前选项索引，供动作触发条件判定） ----------
 
-        public bool BoolValue => false;
+        public override bool Satisfies(ComponentCondition condition)
+        {
+            switch (condition.ValueType)
+            {
+                case BackendValueKind.String:
+                    return condition.Compare(condition.ValueType, condition.Operator, CurrentStateName);
 
-        public string StringValue => CurrentStateName;
+                case BackendValueKind.Integer:
+                    return condition.Compare(condition.ValueType, condition.Operator, selectedIndex);
 
-        public float NumberValue => 0f;
+                default:
+                    return false;
+            }
+        }
 
         /// <summary>全部可选状态名称（上报给 GM 页面展示与切换）。</summary>
         public List<string> StateNames
@@ -150,7 +160,7 @@ namespace DiceTale
 
     /// <summary>
     /// 场景物体的一个状态：只包含状态名称（供后台 set_object_state 按名称切换）。
-    /// 状态变化经基类变更通知统一分发（代码事件 Changed；动作类经 BackendChangeAction.source 订阅），
+    /// 状态变化经基类变更通知统一分发（变更动作列表 actions / 代码事件 Changed；动作类挂在本组件的「变更动作列表」上），
     /// 动作按 <see cref="OptionValue.CurrentStateName"/> 判断当前状态。
     /// </summary>
     [System.Serializable]

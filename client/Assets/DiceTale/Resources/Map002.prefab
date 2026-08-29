@@ -277,8 +277,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8cca1f58fcd94431aeeaacc485347d31, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.ShowHideAction
-  source: {fileID: 5533735694493956684}
-  showCondition:
+  condition:
+    valueType: 1
     op: 0
     targetBool: false
     targetString: "\u5173\u95ED"
@@ -532,6 +532,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5f079cd2b5b47898ac2228c012d11de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.SceneObject
+  actions:
+  - {fileID: 324196991457225583}
   states:
   - name: "\u5173\u95ED"
   - name: "\u5F00\u542F"
