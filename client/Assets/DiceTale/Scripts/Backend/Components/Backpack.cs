@@ -14,9 +14,6 @@ namespace DiceTale
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染物品编辑区）。</summary>
         public override string ComponentId => "Backpack";
 
-        /// <summary>组件默认显示名（GM 属性面板分区标题；Inspector 的 displayName 可覆盖）。</summary>
-        public override string DefaultDisplayName => "背包";
-
         private readonly List<string> items = new List<string>();
 
         /// <summary>道具列表（只读视图；由后台命令修改）。</summary>

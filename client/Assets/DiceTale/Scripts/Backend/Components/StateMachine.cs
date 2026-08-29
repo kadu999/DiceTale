@@ -17,9 +17,6 @@ namespace DiceTale
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染状态单选组）。</summary>
         public override string ComponentId => "StateMachine";
 
-        /// <summary>组件默认显示名（GM 属性面板分区标题；Inspector 的 displayName 可覆盖）。</summary>
-        public override string DefaultDisplayName => "状态机";
-
         [SerializeField, Tooltip("状态列表（仅状态名称）；后台可用 set_object_state 按名称切换")]
         private List<SceneObjectState> states = new List<SceneObjectState>();
 

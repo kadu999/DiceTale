@@ -18,9 +18,6 @@ namespace DiceTale
         /// <summary>组件 ID（与客户端组件类同名，GM 面板据此渲染遮罩编辑区）。</summary>
         public override string ComponentId => "Mask";
 
-        /// <summary>组件默认显示名（GM 属性面板分区标题；Inspector 的 displayName 可覆盖）。</summary>
-        public override string DefaultDisplayName => "遮罩";
-
         [SerializeField, Tooltip("遮罩纹理宽度（像素），GM 页面据此生成编辑画布")]
         private int maskWidth = 960;
 
