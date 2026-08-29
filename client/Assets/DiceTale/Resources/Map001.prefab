@@ -346,7 +346,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.BackendObject
   objectKind: 0
-  displayName: "\u7834\u6865"
+  displayName: "\u53E4\u5821\u5927\u95E8"
   objectId: 
 --- !u!114 &3615305867695832250
 MonoBehaviour:
@@ -360,7 +360,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5f079cd2b5b47898ac2228c012d11de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.SceneObject
-  displayName: 
+  displayName: "\u72B6\u6001"
   actions:
   - {fileID: 90111590232480573}
   states:
@@ -430,7 +430,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5f079cd2b5b47898ac2228c012d11de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.SceneObject
-  displayName: 
+  displayName: "\u72B6\u6001"
   actions:
   - {fileID: 7865490019946216524}
   - {fileID: 4986186018652317216}
@@ -498,7 +498,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e27285285179494fa5990940f6797a75, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.ItemObject
-  displayName: 
+  displayName: "\u5206\u914D\u9053\u5177"
   actions: []
   itemName: "\u7EF4\u4FEE\u5DE5\u5177"
   quantity: 4

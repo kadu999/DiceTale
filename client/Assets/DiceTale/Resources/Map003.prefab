@@ -9,8 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2842844007412446946}
-  - component: {fileID: 7270334667756496114}
   - component: {fileID: 4054285180635414020}
+  - component: {fileID: 74926209318147983}
   m_Layer: 0
   m_Name: SpawnPoint
   m_TagString: Untagged
@@ -33,19 +33,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 6894538419123006058}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7270334667756496114
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2772524057621957425}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 01af866d823304341933690c436325f4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.SpawnPoint
-  id: Map003_001
 --- !u!114 &4054285180635414020
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -58,9 +45,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd0ce7c7e6ad5764797b0e0c574e3c03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.BackendObject
-  objectKind: SpawnPoint
+  objectKind: 0
+  displayName: "\u51FA\u751F\u4F4D\u7F6E"
   objectId: 
-  generateUniqueId: 0
+--- !u!114 &74926209318147983
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2772524057621957425}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1d1793e309d4a2f8fe8f63c77cb3fe2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.MapMarker
+  id: 001
 --- !u!1 &7907862588258075770
 GameObject:
   m_ObjectHideFlags: 0
