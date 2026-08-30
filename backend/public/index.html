@@ -116,6 +116,12 @@
         <button class="modal-close" onclick="closeMaskEditor()">×</button>
       </div>
       <div class="modal-hint">按住鼠标拖拽擦除黑色遮罩，松手自动同步到客户端</div>
+      <div class="mask-editor-tools">
+        <label class="mask-softness-label">边缘厚度（半透明带）
+          <input type="range" id="maskSoftnessSlider" min="0" max="100" value="100" title="羽化带宽 = 笔刷半径 × 该比例；0 = 硬边，100 = 全程衰减">
+          <span id="maskSoftnessValue">100%</span>
+        </label>
+      </div>
       <div class="mask-editor-body">
         <canvas id="maskCanvas" class="mask-canvas"></canvas>
       </div>

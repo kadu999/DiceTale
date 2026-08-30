@@ -1026,3 +1026,30 @@ main.layout {
   cursor: crosshair;
   touch-action: none;
 }
+/* 遮罩编辑弹框：边缘厚度滑块 */
+.mask-editor-tools {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.4rem;
+  color: #94a3b8;
+  font-size: 0.78rem;
+}
+
+.mask-editor-tools input[type="range"] {
+  width: 10rem;
+  vertical-align: middle;
+  accent-color: #3b82f6;
+}
+
+.mask-softness-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#maskSoftnessValue {
+  min-width: 2.2rem;
+  color: #e2e8f0;
+  text-align: right;
+}

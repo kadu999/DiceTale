@@ -6,11 +6,12 @@ namespace DiceTale
     /// <summary>
     /// 遮罩图组件（MaskImage）：只负责持有/更新遮罩纹理，不依赖任何渲染组件。
     /// 场景中代表一张黑色遮罩（临时内存态，不持久化）：
-    /// - 运行时生成全黑 <see cref="Texture2D"/>，通过 <see cref="MaskTexture"/> 暴露给外部渲染组件读取
-    ///   （如 BoxComposite 的 _MaskTex）。**输出纹理实例创建一次、永不更换**，外部持有引用始终有效；
-    /// - 上报尺寸（maskWidth/maskHeight）给后台（组件自己上报，IBackendComponentData），GM 页面在弹框里用鼠标擦除黑色；
-    /// - 擦除结果经 erase_mask 命令（笔画轨迹）同步回来：MaskEraseStamp shader 沿轨迹硬核打点（GPU），
-    ///   输出纹理 ReadPixels 同步，外部直接看到结果。
+    /// - 运行时创建 GPU <see cref="RenderTexture"/>（maskRT）作为**唯一真源**，通过 <see cref="MaskTexture"/> 直接暴露
+    ///   给外部渲染组件采样（如 BoxComposite 的 _MaskTex）。RT 随组件常驻（OnDestroy 才释放），实例身份永不更换，
+    ///   外部持有引用始终有效；无 CPU 侧输出纹理与同步读回；
+    /// - 上报尺寸（maskWidth/maskHeight）与软边厚度（edgeFeather）给后台（组件自己上报，IBackendComponentData），GM 页面在弹框里用鼠标擦除黑色；
+    /// - 擦除结果经 erase_mask 命令（笔画轨迹）同步回来：MaskEraseStamp shader 沿轨迹打点（GPU），
+    ///   软边由 softness 控制（与 GM 画布预览同一公式），外部渲染组件直接采样 RT 看到最新结果。
     /// 对象 ID 与显示名称由枢纽统一提供（默认自动生成唯一 ID；显示名在 BackendObject.displayName 配置）。
     /// </summary>
     public class MaskImage : BackendComponent
@@ -24,14 +25,17 @@ namespace DiceTale
         [SerializeField, Tooltip("遮罩纹理高度（像素），GM 页面据此生成编辑画布")]
         private int maskHeight = 540;
 
-        private Texture2D outputTexture; // 稳定输出纹理（MaskTexture，创建一次永不更换）
-        private RenderTexture maskRT;    // 遮罩当前状态（GPU 擦除目标）
+        [SerializeField, Range(0f, 1f), Tooltip("擦除笔刷软边带比例（0=硬边，1=全程衰减）：羽化带宽 = 笔刷半径 × 该值（默认 1）")]
+        private float edgeFeather = 1f;
+
+        private RenderTexture maskRT;    // 遮罩当前状态/唯一真源（MaskTexture，随组件常驻，身份永不更换）
         private RenderTexture blendRT;   // 擦除 ping-pong 缓冲（不能边读边写同一 RT）
         private Texture2D loadTexture;   // 复用的加载纹理（整图导入用，LoadImage 原地重设尺寸）
         private Material stampMaterial;  // 硬笔刷材质（MaskEraseStamp，沿轨迹打点用）
 
         private static readonly int StampCenterId = Shader.PropertyToID("_StampCenter");
         private static readonly int StampRadiusId = Shader.PropertyToID("_StampRadius");
+        private static readonly int StampSoftnessId = Shader.PropertyToID("_StampSoftness");
         private static readonly int MaskSizeId = Shader.PropertyToID("_MaskSize");
 
         private const string StampShaderName = "DiceTale/MaskEraseStamp";
@@ -42,10 +46,13 @@ namespace DiceTale
         /// <summary>遮罩纹理高度（上报给 GM 页面）。</summary>
         public int MaskHeight => maskHeight;
 
+        /// <summary>擦除笔刷软边带比例（0~1，0=硬边，1=全程衰减；上报给 GM，GM 笔刷 softness 与该值一致，羽化带宽 = 笔刷半径 × 该值）。</summary>
+        public float EdgeFeather => edgeFeather;
+
         /// <summary>组件数据上报：遮罩尺寸（GM 属性面板的遮罩编辑区）。</summary>
         public override void AppendToInfo(Server.ServerObjectInfo info)
         {
-            AppendData(info, new MaskData { maskWidth = maskWidth, maskHeight = maskHeight });
+            AppendData(info, new MaskData { maskWidth = maskWidth, maskHeight = maskHeight, edgeFeather = edgeFeather });
         }
 
         [System.Serializable]
@@ -53,10 +60,11 @@ namespace DiceTale
         {
             public int maskWidth;
             public int maskHeight;
+            public float edgeFeather;
         }
 
-        /// <summary>稳定输出遮罩纹理（Texture2D，初始全黑；外部持有引用始终有效）。由外部渲染组件读取。</summary>
-        public Texture2D MaskTexture => outputTexture;
+        /// <summary>当前遮罩纹理（RenderTexture，唯一真源；初始全黑，随组件常驻，外部持有引用始终有效）。由外部渲染组件采样。</summary>
+        public RenderTexture MaskTexture => maskRT;
 
         /// <summary>命令处理：set_mask_image / erase_mask（遮罩命令由本组件自己解析并执行，不再经枢纽转发）。</summary>
         public override bool CanHandle(string commandType) =>
@@ -115,44 +123,20 @@ namespace DiceTale
         {
             base.OnEnable(); // 通知枢纽刷新能力组件列表（基类内置）
 
-            EnsureOutputTexture();
             EnsureMaskRT();
             EnsureStampMaterial();
         }
 
-        private void OnDisable()
+        // 注意：不覆写 OnDisable 释放资源——maskRT 是 MaskTexture 的身份本体，必须跨 disable 常驻；
+        // 资源统一在 OnDestroy 释放（见 ReleaseResources）。
+
+        private void OnDestroy()
         {
-            ReleaseResources(); // 只释放 RT/材质；outputTexture 保留，身份不变
+            ReleaseResources();
         }
 
-        /// <summary>创建稳定输出纹理（初始全黑；只创建一次，之后复用，身份不变）。</summary>
-        private void EnsureOutputTexture()
-        {
-            var width = Mathf.Max(8, maskWidth);
-            var height = Mathf.Max(8, maskHeight);
-
-            if (outputTexture != null)
-            {
-                return;
-            }
-
-            outputTexture = new Texture2D(width, height, TextureFormat.RGBA32, false);
-            outputTexture.name = "MaskOutputTexture";
-            outputTexture.wrapMode = TextureWrapMode.Clamp;
-            outputTexture.filterMode = FilterMode.Bilinear;
-
-            var colors = new Color[width * height];
-            for (int i = 0; i < colors.Length; i++)
-            {
-                colors[i] = Color.black;
-            }
-
-            outputTexture.SetPixels(colors);
-            outputTexture.Apply();
-        }
-
-        /// <summary>创建 GPU 擦除用 RenderTexture（maskRT = 当前状态，blendRT = ping-pong 缓冲；只创建一次）。
-        /// 初始内容 = 当前输出纹理（首次为全黑；重启用保留上次擦除结果，不会闪黑）。</summary>
+        /// <summary>创建 GPU 擦除用 RenderTexture（maskRT = 当前状态/唯一真源，blendRT = ping-pong 缓冲；只创建一次）。
+        /// 初始内容清为全黑（新 RT 内容不保证为黑）；RT 随组件常驻，跨 disable 保留擦除状态。</summary>
         private void EnsureMaskRT()
         {
             var width = Mathf.Max(8, maskWidth);
@@ -172,7 +156,11 @@ namespace DiceTale
             blendRT.wrapMode = TextureWrapMode.Clamp;
             blendRT.filterMode = FilterMode.Bilinear;
 
-            Graphics.Blit(outputTexture, maskRT);
+            // 新 RT 内容未定义，显式清一次黑（唯一真源从全黑开始）
+            var prev = RenderTexture.active;
+            RenderTexture.active = maskRT;
+            GL.Clear(true, true, Color.black);
+            RenderTexture.active = prev;
         }
 
         /// <summary>确保复用的加载纹理存在（LoadImage 会按图尺寸原地重设，实例保持一个，减少 GC）。</summary>
@@ -208,22 +196,8 @@ namespace DiceTale
             stampMaterial.name = "MaskEraseStampMat";
         }
 
-        /// <summary>把遮罩 RT 当前内容读回稳定输出纹理（外部读取 MaskTexture 直接看到最新状态）。</summary>
-        private void SyncOutputTexture()
-        {
-            if (maskRT == null || outputTexture == null)
-            {
-                return;
-            }
-
-            var prev = RenderTexture.active;
-            RenderTexture.active = maskRT;
-            outputTexture.ReadPixels(new Rect(0, 0, outputTexture.width, outputTexture.height), 0, 0);
-            outputTexture.Apply();
-            RenderTexture.active = prev;
-        }
-
         /// <summary>后台命令入口：整图导入（base64 PNG）——直接替换当前遮罩，无过渡。
+        /// 自下而上（UV 0,0 在左下），因此映射到纹理像素时 y 要翻转（1 - y）。
         /// 应用成功时触发基类 <see cref="BackendComponent.Changed"/>。</summary>
         public void ApplyMaskImage(string base64Png)
         {
@@ -232,7 +206,6 @@ namespace DiceTale
                 return;
             }
 
-            EnsureOutputTexture();
             EnsureMaskRT();
             EnsureLoadTexture();
 
@@ -243,14 +216,14 @@ namespace DiceTale
             }
 
             Graphics.Blit(loadTexture, maskRT);
-            SyncOutputTexture();
             NotifyChanged();
             Debug.Log($"[MaskImage] {name}: mask image applied ({loadTexture.width}x{loadTexture.height})");
         }
 
         /// <summary>后台命令入口：应用 GM 擦除的笔画轨迹。
-        /// 用 MaskEraseStamp shader 沿线段打硬核圆（destination-out，ping-pong 到 maskRT），
-        /// 再同步到稳定输出纹理。边缘统一为硬边（无额外羽化 pass）。
+        /// 用 MaskEraseStamp shader 沿线段打擦除圆（幂等 min 擦除——同一位置擦 N 次 = 擦 1 次，渐变带不被叠加抹平；ping-pong 到 maskRT），
+        /// 结果直接留在 maskRT（唯一真源）。软边（与 GM 画布预览同一公式）：全擦核半径 core = radius*(1-softness)，
+        /// 核内全擦、核外 core ~ radius 线性渐隐——离中心越远擦除越小（softness=0 硬边，1 全程衰减）。
         /// 坐标约定：GM 画布为左上原点、y 向下（归一化 0=顶 1=底）；shader 的 Blit 空间是
         /// 自下而上（UV 0,0 在左下），因此映射到纹理像素时 y 要翻转（1 - y）。
         /// 应用成功时触发基类 <see cref="BackendComponent.Changed"/>。</summary>
@@ -261,10 +234,9 @@ namespace DiceTale
                 return;
             }
 
-            EnsureOutputTexture();
             EnsureMaskRT();
             EnsureStampMaterial();
-            if (maskRT == null || blendRT == null || outputTexture == null || stampMaterial == null)
+            if (maskRT == null || blendRT == null || stampMaterial == null)
             {
                 Debug.LogWarning($"[MaskImage] {name}: 擦除被跳过（RT/材质未就绪，请检查 MaskEraseStamp Shader 是否导入）");
                 return;
@@ -275,8 +247,9 @@ namespace DiceTale
 
             stampMaterial.SetVector(MaskSizeId, maskSize);
             stampMaterial.SetFloat(StampRadiusId, radiusTex);
+            stampMaterial.SetFloat(StampSoftnessId, Mathf.Clamp01(softness)); // 软边带比例（0=硬边，1=全程衰减，与 GM 画布预览一致）
 
-            // 单点（单击/笔画尾部）：只打一个擦除圆；多点：沿线段打硬圆（shader：d < radius 全擦）。
+            // 单点（单击/笔画尾部）：只打一个擦除圆；多点：沿线段打擦除圆（shader：软边渐隐）。
             // 归一化 y（GM 上→下）翻转为 shader 的自下而上像素坐标，避免擦除轨迹上下镜像。
             if (points.Length == 1)
             {
@@ -294,11 +267,12 @@ namespace DiceTale
                     var to = new Vector2(points[i + 1].x * maskRT.width, (1f - points[i + 1].y) * maskRT.height);
                     var distance = (to - from).magnitude;
                     var samples = Mathf.Max(1, Mathf.CeilToInt(distance / step));
+                    samples = 1;
                     for (int s = 0; s <= samples; s++)
                     {
                         var center = Vector2.Lerp(from, to, s / (float)samples);
 
-                        // destination-out 打点：ping-pong（读 maskRT 写 blendRT，再拷回 maskRT）
+                        // 幂等擦除打点（min）：ping-pong（读 maskRT 写 blendRT，再拷回 maskRT）
                         stampMaterial.SetVector(StampCenterId, center);
                         Graphics.Blit(maskRT, blendRT, stampMaterial);
                         Graphics.Blit(blendRT, maskRT);
@@ -306,21 +280,11 @@ namespace DiceTale
                 }
             }
 
-            SyncOutputTexture();
             NotifyChanged();
-
-            // 诊断：采样笔画起点附近的输出纹理 alpha——0 说明 shader 擦除已写入输出，1 说明链路有问题
-            if (points.Length > 0 && outputTexture != null)
-            {
-                var px = Mathf.Clamp(Mathf.RoundToInt(points[0].x * outputTexture.width), 0, outputTexture.width - 1);
-                var py = Mathf.Clamp(Mathf.RoundToInt((1f - points[0].y) * outputTexture.height), 0, outputTexture.height - 1);
-                var sample = outputTexture.GetPixel(px, py);
-                Debug.Log($"[MaskImage] {name}: 输出纹理采样 alpha={sample.a:F2} (起点 {px},{py})");
-            }
-
             Debug.Log($"[MaskImage] {name}: erase stroke ({points.Length} points, r={radiusTex}, soft={softness})");
         }
 
+        /// <summary>释放资源（仅组件 OnDestroy 时调用）：maskRT/blendRT 是 MaskTexture 身份本体，跨 disable 常驻。</summary>
         private void ReleaseResources()
         {
             if (loadTexture != null)
@@ -348,8 +312,6 @@ namespace DiceTale
                 Destroy(stampMaterial);
                 stampMaterial = null;
             }
-
-            // outputTexture 不销毁：实例身份永不变，外部引用始终有效；重新 Enable 时复用
         }
     }
 }

@@ -4,10 +4,11 @@
 //      _MainTex = 背景纹理（纹理1）、_EffectTex = 效果纹理（纹理2）、_MaskTex = 框遮罩（RectMask 画出的 RT），
 //      mesh 直接渲染合成结果，无需额外合成 RT。
 //   b) 配合 Graphics.Blit(背景纹理, 目标, 本材质) 使用（_MainTex 由 Blit 自动传入源纹理）。
-//   一对一混合：两张纹理都按同一套 quad UV 采样，覆盖侧（mask.a < 0.5）显示效果纹理（纹理2），
-//              未覆盖侧显示背景纹理（纹理1），交界按 mask.a 平滑交叉混合。
-//   边缘虚化：_MaskEdgeSoftness 控制交界过渡带宽度（UV 单位，对应 WipeMaskEffect 的 blendWidth 概念），
-//             以 mask.a = 0.5 为界做 smoothstep——即使遮罩纹理是硬边，渲染时也会得到平滑羽化边缘。
+//   一对一混合：两张纹理都按同一套 quad UV 采样，遮罩 alpha 直接作为混合权重——
+//              mask.a = 0（擦除/覆盖侧）显示效果纹理（纹理2），mask.a = 1（黑/未覆盖侧）显示背景纹理（纹理1），
+//              中间值 = 半透明边缘：两张图在羽化带内按 alpha 线性交叉混合，融合自然。
+//   边缘羽化由各遮罩生成端负责（RectMask._EdgeSoftness / WipeMask._BlendWidth / MaskEraseStamp._StampSoftness）；
+//   _MaskEdgeSoftness 只做端点截止：0 = 完全线性跟随遮罩（默认），越大混合带越窄，0.5 = 退化为硬边。
 Shader "DiceTale/BoxComposite"
 {
     Properties
@@ -17,7 +18,7 @@ Shader "DiceTale/BoxComposite"
         _MaskTex ("框遮罩", 2D) = "black" {}
         _BackgroundTint ("背景纹理颜色", Color) = (1, 1, 1, 1)
         _EffectTint ("效果纹理颜色", Color) = (1, 1, 1, 1)
-        _MaskEdgeSoftness ("遮罩边缘虚化宽度 (UV)", Range(0, 0.2)) = 0.05
+        _MaskEdgeSoftness ("遮罩端点截止比例 (0=线性, 0.5=硬边)", Range(0, 0.5)) = 0.05
     }
     SubShader
     {
@@ -68,11 +69,12 @@ Shader "DiceTale/BoxComposite"
                 fixed4 bg = tex2D(_MainTex, uv) * _BackgroundTint;
                 fixed4 fx = tex2D(_EffectTex, uv) * _EffectTint;
 
-                // 一对一混合：覆盖侧（mask.a < 0.5）显示效果纹理，未覆盖侧显示背景纹理。
-                // 边缘虚化：以 mask.a = 0.5 为界、_MaskEdgeSoftness 为带宽做 smoothstep，
-                // 即使遮罩纹理是硬边也能得到平滑羽化边缘（对应 WipeMaskEffect 的 blendWidth 思路）。
-                float edge = max(_MaskEdgeSoftness, 1e-4);
-                float coverage = 1.0 - smoothstep(0.5 - edge, 0.5 + edge, mask.a);
+                // 遮罩 alpha 直接作为混合权重：mask.a = 0 → 纹理2（效果），mask.a = 1 → 纹理1（背景），
+                // 中间值 = 半透明边缘，两张图按 alpha 线性交叉混合——羽化带整体成为融合区（不再以 0.5 为界截断）。
+                // _MaskEdgeSoftness：端点截止比例——0 完全线性跟随遮罩；越大混合带越窄；0.5 退化为硬边。
+                float edge = saturate(_MaskEdgeSoftness);
+                float t = saturate((mask.a - edge) / max(1.0 - 2.0 * edge, 1e-4));
+                float coverage = 1.0 - t;
                 return lerp(bg, fx, coverage);
             }
             ENDCG
