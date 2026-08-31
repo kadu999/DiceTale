@@ -142,7 +142,15 @@ main { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-dire
 }
 
 /* 属性列表 */
-.property-list { display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; min-height: 0; }
+.property-list {
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  min-height: 0;
+  /* 与右侧滚动条保持间距 */
+  padding-right: 8px;
+}
 .property-empty { color: #64748b; font-size: 0.85rem; padding: 0.25rem; }
 .property-section {
   display: flex;
@@ -221,6 +229,25 @@ main { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-dire
   line-height: 1;
 }
 
+/* 道具类别标签（道具页 + 选择弹框） */
+.category-tag {
+  flex: 0 0 auto;
+  padding: 0.2rem 0.7rem;
+  border: 1px solid #495057;
+  border-radius: 999px;
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+.category-tag:hover { background: #2b3035; border-color: #6c757d; }
+.category-tag.active {
+  background: #0d6efd;
+  border-color: #0d6efd;
+  color: #fff;
+  font-weight: 600;
+}
+
 /* 道具列表（撑满卡片、可滚动） */
 .item-list {
   display: flex;
@@ -229,6 +256,49 @@ main { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-dire
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  /* 列表内容与右侧滚动条保持间距，避免贴边 */
+  padding-right: 10px;
+}
+
+/* 滚动条可见化：Android WebView / Chromium 默认是覆盖式滚动条，不滚动时不显示，
+   用户会误以为列表不能滚。这里强制常驻显示细滚动条（PC / Android 通用）。 */
+.item-list::-webkit-scrollbar,
+.property-list::-webkit-scrollbar,
+#playerList::-webkit-scrollbar,
+.modal-item-list::-webkit-scrollbar,
+.modal-detail-list::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.item-list::-webkit-scrollbar-track,
+.property-list::-webkit-scrollbar-track,
+#playerList::-webkit-scrollbar-track,
+.modal-item-list::-webkit-scrollbar-track,
+.modal-detail-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.item-list::-webkit-scrollbar-thumb,
+.property-list::-webkit-scrollbar-thumb,
+#playerList::-webkit-scrollbar-thumb,
+.modal-item-list::-webkit-scrollbar-thumb,
+.modal-detail-list::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.45);
+  border-radius: 3px;
+}
+.item-list::-webkit-scrollbar-thumb:hover,
+.property-list::-webkit-scrollbar-thumb:hover,
+#playerList::-webkit-scrollbar-thumb:hover,
+.modal-item-list::-webkit-scrollbar-thumb:hover,
+.modal-detail-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.7);
+}
+.item-list,
+.property-list,
+#playerList,
+.modal-item-list,
+.modal-detail-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
 }
 .item-row {
   display: flex;
@@ -254,7 +324,7 @@ main { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-dire
 
 /* 玩家卡片 */
 /* 玩家列表容器自身滚动，避免整页出现滚动条 */
-#playerList { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+#playerList { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 8px; }
 .player-card {
   flex: 0 0 260px;
   width: 260px;
@@ -323,4 +393,6 @@ main { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-dire
   .page { overflow-y: auto; }
   .page .row { flex: none; height: auto; }
   .page .row > [class*="col-"] { height: auto; }
+  /* 堆叠布局下列高度不再受 flex 约束，道具列表需要固定上限才能在列表内滚动 */
+  .item-list { max-height: calc(100dvh - 300px); }
 }

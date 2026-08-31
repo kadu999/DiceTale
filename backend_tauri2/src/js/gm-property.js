@@ -59,7 +59,9 @@ function renderPropertyPanelInto(id) {
   // 基本信息（玩家在 objects 中缺条目时用 players 名单兜底）
   const info = propertySection(container, '基本信息');
   addPropertyRow(info, '名称', (obj && obj.name) || (player && player.name) || selectedObjectId);
-  addPropertyRow(info, 'ID', selectedObjectId);
+  if (shouldShowObjectId(selectedObjectId)) {
+    addPropertyRow(info, 'ID', selectedObjectId);
+  }
   addPropertyRow(info, '位置', fmtPos((obj && obj.position) || (player && player.position)));
   if (player) addPropertyRow(info, '地图', player.mapName || '-');
 
@@ -113,4 +115,10 @@ function addPropertyRow(container, labelText, value) {
   row.appendChild(label);
   row.appendChild(valueEl);
   container.appendChild(row);
+}
+
+/** 是否显示对象 ID：客户端自动生成的「名字_32位GUID」是内部标识，对 GM 无意义且过长，
+ *  隐藏；只有配置了人类可读的自定义 ID（如 Gate_01）时才显示。 */
+function shouldShowObjectId(id) {
+  return typeof id === 'string' && !/_([0-9a-f]{32})$/i.test(id);
 }

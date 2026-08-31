@@ -97,7 +97,7 @@ function renderMap() {
       (objectId === selectedObjectId ? ' selected' : '');
     const smParams = componentParams(obj, 'OptionValue') || {};
     const exParams = exchangeParams(obj);
-    marker.title = `${obj.name || objectId} (${objectId})\n${smParams.currentOption ? '当前：' + smParams.currentOption : '未配置选项'}`;
+    marker.title = `${obj.name || objectId}${shouldShowObjectId(objectId) ? ' (' + objectId + ')' : ''}\n${smParams.currentOption ? '当前：' + smParams.currentOption : '未配置选项'}`;
     marker.dataset.objectId = objectId;
     applyMarkerPosition(marker, num(obj.position.x, 0.5), num(obj.position.y, 0.5));
 

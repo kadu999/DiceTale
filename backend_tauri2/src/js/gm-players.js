@@ -37,7 +37,9 @@ function renderPlayerList() {
 
     // 基本信息
     const info = propertySection(list, '基本信息');
-    addPropertyRow(info, 'ID', playerId);
+    if (shouldShowObjectId(playerId)) {
+      addPropertyRow(info, 'ID', playerId);
+    }
     addPropertyRow(info, '地图', player.mapName || '-');
     addPropertyRow(info, '位置', fmtPos(player.position));
 
