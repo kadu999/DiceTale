@@ -1,0 +1,308 @@
+/* DiceTale GM 控制台自定义样式（Bootstrap 5 之外的补充） */
+
+html, body { height: 100%; }
+
+/* 页面切换 */
+.page { display: none; }
+.page.active { display: block; }
+
+/* 顶栏页面切换按钮（navbar 内） */
+.page-tab { color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2); }
+.page-tab.active { background: #0d6efd; color: #fff; border-color: #0d6efd; }
+
+/* 地图选择标签 */
+.map-tabs { scrollbar-width: none; }
+.map-tabs::-webkit-scrollbar { display: none; }
+.map-tabs button {
+  flex: 0 0 auto;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid #495057;
+  border-radius: 6px;
+  background: transparent;
+  color: #cbd5e1;
+  white-space: nowrap;
+}
+.map-tabs button.active { background: #0d6efd; color: #fff; border-color: #0d6efd; }
+
+/* 地图容器与图片 */
+.map-cell { display: flex; justify-content: center; }
+.map-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 200px;
+  overflow: hidden;
+  user-select: none;
+}
+#mapImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.overlay-layer { position: absolute; inset: 0; pointer-events: none; }
+
+/* 玩家标记：圆形令牌，名字居中 */
+.player-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 2px;
+  border-radius: 50%;
+  background: #0d6efd;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 10px;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  transition: width 0.15s, height 0.15s, font-size 0.15s;
+}
+.player-marker.selected {
+  width: 48px;
+  height: 48px;
+  font-size: 13px;
+  border-color: #fff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 1px 6px rgba(0, 0, 0, 0.7);
+}
+.player-marker::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid rgba(13, 110, 253, 0.5);
+  opacity: 0;
+}
+.player-marker.selected::after { animation: player-pulse 1.6s ease-out infinite; }
+@keyframes player-pulse {
+  0% { transform: scale(0.7); opacity: 1; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+/* 地图目标标记（带名称标签） */
+.object-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #8b5cf6;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  transition: transform 0.1s, box-shadow 0.1s;
+  font-size: 12px;
+  color: #fff;
+  white-space: nowrap;
+}
+.object-marker:active { transform: translate(-50%, -50%) scale(1.1); }
+.object-marker.kind-SceneObject { background: #f59e0b; }
+.object-marker.selected {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 1px 6px rgba(0, 0, 0, 0.6);
+  transform: translate(-50%, -50%) scale(1.08);
+}
+.object-marker-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+}
+.object-marker-label { line-height: 1; }
+.object-marker-state {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.3);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+/* 属性列表 */
+.property-list { display: flex; flex-direction: column; overflow-x: hidden; }
+.property-empty { color: #64748b; font-size: 0.85rem; padding: 0.25rem; }
+.property-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.55rem 0.15rem;
+  border-top: 1px solid #495057;
+}
+.property-section:first-child { border-top: none; padding-top: 0.15rem; }
+.property-section:last-child { padding-bottom: 0; }
+.property-section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+.property-row { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.15rem 0.25rem; font-size: 0.9rem; }
+.property-label { flex: 0 0 auto; min-width: 4.5em; color: #94a3b8; }
+.property-value { font-weight: 600; color: #e2e8f0; word-break: break-all; }
+.property-states { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.property-hint { color: #94a3b8; font-size: 0.78rem; }
+.property-items { display: flex; flex-direction: column; gap: 0.45rem; flex: 1 1 auto; min-width: 0; }
+
+/* 道具分配 */
+.property-distribute-title { padding: 0.3rem 0.25rem; font-size: 0.9rem; font-weight: 600; color: #cbd5e1; }
+.property-distribute-line { display: flex; align-items: center; gap: 6px; padding: 0.15rem 0.1rem; min-width: 0; }
+.property-distribute-count { flex: 0 0 auto; min-width: 20px; text-align: center; font-weight: 600; color: #e2e8f0; }
+.property-distribute-plus { margin-left: auto; }
+.property-distribute-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+}
+
+/* 属性面板里的按钮 / 输入控件 */
+.state-btn {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid #495057;
+  border-radius: 999px;
+  background: #212529;
+  color: #e2e8f0;
+  font-size: 0.82rem;
+}
+.state-btn.active { background: #0d6efd; color: #fff; border-color: #0d6efd; }
+.state-btn:disabled { opacity: 0.4; }
+.property-item-add-btn { margin-left: auto; }
+.property-item-qty { width: 44px; text-align: center; }
+.property-item-slider { flex: 1 1 auto; min-width: 8rem; margin: 0 0.25rem; }
+.property-item-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px 2px 10px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.22);
+  color: #c7d2fe;
+  font-size: 0.82rem;
+  max-width: 100%;
+}
+.property-item-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.property-item-remove {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(199, 210, 254, 0.16);
+  color: #c7d2fe;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+/* 道具列表（可滚动） */
+.item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  overflow-y: auto;
+  max-height: calc(100dvh - 260px);
+}
+.item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #495057;
+  border-radius: 8px;
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  text-align: left;
+}
+.item-row:hover { background: #2b3035; }
+.item-row.selected { background: #0d6efd; border-color: #0d6efd; color: #fff; }
+.item-row.disabled { opacity: 0.4; cursor: default; }
+.item-row.disabled:hover { background: transparent; }
+.item-row-name { flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.item-row-price { flex: 0 0 auto; font-size: 0.75rem; color: #94a3b8; }
+.item-row.selected .item-row-price { color: #dbeafe; }
+
+/* 玩家卡片 */
+.player-card {
+  flex: 0 0 260px;
+  width: 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 90px);
+  padding: 0.75rem;
+  background: #1e293b;
+  border: 1px solid #2b3952;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.player-card .property-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.player-card:hover { background: #22304a; border-color: #3a4a66; }
+.player-card.selected { border-color: #0d6efd; background: #1c2b46; }
+.player-empty { color: #64748b; font-size: 0.85rem; }
+
+/* toast */
+.gm-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 2rem;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #fff;
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 1100;
+}
+.gm-toast.show { opacity: 1; }
+
+/* 遮罩编辑 */
+.mask-editor-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  overflow: hidden;
+  background: #0b1220;
+  border: 1px solid #2b3952;
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+.mask-canvas {
+  max-width: 100%;
+  max-height: 70dvh;
+  background-color: #0b1220;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* 弹框列表区高度约束 */
+.modal-item-list { max-height: 40dvh; }
+.modal-detail-list { max-height: 40dvh; }
+
+/* 手机窄屏（横屏 App）：地图占满、属性面板在下方 */
+@media (max-width: 991px) {
+  .map-cell { margin-bottom: 0.5rem; }
+}

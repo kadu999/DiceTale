@@ -1,0 +1,24 @@
+{
+  "name": "backend_tauri2",
+  "version": "1.0.0",
+  "description": "DiceTale GM 控制台（Tauri 2 三端：网页 / PC / Android）",
+  "main": "index.js",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "node scripts/run-tauri.js dev",
+    "dev:android": "node scripts/run-tauri.js android:dev",
+    "build": "node scripts/run-tauri.js build",
+    "build:android": "node scripts/run-tauri.js android",
+    "serve": "node scripts/serve.js",
+    "serve:port": "node scripts/serve.js"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "dependencies": {
+    "@tauri-apps/plugin-http": "^2.5.9",
+    "bootstrap": "^5.3.8"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4"
+  }
+}

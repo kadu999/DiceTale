@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>DiceTale GM</title>
+  <link rel="stylesheet" href="vendor/css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/gm.css">
+</head>
+<body class="bg-dark text-light">
+  <!-- 顶栏：标题 + 页面切换 + 连接状态 + 后端设置 -->
+  <nav class="navbar navbar-expand navbar-dark bg-black border-bottom border-secondary px-2">
+    <span class="navbar-brand fs-6 me-2">DiceTale GM</span>
+    <ul class="navbar-nav me-auto flex-row gap-1">
+      <li class="nav-item"><button class="btn btn-sm page-tab active" id="pageBtnMap" onclick="switchPage('map')">地图</button></li>
+      <li class="nav-item"><button class="btn btn-sm page-tab" id="pageBtnPlayers" onclick="switchPage('players')">玩家</button></li>
+      <li class="nav-item"><button class="btn btn-sm page-tab" id="pageBtnItems" onclick="switchPage('items')">道具</button></li>
+    </ul>
+    <div class="d-flex align-items-center gap-2">
+      <span id="clientStatus" class="badge text-bg-danger">客户端未连接</span>
+      <span id="connectionStatus" class="badge text-bg-danger">未连接</span>
+      <button class="btn btn-sm btn-outline-secondary" onclick="openSettings()" title="后端地址设置">⚙</button>
+    </div>
+  </nav>
+
+  <main class="container-fluid py-2">
+    <!-- 地图页 -->
+    <section id="pageMap" class="page active">
+      <div class="row g-2">
+        <div class="col-12 col-lg-2">
+          <div class="card bg-secondary bg-opacity-25 h-100">
+            <div class="card-header py-1 small text-center text-secondary">地图</div>
+            <div class="card-body p-1">
+              <div id="mapTabs" class="d-flex flex-lg-column flex-row gap-1 overflow-auto map-tabs"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-7">
+          <div class="map-cell">
+            <div id="mapContainer" class="map-container bg-black border border-secondary rounded">
+              <img id="mapImage" alt="地图" draggable="false">
+              <div id="overlayLayer" class="overlay-layer"></div>
+              <div id="playerLayer" class="overlay-layer"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-3">
+          <div class="card bg-secondary bg-opacity-25 h-100">
+            <div class="card-header py-1 small text-center text-secondary">属性</div>
+            <div id="propertyListMap" class="card-body property-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 玩家页 -->
+    <section id="pagePlayers" class="page">
+      <div id="playerList" class="d-flex flex-wrap gap-2 align-items-start"></div>
+    </section>
+
+    <!-- 道具页 -->
+    <section id="pageItems" class="page">
+      <div class="row g-2">
+        <div class="col-12 col-lg-3">
+          <div class="card bg-secondary bg-opacity-25">
+            <div class="card-header py-1 small text-center text-secondary">道具</div>
+            <div class="card-body">
+              <input id="itemSearch" class="form-control form-control-sm mb-2" type="search" placeholder="搜索道具名 / 类别" autocomplete="off">
+              <div id="itemCategory" class="d-flex flex-wrap gap-1 mb-2"></div>
+              <div id="itemList" class="item-list"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-5">
+          <div class="card bg-secondary bg-opacity-25 h-100">
+            <div class="card-header py-1 small text-center text-secondary" id="itemDetailTitle">选择道具</div>
+            <div id="itemDetail" class="card-body property-list"></div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="card bg-secondary bg-opacity-25 h-100">
+            <div class="card-header py-1 small text-center text-secondary" id="itemAssignTitle">分配</div>
+            <div id="itemAssign" class="card-body property-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 操作失败提示 -->
+  <div id="toast" class="toast gm-toast" role="status" aria-live="polite"></div>
+
+  <!-- 后端地址设置弹框（Bootstrap modal） -->
+  <div class="modal fade" id="settingsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content bg-dark text-light">
+        <div class="modal-header py-2">
+          <h6 class="modal-title">后端地址</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-secondary mb-2">Node 后台地址（含端口），例如 http://192.168.1.33:1420</p>
+          <input id="backendUrlInput" class="form-control form-control-sm" type="text" autocomplete="off">
+        </div>
+        <div class="modal-footer py-1">
+          <button class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+          <button class="btn btn-sm btn-primary" onclick="applyBackendUrl()">连接</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 道具选择弹框（Bootstrap modal） -->
+  <div class="modal fade" id="itemPickerModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content bg-dark text-light">
+        <div class="modal-header py-2">
+          <h6 class="modal-title">选择道具</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="closeItemPicker()"></button>
+        </div>
+        <div class="modal-body">
+          <input id="pickerSearch" class="form-control form-control-sm mb-2" type="search" placeholder="搜索道具名 / 类别" autocomplete="off">
+          <div id="pickerCategory" class="d-flex flex-wrap gap-1 mb-2"></div>
+          <div class="row g-2">
+            <div class="col-12 col-md-6">
+              <div class="small text-secondary mb-1">点击道具查看属性</div>
+              <div id="pickerList" class="item-list modal-item-list"></div>
+            </div>
+            <div class="col-12 col-md-6 border-md-start border-secondary ps-md-3">
+              <div class="small text-secondary mb-1" id="pickerDetailTitle">道具属性</div>
+              <div id="pickerDetail" class="property-list modal-detail-list"></div>
+              <div id="pickerQtyRow" class="d-flex align-items-center gap-2 mt-2 border-top border-secondary pt-2" style="display:none">
+                <span class="small text-secondary">数量</span>
+                <input id="pickerQty" class="form-control form-control-sm w-auto" type="number" min="1" max="99" value="1">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer py-1">
+          <button class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal" onclick="closeItemPicker()">取消</button>
+          <button class="btn btn-sm btn-primary" id="pickerConfirm" onclick="confirmPickerAdd()">确定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 遮罩编辑弹框（Bootstrap modal） -->
+  <div class="modal fade" id="maskEditorModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content bg-dark text-light">
+        <div class="modal-header py-2">
+          <h6 class="modal-title" id="maskEditorTitle">编辑遮罩</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="closeMaskEditor()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="small text-secondary mb-2">按住拖拽擦除黑色遮罩，松手自动同步到客户端</div>
+          <div class="d-flex align-items-center justify-content-center gap-2 mb-2 text-secondary small">
+            <label class="d-flex align-items-center gap-2">边缘厚度（半透明带）
+              <input type="range" id="maskSoftnessSlider" min="0" max="100" value="100" class="form-range w-50">
+              <span id="maskSoftnessValue" class="text-light">100%</span>
+            </label>
+          </div>
+          <div class="mask-editor-body">
+            <canvas id="maskCanvas" class="mask-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 脚本按依赖顺序加载 -->
+  <script src="vendor/js/bootstrap.bundle.min.js"></script>
+  <script src="js/tauri-bridge.js"></script>
+  <script src="js/gm-core.js"></script>
+  <script src="js/gm-property.js"></script>
+  <script src="js/components/OptionValue.js"></script>
+  <script src="js/components/Backpack.js"></script>
+  <script src="js/components/ItemExchange.js"></script>
+  <script src="js/components/MaskImage.js"></script>
+  <script src="js/components/FloatValue.js"></script>
+  <script src="js/components/IntValue.js"></script>
+  <script src="js/components/BoolValue.js"></script>
+  <script src="js/gm-map.js"></script>
+  <script src="js/gm-players.js"></script>
+  <script src="js/gm-items.js"></script>
+  <script src="js/gm-mask.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

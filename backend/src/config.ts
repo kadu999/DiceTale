@@ -39,7 +39,7 @@ function resolveMapsDir(raw: string | undefined): string {
 
 export const config: BackendConfig = (() => {
   const file = loadConfigFile();
-  const port = parseInt(process.env.PORT || String(file.port ?? 8088), 10);
+  const port = parseInt(process.env.PORT || String(file.port ?? 1420), 10);
   const mapsDir = resolveMapsDir(process.env.MAPS_DIR || file.mapsDir);
   return { port, mapsDir };
 })();

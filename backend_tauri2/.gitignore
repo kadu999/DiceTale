@@ -1,0 +1,8 @@
+# Node
+node_modules/
+
+# Rust / Tauri build output
+src-tauri/target/
+
+# Tauri Android generated project (regenerate with: tauri android init)
+src-tauri/gen/android/
