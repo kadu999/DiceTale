@@ -5,4 +5,30 @@ node_modules/
 src-tauri/target/
 
 # Tauri Android generated project (regenerate with: tauri android init)
-src-tauri/gen/android/
+# 例外：少量自定义文件单独入库（横屏锁定、安全区/挖孔处理等；重新 init 后需从 git 恢复）
+# 注意：必须用 /* 排除内容而非排除目录本身，否则 git 剪枝导致 ! 否定规则全部失效
+src-tauri/gen/android/*
+!src-tauri/gen/android/app/
+src-tauri/gen/android/app/*
+!src-tauri/gen/android/app/src/
+src-tauri/gen/android/app/src/*
+!src-tauri/gen/android/app/src/main/
+src-tauri/gen/android/app/src/main/*
+!src-tauri/gen/android/app/src/main/AndroidManifest.xml
+!src-tauri/gen/android/app/src/main/java/
+src-tauri/gen/android/app/src/main/java/*
+!src-tauri/gen/android/app/src/main/java/com/
+src-tauri/gen/android/app/src/main/java/com/*
+!src-tauri/gen/android/app/src/main/java/com/dicetale/
+src-tauri/gen/android/app/src/main/java/com/dicetale/*
+!src-tauri/gen/android/app/src/main/java/com/dicetale/gm/
+src-tauri/gen/android/app/src/main/java/com/dicetale/gm/*
+!src-tauri/gen/android/app/src/main/java/com/dicetale/gm/MainActivity.kt
+!src-tauri/gen/android/app/src/main/res/
+src-tauri/gen/android/app/src/main/res/*
+!src-tauri/gen/android/app/src/main/res/values/
+src-tauri/gen/android/app/src/main/res/values/*
+!src-tauri/gen/android/app/src/main/res/values/themes.xml
+!src-tauri/gen/android/app/src/main/res/values-night/
+src-tauri/gen/android/app/src/main/res/values-night/*
+!src-tauri/gen/android/app/src/main/res/values-night/themes.xml

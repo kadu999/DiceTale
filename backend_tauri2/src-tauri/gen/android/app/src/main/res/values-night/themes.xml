@@ -1,0 +1,9 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Theme.app" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- 横屏时左侧摄像头挖孔遮挡内容：窗口禁止布局进挖孔区 -->
+        <item name="android:windowLayoutInDisplayCutoutMode">never</item>
+        <!-- 未来 Android 15+（targetSdk 35+）强制 edge-to-edge：显式退出，保持内容避开系统栏 -->
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+    </style>
+</resources>

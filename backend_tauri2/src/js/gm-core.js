@@ -1,11 +1,17 @@
 // 后端地址确定优先级（前端无设置界面，地址来自 config.js 配置）：
-//   1) config.js 里 window.DICETALE_BACKEND_URL 有值 → 强制使用（手机连电脑填局域网 IP）
-//   2) 页面由后端同源托管（location.origin === DICETALE_BACKEND_FALLBACK）→ 直接同源
-//   3) DICETALE_BACKEND_FALLBACK（默认 http://localhost:1420，Tauri 壳 PC / 1421 预览页使用；
+//   1) DICETALE_BACKEND_URL 有值 → 强制使用（最高优先级，一般留空）
+//   2) Tauri 壳 Android 端 → DICETALE_BACKEND_ANDROID（手机连电脑填电脑局域网 IP；
+//      手机自身 localhost 不可达，不能走 PC 的 localhost fallback）
+//   3) 页面由后端同源托管（location.origin === DICETALE_BACKEND_FALLBACK）→ 直接同源
+//   4) DICETALE_BACKEND_FALLBACK（默认 http://localhost:1420，Tauri 壳 PC / 1421 预览页使用；
 //      后端端口改动时需同步修改该配置）
 const BACKEND_FALLBACK = (window.DICETALE_BACKEND_FALLBACK || 'http://localhost:1420').replace(/\/+$/, '');
+const BACKEND_ANDROID = (window.DICETALE_BACKEND_ANDROID || BACKEND_FALLBACK).replace(/\/+$/, '');
 let backendBase = (function () {
   if (window.DICETALE_BACKEND_URL) return window.DICETALE_BACKEND_URL.replace(/\/+$/, '');
+  if (window.isDiceTaleTauri && window.isDiceTaleTauri() && /Android/i.test(navigator.userAgent)) {
+    return BACKEND_ANDROID;
+  }
   if ((location.protocol === 'http:' || location.protocol === 'https:') && location.origin === BACKEND_FALLBACK) {
     return location.origin;
   }
@@ -205,7 +211,8 @@ function syncPropertyHeight() {
   }
   if (page && !page.classList.contains('active')) return;
 
-  if (window.matchMedia('(orientation: landscape) and (min-width: 640px)').matches) {
+  // 与三栏网格的断点一致（col-sm-* = 576px）：仅横屏且宽度充足（三栏并排）时才同步高度
+  if (window.matchMedia('(orientation: landscape) and (min-width: 576px)').matches) {
     propertyPanel.style.height = mapContainer.clientHeight + 'px';
   } else {
     propertyPanel.style.height = '';
@@ -218,11 +225,3 @@ function fitLayout() {
   syncPropertyHeight();
   if (typeof repositionMarkers === 'function') repositionMarkers();
 }
-
-/** 关闭横屏建议（点击提示条）。 */
-function dismissRotateHint() {
-  var el = document.getElementById('rotateHint');
-  if (el) el.style.display = 'none';
-}
-// 横屏建议只短暂提示，超时自动消失，不长期占屏
-setTimeout(dismissRotateHint, 8000);

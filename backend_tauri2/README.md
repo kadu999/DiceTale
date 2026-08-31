@@ -27,10 +27,11 @@ Unity 客户端（单客户端）配套的 GM 控制台与中继后台：TypeScr
 
 | 键 | 默认 | 说明 |
 | --- | --- | --- |
-| `DICETALE_BACKEND_URL` | `''` | 强制指定后端地址。手机连电脑时填电脑局域网 IP，如 `http://192.168.1.33:1420` |
+| `DICETALE_BACKEND_URL` | `''` | 强制指定后端地址（优先级最高，一般留空） |
+| `DICETALE_BACKEND_ANDROID` | `http://192.168.1.33:1420` | Tauri 壳 Android 端使用的后端地址：**手机连电脑必须填电脑局域网 IP**（手机自身 localhost 指向手机自己），换网络/换电脑时需同步修改 |
 | `DICETALE_BACKEND_FALLBACK` | `http://localhost:1420` | 非后端同源环境（Tauri 壳 PC、1421 预览页）使用的后端地址 |
 
-地址确定优先级：`DICETALE_BACKEND_URL` 有值 → 强制使用；页面由后端同源托管 → 同源；否则 → `DICETALE_BACKEND_FALLBACK`。
+地址确定优先级：`DICETALE_BACKEND_URL` 有值 → 强制使用；Tauri 壳 Android 端 → `DICETALE_BACKEND_ANDROID`；页面由后端同源托管 → 同源；否则 → `DICETALE_BACKEND_FALLBACK`。
 
 ### 3. 其它配置
 
@@ -50,6 +51,19 @@ open-port.bat        :: 放行防火墙 TCP 端口（局域网设备访问需管
 ```
 
 等价 npm 脚本：`npm run serve`（后台）、`npm run dev` / `npm run dev:android` / `npm run build` / `npm run build:android`。
+
+## Android 构建说明
+
+以下自定义均在 `src-tauri/gen/android/` 下，已**单独入库**（其余内容仍是生成物、不入库）；若重新执行
+`tauri android init` 会覆盖，需用 `git checkout -- <对应文件>` 恢复。
+
+- **横屏锁定**：`app/src/main/AndroidManifest.xml` 中 `.MainActivity` 的
+  `android:screenOrientation="landscape"`（Tauri 暂未提供 orientation 配置项，见 tauri-apps/tauri#13408）。
+- **安全区（刘海/挖孔 + 虚拟按键）**：Tauri 模板默认 `enableEdgeToEdge()` 会让 WebView 画到系统栏下面，
+  横屏时右侧被虚拟按键遮挡；`app/src/main/java/com/dicetale/gm/MainActivity.kt` 已去掉该调用，
+  主题 `app/src/main/res/values*/themes.xml` 增加 `windowLayoutInDisplayCutoutMode=never`
+  （左侧摄像头挖孔不遮挡）与 `windowOptOutEdgeToEdgeEnforcement=true`（Android 15+ 强制 edge-to-edge 时保持退出）。
+  注：Android 9 WebView 不报告 `env(safe-area-inset-*)`，故不能靠前端 CSS 解决，必须走原生层。
 
 ## 通信协议
 
