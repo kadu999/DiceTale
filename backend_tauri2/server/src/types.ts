@@ -42,7 +42,6 @@ export type ClientMessage =
 
 export type ServerMessage =
   | { type: 'sync_state'; state: GameStateSnapshot }
-  | { type: 'set_map'; mapName: string; spawnId: string }
   | { type: 'teleport_player'; mapName: string; spawnId: string }
   /** 按对象 ID 设置客户端后台对象的当前选项（选项由客户端 Inspector 选项列表定义） */
   | { type: 'set_option'; objectId: string; option: string }
@@ -123,5 +122,4 @@ export type GmUpdateMessage = {
 /** 后台 → GM 控制台的消息 */
 export type GmServerMessage =
   | GmUpdateMessage
-  | { type: 'gm_error'; reason: string }
-  | { type: 'sync_state'; state: GameStateSnapshot };
+  | { type: 'gm_error'; reason: string };

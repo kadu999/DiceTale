@@ -79,6 +79,13 @@ function serveStatic(req: http.IncomingMessage, res: http.ServerResponse) {
     return;
   }
 
+  // 未知 API 路径返回 404（JSON），避免回退到 index.html
+  if ((req.url || '').startsWith('/api/')) {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Not found' }));
+    return;
+  }
+
   // 剥离查询串（如 /app.js?v=1 应解析为 /app.js），避免命中 index.html 回退
   const urlPath = (req.url || '').split('?')[0];
   const resolvedPath = path.resolve(PUBLIC_DIR, '.' + urlPath);
@@ -98,18 +105,32 @@ function serveStatic(req: http.IncomingMessage, res: http.ServerResponse) {
 
 export const server = http.createServer(serveStatic);
 
+// 启动失败（端口被占等）给出明确提示后退出，而不是裸抛堆栈
+server.on('error', (err) => {
+  const e = err as NodeJS.ErrnoException;
+  if (e.code === 'EADDRINUSE') {
+    console.error(`[Server] 端口 ${PORT} 已被占用：请修改 server/config.json 的 port，或关闭占用该端口的进程`);
+    process.exit(1);
+  }
+  console.error('[Server] HTTP server error:', err);
+});
+
 // 注意：不能在同一 http server 上创建多个带 path 的 WebSocketServer，
 // 不匹配 path 的实例会以 400 中止握手。因此使用单个 WSS，按 URL 路由。
-const wss = new WebSocketServer({ server });
+// maxPayload 来自配置（maxMessageMb）：单条 WS 消息大小上限（遮罩图等大消息）。
+const wss = new WebSocketServer({ server, maxPayload: config.maxMessageMb * 1024 * 1024 });
 
-// 调试：打印所有 WS 升级请求（排查手机端 WebSocket 握手失败）
-server.on('upgrade', (req, socket) => {
-  const h = req.headers;
-  console.log(`[Server] WS upgrade: ${req.url} from ${req.socket.remoteAddress}`);
-  console.log(`  upg=${h.upgrade} conn=${h.connection} ver=${h['sec-websocket-version']} key=${(h['sec-websocket-key'] || '').slice(0, 12)}... ext=${h['sec-websocket-extensions'] || '-'} origin=${h.origin || '-'}`);
-  socket.on('close', () => console.log(`[Server] WS socket closed (${req.url})`));
-  socket.on('error', (e) => console.log(`[Server] WS socket error: ${e.message}`));
-});
+// 调试（可选）：打印所有 WS 升级请求（排查手机端 WebSocket 握手失败）。
+// 默认关闭，由 server/config.json 的 debugWs 或环境变量 DEBUG_WS 开启。
+if (config.debugWs) {
+  server.on('upgrade', (req, socket) => {
+    const h = req.headers;
+    console.log(`[Server] WS upgrade: ${req.url} from ${req.socket.remoteAddress}`);
+    console.log(`  upg=${h.upgrade} conn=${h.connection} ver=${h['sec-websocket-version']} key=${(h['sec-websocket-key'] || '').slice(0, 12)}... ext=${h['sec-websocket-extensions'] || '-'} origin=${h.origin || '-'}`);
+    socket.on('close', () => console.log(`[Server] WS socket closed (${req.url})`));
+    socket.on('error', (e) => console.log(`[Server] WS socket error: ${e.message}`));
+  });
+}
 
 let clientSocket: WebSocket | null = null;
 const gmSockets = new Set<WebSocket>();

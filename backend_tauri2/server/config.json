@@ -1,4 +1,6 @@
 {
   "port": 1420,
-  "mapsDir": "maps"
+  "mapsDir": "maps",
+  "debugWs": false,
+  "maxMessageMb": 16
 }

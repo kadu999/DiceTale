@@ -1,13 +1,15 @@
-// 后端地址确定优先级（前端无设置界面，地址来自 config.js 写死配置）：
+// 后端地址确定优先级（前端无设置界面，地址来自 config.js 配置）：
 //   1) config.js 里 window.DICETALE_BACKEND_URL 有值 → 强制使用（手机连电脑填局域网 IP）
-//   2) 网页由后端托管（http/https 同源）→ 直接同源
-//   3) 默认本机 http://localhost:1420（Tauri 壳 PC 默认 / 未配置时）
+//   2) 页面由后端同源托管（location.origin === DICETALE_BACKEND_FALLBACK）→ 直接同源
+//   3) DICETALE_BACKEND_FALLBACK（默认 http://localhost:1420，Tauri 壳 PC / 1421 预览页使用；
+//      后端端口改动时需同步修改该配置）
+const BACKEND_FALLBACK = (window.DICETALE_BACKEND_FALLBACK || 'http://localhost:1420').replace(/\/+$/, '');
 let backendBase = (function () {
   if (window.DICETALE_BACKEND_URL) return window.DICETALE_BACKEND_URL.replace(/\/+$/, '');
-  if (location.protocol === 'http:' || location.protocol === 'https:') {
+  if ((location.protocol === 'http:' || location.protocol === 'https:') && location.origin === BACKEND_FALLBACK) {
     return location.origin;
   }
-  return 'http://localhost:1420';
+  return BACKEND_FALLBACK;
 })();
 
 /** 后端资源完整 URL（地图图片、items.json、api 等）。 */
@@ -15,7 +17,6 @@ function backendUrl(path) {
   return backendBase + path;
 }
 
-const wsUrl = backendBase.replace(/^http/, 'ws') + '/gm';
 let ws;
 let state = null;
 let selectedMap = null;
@@ -67,9 +68,9 @@ function connect() {
       showToast(msg.reason || '操作失败');
       return;
     }
-    if (msg.type === 'gm_update' || msg.type === 'sync_state') {
+    if (msg.type === 'gm_update') {
       state = msg.state;
-      if (msg.type === 'gm_update' && typeof msg.clientConnected === 'boolean') {
+      if (typeof msg.clientConnected === 'boolean') {
         clientConnected = msg.clientConnected;
         setClientStatus(clientConnected);
       }

@@ -1,7 +1,8 @@
 // 静态服务器 + 自带后端拉起：本地预览 backend_tauri2/src 网页端。
 // 用法：node scripts/serve.js [端口]   默认 1421
-// 说明：页面里的 /api/maps、/items.json、/maps/*.png 来自自带后端（server/src/index.ts，默认 1420）。
-//       serve.js 启动时会检测 1420 是否在运行；未运行则自动拉起自带后端（tsx 直跑，无需编译），
+// 说明：页面里的 /api/maps、/items.json、/maps/*.png 来自自带后端（server/src/index.ts，
+//       端口读 server/config.json，默认 1420）。serve.js 启动时会检测后端端口是否在运行；
+//       未运行则自动拉起自带后端（tsx 直跑，无需编译），
 //       因此只需运行本脚本（或 serve-web.bat），网页打开即是完整可用的 GM 控制台。
 const http = require('http');
 const fs = require('fs');
@@ -12,7 +13,6 @@ const { spawn } = require('child_process');
 const PROJECT_ROOT = path.join(__dirname, '..');
 const ROOT = path.join(PROJECT_ROOT, 'src');
 const PORT = parseInt(process.argv[2] || process.env.PORT || '1421', 10);
-const BACKEND_PORT = 1420;
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -56,19 +56,17 @@ const server = http.createServer((req, res) => {
   }
 });
 
-// ---- 道具目录同步：src/items.json 是唯一来源，启动时同步一份给后端托管目录 ----
-const serverPublicDir = path.join(PROJECT_ROOT, 'server', 'public');
-const srcItemsJson = path.join(ROOT, 'items.json');
-const dstItemsJson = path.join(serverPublicDir, 'items.json');
-try {
-  fs.mkdirSync(serverPublicDir, { recursive: true });
-  fs.copyFileSync(srcItemsJson, dstItemsJson);
-  console.log('[serve] 道具目录已同步: src/items.json -> server/public/items.json');
-} catch (e) {
-  console.warn('[serve] items.json 同步失败:', e.message);
+// ---- 后端端口：与后端共用 server/config.json（避免两处写死不一致） ----
+function readBackendPort() {
+  try {
+    const cfg = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'server', 'config.json'), 'utf8'));
+    if (typeof cfg.port === 'number' && cfg.port > 0) return cfg.port;
+  } catch (e) { /* 配置文件缺失/损坏时回退默认 */ }
+  return 1420;
 }
+const BACKEND_PORT = readBackendPort();
 
-// ---- 自带后端拉起（1420 未运行则自动启动，tsx 直跑无需编译） ----
+// ---- 自带后端拉起（后端端口未运行则自动启动，tsx 直跑无需编译） ----
 let backendChild = null;
 
 function isPortListening(port, cb) {

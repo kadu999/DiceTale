@@ -30,16 +30,4 @@ if (typeof window.backendFetchJson !== 'function') {
   };
 }
 
-/** 跨环境 GET 文本（备用）。 */
-if (typeof window.backendFetchText !== 'function') {
-  window.backendFetchText = async function (path) {
-    const url = backendUrl(path);
-    if (window.isDiceTaleTauri()) {
-      const bytes = await window.__TAURI_INTERNALS__.invoke('http_get', { url });
-      // bytes 是数字数组
-      return bytes.map((b) => String.fromCharCode(b)).join('');
-    }
-    const resp = await fetch(url);
-    return resp.text();
-  };
-}
+

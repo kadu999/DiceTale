@@ -1,6 +1,6 @@
 # DiceTale（骰子物语）
 
-一个轻量级的桌游跑团（TRPG）Demo 项目：**Unity 客户端 + Node.js 客户端后台**。
+一个轻量级的桌游跑团（TRPG）Demo 项目：**Unity 客户端 + GM 控制台后台**。
 
 架构是**单客户端 ↔ 单后台**：只有一个 Unity 客户端，配套一个专属于它的后台控制台。
 后台不面向多客户端，只负责接收客户端上报的状态并显示（地图、玩家位置、物体状态），以及触发控制（传送、切换物体状态）。
@@ -14,56 +14,47 @@ DiceTale/
 │       ├── Server/               # WebSocket 连接层（连接、命令分发、JSON 解析）
 │       ├── BackendManager.cs     # 后端入口（默认连后台，可切本地 Mock）
 │       └── ...
-├── backend/                      # Node.js 客户端后台（TypeScript + ws）
-│   ├── src/                      # 后台源码（状态、会话、处理器、配置）
-│   ├── public/                   # GM 控制台网页（Pad/手机友好）
-│   ├── maps/                     # 地图贴图副本（*.png）
-│   ├── config.json               # 后台配置（端口、地图目录）
-│   ├── scripts/syncMaps.ts       # 从客户端同步地图到 maps/ 的辅助脚本
-│   ├── data/                     # 状态存档（gamestate.json）
-│   └── tests/                    # jest 测试
+├── backend_tauri2/               # 当前版 GM 控制台（网页 / PC / Android 三端）
+│   ├── server/                   # Node.js 后台（TypeScript + ws，含 jest 测试）
+│   ├── src/                      # GM 控制台前端（静态网页，可被后台/预览页/Tauri 壳加载）
+│   ├── src-tauri/                # Tauri 2 壳（PC / Android，Rust 只做 HTTP 转发）
+│   ├── scripts/                  # serve.js（预览页 + 自带后端拉起）、run-tauri.js（构建入口）
+│   └── README.md                 # 详细配置与启动说明（配置项全部收敛于此）
+├── backend/                      # 旧版后台（已由 backend_tauri2 取代，仅存档）
+├── tools/                        # 工具脚本（items.json 转换、前端测试等）
 └── docs/                         # 设计与实现文档
 ```
 
-## 后台启动
-
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-Windows 也可以用一键脚本（`backend/` 目录下）：
+## 启动（当前版 backend_tauri2）
 
 ```bat
-build.bat      :: 安装依赖并编译 TypeScript（产出 dist/）
-start.bat      :: 启动后台（缺编译产物时自动先 build）
-open-port.bat  :: 放行后台端口防火墙（局域网客户端/Android 查看器连接时需要；需管理员，自动提权）
+cd backend_tauri2
+npm install
+serve-web.bat        :: 单端口：后台 + 网页，浏览器打开 http://localhost:1420/
+dev-pc.bat           :: Tauri PC 开发模式（热更新）
+dev-android.bat      :: Tauri Android 开发模式（模拟器/真机）
+build-pc.bat         :: 打包 PC 安装包（msi / nsis）
+build-android.bat    :: 打包 Android APK
 ```
 
 - GM 控制台：<http://localhost:1420/>
 - 客户端 WebSocket：`ws://localhost:1420/client`
 - GM WebSocket：`ws://localhost:1420/gm`
-- 状态存档：`backend/data/gamestate.json`（后台记录，重启后自动恢复）
+- 全部配置项与说明见 [backend_tauri2/README.md](backend_tauri2/README.md)：`server/config.json`（端口、地图目录、调试开关、WS 消息上限）+ `src/config.js`（后端地址）。
 
 ## 地图资源配置
 
-后台**自持地图贴图副本**（不再直接读取客户端目录），默认目录 `backend/maps/`：
+后台**自持地图贴图副本**（不直接读取客户端目录），默认目录 `backend_tauri2/server/maps/`：
 
-- `*.png`：地图贴图（GM 控制台显示用）。
+- `*.png`：地图贴图（GM 控制台显示用；`ACT/FX/Room/Carriage` 开头与 `__v` 版本号文件会被过滤，不进入地图列表）。
 
 配置优先级（高 → 低）：
 
-1. 环境变量 `PORT`、`MAPS_DIR`（`mapsDir` 支持绝对路径或相对 `backend/` 的路径）；
-2. `backend/config.json`（`port`、`mapsDir`；可用环境变量 `DICETALE_CONFIG` 指定其它配置文件）；
-3. 内置默认值（`1420`、`maps`）。
+1. 环境变量 `PORT`、`MAPS_DIR`（`mapsDir` 支持绝对路径或相对 `server/` 的路径）、`DEBUG_WS`、`MAX_MESSAGE_MB`；
+2. `backend_tauri2/server/config.json`（`port`、`mapsDir`、`debugWs`、`maxMessageMb`；可用环境变量 `DICETALE_CONFIG` 指定其它配置文件）；
+3. 内置默认值（`1420`、`maps`、`false`、`16`）。
 
-客户端新增地图后，同步到后台（客户端资源目录可用环境变量 `DICETALE_CLIENT_ASSETS` 覆盖）：
-
-```bash
-cd backend
-npm run sync:maps
-```
+客户端新增地图后，把 `*.png` 复制到 `backend_tauri2/server/maps/` 即可。
 
 ## 数据流（客户端主导）
 
@@ -74,13 +65,15 @@ npm run sync:maps
 - 后台记录这些信息，推送给 GM 控制台显示；
 - 后台只负责**触发控制**：GM 传送、切换物体状态时向客户端下发命令执行。
 
-GM 控制台显示的地图图片由后台静态提供（`/maps/{mapName}.png`，图片存于后台自己的 `backend/maps/` 目录），物体标记位置、玩家位置全部来自客户端上报。
+> 注意：后台是**运行时状态**，客户端断开即清空（单客户端架构），无持久化存档。
+
+GM 控制台显示的地图图片由后台静态提供（`/maps/{mapName}.png`，图片存于 `server/maps/`），物体标记位置、玩家位置全部来自客户端上报。
 
 ## 运行测试
 
 ```bash
-cd backend
-npm test        # jest：游戏状态、持久化、WebSocket 协议流程
+cd backend_tauri2
+npm test        # jest：游戏状态、WebSocket 协议流程（GameState + server 集成）
 ```
 
 ## Unity 客户端接入
@@ -93,7 +86,7 @@ npm test        # jest：游戏状态、持久化、WebSocket 协议流程
 
 ## 通信协议
 
-所有消息均为 JSON，通过 WebSocket 传输。
+所有消息均为 JSON，通过 WebSocket 传输（协议类型定义见 `backend_tauri2/server/src/types.ts`）。
 
 - 后台 → GM 控制台的 `gm_update` 携带 `clientConnected`（客户端在线状态，单客户端架构断开即无客户端）；
 - GM 操作失败（客户端未连接、超出道具库存等）时，后台返回 `gm_error` 提示原因；

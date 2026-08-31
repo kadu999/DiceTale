@@ -20,6 +20,10 @@ pub fn run() {
 /// 通过原生侧发起请求绕过 CORS。浏览器环境仍用原生 fetch，这里只在 Tauri 环境调用。
 #[tauri::command]
 fn http_get(url: String) -> Result<Vec<u8>, String> {
+  // 只允许 http/https（ureq 也仅支持这两种协议）：显式拦截其它 scheme，收敛任意 URL 转发的面
+  if !url.starts_with("http://") && !url.starts_with("https://") {
+    return Err("only http/https URLs are allowed".into());
+  }
   let resp = ureq::get(&url)
     .timeout(std::time::Duration::from_secs(10))
     .call()
