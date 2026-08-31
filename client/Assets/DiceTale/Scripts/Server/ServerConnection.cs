@@ -18,7 +18,7 @@ namespace DiceTale.Server
         public static ServerConnection Instance { get; private set; }
 
         [Tooltip("服务器 WebSocket 地址（客户端通道）")]
-        public string DefaultUrl = "ws://localhost:8088/client";
+        public string DefaultUrl = "ws://localhost:1420/client";
 
         [Tooltip("断线后是否自动重连")]
         public bool AutoReconnect = true;

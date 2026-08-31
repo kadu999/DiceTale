@@ -77,6 +77,11 @@ function canAddItem(name) {
 // ---------- 道具页 ----------
 
 function renderItemPage() {
+  if (!state) {
+    const el = document.getElementById('itemList');
+    if (el) el.innerHTML = '<div class="property-empty">未连接服务器，等待数据…</div>';
+    return;
+  }
   renderItemList();
   renderItemDetail();
 }

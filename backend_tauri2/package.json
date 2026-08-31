@@ -9,16 +9,21 @@
     "dev:android": "node scripts/run-tauri.js android:dev",
     "build": "node scripts/run-tauri.js build",
     "build:android": "node scripts/run-tauri.js android",
-    "serve": "node scripts/serve.js",
-    "serve:port": "node scripts/serve.js"
+    "serve": "tsx server/src/index.ts",
+    "server": "tsx server/src/index.ts"
   },
   "keywords": [],
   "type": "commonjs",
   "dependencies": {
     "@tauri-apps/plugin-http": "^2.5.9",
-    "bootstrap": "^5.3.8"
+    "bootstrap": "^5.3.8",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.11.4"
+    "@tauri-apps/cli": "^2.11.4",
+    "@types/node": "^22.10.0",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
   }
 }

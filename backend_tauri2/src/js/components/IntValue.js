@@ -3,8 +3,8 @@
 // 数字框 change 或滑条释放（change）时发送 gm_set_int；滑条拖动中（input）只实时同步数字框。
 function renderIntValue(container, objectId, obj) {
   const params = componentParams(obj, 'IntValue') || {};
-  const value = params.value ?? 0;
-  const hasRange = params.enableRange === true && (params.min ?? 0) < (params.max ?? 100);
+  const value = num(params.value, 0);
+  const hasRange = params.enableRange === true && num(params.min, 0) < num(params.max, 100);
 
   const row = document.createElement('div');
   row.className = 'property-row';

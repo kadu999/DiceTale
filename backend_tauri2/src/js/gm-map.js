@@ -39,7 +39,9 @@ function applyMarkerPosition(marker, x, y) {
 
 function renderMapTabs() {
   const tabs = document.getElementById('mapTabs');
+  if (!tabs) return;
   tabs.innerHTML = '';
+  if (!state) return;
   for (const map of knownMaps()) {
     const btn = document.createElement('button');
     btn.textContent = map;
@@ -57,6 +59,7 @@ let lastMapRenderKey = '';
 let playerMarkers = {}; // playerId -> 持久化的玩家标记元素（不随渲染重建，避免动画重启/其他玩家跳动）
 
 function renderMap() {
+  if (!state) return;
   // 不自动跟随客户端切图：显示的哪个地图只由手动切换决定（首次默认客户端当前地图）
   if (!selectedMap) selectedMap = state.currentMap;
 

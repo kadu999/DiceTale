@@ -4,6 +4,11 @@ function renderPlayerList() {
   if (!container) return;
   container.innerHTML = '';
 
+  if (!state) {
+    container.innerHTML = '<div class="player-empty">未连接服务器，等待数据…</div>';
+    return;
+  }
+
   const players = Object.entries(state.players || {});
   if (players.length === 0) {
     container.innerHTML = '<div class="player-empty">暂无玩家</div>';

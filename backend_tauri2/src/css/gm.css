@@ -1,17 +1,28 @@
 /* DiceTale GM 控制台自定义样式（Bootstrap 5 之外的补充） */
 
-html, body { height: 100%; }
+/* 顶层布局锁死视口：body/main 永不产生滚动条，超出的内容一律交给子容器滚动 */
+html, body { height: 100%; overflow: hidden; }
+body { display: flex; flex-direction: column; }
+main { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
 
 /* 页面切换 */
-.page { display: none; }
-.page.active { display: block; }
+.page { display: none; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.page.active { display: flex; flex-direction: column; }
+
+/* 页面内的行 / 列 / 卡片：撑满可用高度，内部滚动区可收缩（min-height: 0）
+   注意：.row 是 flex-wrap: wrap 容器，仅靠 align-items: stretch 不会把列拉高，
+   必须显式 height: 100% 让列填满行，行填满页面。 */
+.page .row { flex: 1 1 auto; height: 100%; min-height: 0; }
+.page .row > [class*="col-"] { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.page .card { flex: 1 1 auto; min-height: 0; }
+.page .card-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 
 /* 顶栏页面切换按钮（navbar 内） */
 .page-tab { color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2); }
 .page-tab.active { background: #0d6efd; color: #fff; border-color: #0d6efd; }
 
 /* 地图选择标签 */
-.map-tabs { scrollbar-width: none; }
+.map-tabs { scrollbar-width: none; flex: 1 1 auto; min-height: 0; }
 .map-tabs::-webkit-scrollbar { display: none; }
 .map-tabs button {
   flex: 0 0 auto;
@@ -25,7 +36,7 @@ html, body { height: 100%; }
 .map-tabs button.active { background: #0d6efd; color: #fff; border-color: #0d6efd; }
 
 /* 地图容器与图片 */
-.map-cell { display: flex; justify-content: center; }
+.map-cell { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; }
 .map-container {
   position: relative;
   width: 100%;
@@ -131,7 +142,7 @@ html, body { height: 100%; }
 }
 
 /* 属性列表 */
-.property-list { display: flex; flex-direction: column; overflow-x: hidden; }
+.property-list { display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; min-height: 0; }
 .property-empty { color: #64748b; font-size: 0.85rem; padding: 0.25rem; }
 .property-section {
   display: flex;
@@ -210,13 +221,14 @@ html, body { height: 100%; }
   line-height: 1;
 }
 
-/* 道具列表（可滚动） */
+/* 道具列表（撑满卡片、可滚动） */
 .item-list {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
-  max-height: calc(100dvh - 260px);
 }
 .item-row {
   display: flex;
@@ -241,6 +253,8 @@ html, body { height: 100%; }
 .item-row.selected .item-row-price { color: #dbeafe; }
 
 /* 玩家卡片 */
+/* 玩家列表容器自身滚动，避免整页出现滚动条 */
+#playerList { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 .player-card {
   flex: 0 0 260px;
   width: 260px;
@@ -305,4 +319,8 @@ html, body { height: 100%; }
 /* 手机窄屏（横屏 App）：地图占满、属性面板在下方 */
 @media (max-width: 991px) {
   .map-cell { margin-bottom: 0.5rem; }
+  /* 窄屏列堆叠时允许页面自身滚动，避免内容被裁掉 */
+  .page { overflow-y: auto; }
+  .page .row { flex: none; height: auto; }
+  .page .row > [class*="col-"] { height: auto; }
 }

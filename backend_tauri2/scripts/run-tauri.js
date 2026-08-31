@@ -65,7 +65,7 @@ if (!command) {
 const tauriArgs = {
   dev: ['dev'],
   build: ['build'],
-  android: ['android', 'build', '--apk'],
+  android: ['android', 'build', '--apk', '--debug'],
   'android:dev': ['android', 'dev'],
 }[command];
 if (!tauriArgs) {

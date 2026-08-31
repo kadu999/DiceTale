@@ -49,8 +49,8 @@ function renderPropertyPanelInto(id) {
     return;
   }
 
-  const obj = (state.objects && state.objects[selectedObjectId]) || null;
-  const player = (state.players && state.players[selectedObjectId]) || null;
+  const obj = (state && state.objects && state.objects[selectedObjectId]) || null;
+  const player = (state && state.players && state.players[selectedObjectId]) || null;
   if (!obj && !player) {
     container.innerHTML = '<div class="property-empty">未找到该目标（可能已移除）</div>';
     return;

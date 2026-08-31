@@ -1,21 +1,14 @@
-// 后端地址配置：Tauri 壳（PC/Android）里页面与后端不同源，需要显式配置；
-// 网页版（由后端托管）时 location.host 即后端，无需配置。
-// 存 localStorage，可在设置弹框里修改。
+// 后端地址确定优先级（前端无设置界面，地址来自 config.js 写死配置）：
+//   1) config.js 里 window.DICETALE_BACKEND_URL 有值 → 强制使用（手机连电脑填局域网 IP）
+//   2) 网页由后端托管（http/https 同源）→ 直接同源
+//   3) 默认本机 http://localhost:1420（Tauri 壳 PC 默认 / 未配置时）
 let backendBase = (function () {
-  var saved = null;
-  try { saved = localStorage.getItem('diceTaleBackendBase'); } catch (e) {}
-  if (saved) return saved.replace(/\/+$/, '');
-  // 未配置时：若当前页面由后端托管（http/https 且有 host），直接同源；否则默认本机 1420
+  if (window.DICETALE_BACKEND_URL) return window.DICETALE_BACKEND_URL.replace(/\/+$/, '');
   if (location.protocol === 'http:' || location.protocol === 'https:') {
     return location.origin;
   }
   return 'http://localhost:1420';
 })();
-
-function setBackendBase(base) {
-  backendBase = base.replace(/\/+$/, '');
-  try { localStorage.setItem('diceTaleBackendBase', backendBase); } catch (e) {}
-}
 
 /** 后端资源完整 URL（地图图片、items.json、api 等）。 */
 function backendUrl(path) {
@@ -35,11 +28,29 @@ function currentWsUrl() {
   return backendBase.replace(/^http/, 'ws') + '/gm';
 }
 
+/** 拉取后端目录数据（地图列表 + 道具目录），幂等可重复调用。 */
+function refreshBackendData() {
+  backendFetchJson('/api/maps')
+    .then((data) => {
+      apiMaps = (data && data.maps) || [];
+      if (state) render();
+    })
+    .catch(() => {});
+  backendFetchJson('/items.json')
+    .then((data) => {
+      itemCatalog = (data && data.items) || [];
+      if (state) render();
+    })
+    .catch(() => {});
+}
+
 function connect() {
   ws = new WebSocket(currentWsUrl());
 
   ws.onopen = () => {
     setStatus(true);
+    // 后端刚启动时首次拉取可能失败，连接建立后补拉一次目录数据
+    refreshBackendData();
   };
 
   ws.onclose = () => {
@@ -92,50 +103,6 @@ function setStatus(connected) {
   if (!el) return;
   el.className = 'badge ' + (connected ? 'text-bg-success' : 'text-bg-danger');
   el.textContent = connected ? '已连接' : '未连接';
-}
-
-/** 打开后端地址设置弹框（Bootstrap modal）。 */
-function openSettings() {
-  const input = document.getElementById('backendUrlInput');
-  if (input) input.value = backendBase;
-  const modalEl = document.getElementById('settingsModal');
-  if (window.bootstrap && modalEl) {
-    bootstrap.Modal.getOrCreateInstance(modalEl).show();
-  } else {
-    modalEl.style.display = 'block';
-  }
-}
-
-/** 应用新的后端地址并重连。 */
-function applyBackendUrl() {
-  const input = document.getElementById('backendUrlInput');
-  if (!input) return;
-  const url = input.value.trim();
-  if (!url) { showToast('请输入后端地址'); return; }
-  setBackendBase(url);
-  // 关闭弹框
-  const modalEl = document.getElementById('settingsModal');
-  if (window.bootstrap && modalEl) {
-    bootstrap.Modal.getOrCreateInstance(modalEl).hide();
-  } else {
-    modalEl.style.display = 'none';
-  }
-  // 重连：先断开旧连接，connect() 由 onclose 触发重建
-  try { if (ws) ws.close(); } catch (e) {}
-  // 重新拉地图列表 / 道具目录
-  backendFetchJson('/api/maps')
-    .then((data) => {
-      apiMaps = (data && data.maps) || [];
-      if (state) render();
-    })
-    .catch(() => {});
-  backendFetchJson('/items.json')
-    .then((data) => {
-      itemCatalog = (data && data.items) || [];
-      if (state) render();
-    })
-    .catch(() => {});
-  showToast('后端地址已更新：' + backendBase);
 }
 
 function send(msg) {
