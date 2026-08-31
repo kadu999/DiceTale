@@ -25,7 +25,7 @@
   <main class="container-fluid py-2">
     <!-- 地图页 -->
     <section id="pageMap" class="page active">
-      <div class="row g-2">
+      <div class="row gx-2">
         <div class="col-12 col-sm-1">
           <div class="card bg-secondary bg-opacity-25 h-100">
             <div class="card-header py-1 small text-center text-secondary">地图</div>
@@ -57,28 +57,33 @@
       <div id="playerList" class="d-flex flex-wrap gap-2 align-items-start"></div>
     </section>
 
-    <!-- 道具页 -->
+    <!-- 道具页：类型 | 道具列表（弹性占满）| 道具属性（上）+ 玩家分配（下，与类型列同宽） -->
     <section id="pageItems" class="page">
-      <div class="row g-2">
-        <div class="col-12 col-sm-3">
-          <div class="card bg-secondary bg-opacity-25">
+      <div class="row gx-2">
+        <div class="col-12 col-sm-2">
+          <div class="card bg-secondary bg-opacity-25 h-100">
+            <div class="card-header py-1 small text-center text-secondary">类型</div>
+            <div class="card-body p-1">
+              <div id="itemCategory" class="item-type-list"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-8">
+          <div class="card bg-secondary bg-opacity-25 h-100">
             <div class="card-header py-1 small text-center text-secondary">道具</div>
             <div class="card-body">
               <input id="itemSearch" class="form-control form-control-sm mb-2" type="search" placeholder="搜索道具名 / 类别" autocomplete="off">
-              <div id="itemCategory" class="d-flex flex-wrap gap-1 mb-2"></div>
               <div id="itemList" class="item-list"></div>
             </div>
           </div>
         </div>
-        <div class="col-12 col-sm-5">
-          <div class="card bg-secondary bg-opacity-25 h-100">
-            <div class="card-header py-1 small text-center text-secondary" id="itemDetailTitle">选择道具</div>
+        <div class="col-12 col-sm-2 d-flex flex-column gap-2">
+          <div class="card bg-secondary bg-opacity-25 split-card">
+            <div class="card-header py-1 small text-center text-secondary">选中道具</div>
             <div id="itemDetail" class="card-body property-list"></div>
           </div>
-        </div>
-        <div class="col-12 col-sm-4">
-          <div class="card bg-secondary bg-opacity-25 h-100">
-            <div class="card-header py-1 small text-center text-secondary" id="itemAssignTitle">分配</div>
+          <div class="card bg-secondary bg-opacity-25 split-card">
+            <div class="card-header py-1 small text-center text-secondary">分配道具</div>
             <div id="itemAssign" class="card-body property-list"></div>
           </div>
         </div>

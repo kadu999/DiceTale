@@ -103,26 +103,29 @@ function renderItemList() {
     return;
   }
 
+  // 背包式网格：每个道具一个格子（名字 + 价格）
   for (const item of filtered) {
-    const row = document.createElement('button');
-    row.className = 'item-row' + (item.name === selectedItem ? ' selected' : '');
-    row.onclick = () => {
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'item-cell' + (item.name === selectedItem ? ' selected' : '');
+    cell.title = item.name;
+    cell.onclick = () => {
       selectedItem = item.name;
       renderItemList();
       renderItemDetail();
     };
 
     const nameEl = document.createElement('span');
-    nameEl.className = 'item-row-name';
+    nameEl.className = 'item-cell-name';
     nameEl.textContent = item.name;
 
     const priceEl = document.createElement('span');
-    priceEl.className = 'item-row-price';
+    priceEl.className = 'item-cell-price';
     priceEl.textContent = item.price != null ? '$' + fmtPrice(item.price) : '价格自定';
 
-    row.appendChild(nameEl);
-    row.appendChild(priceEl);
-    container.appendChild(row);
+    cell.appendChild(nameEl);
+    cell.appendChild(priceEl);
+    container.appendChild(cell);
   }
 }
 
@@ -136,20 +139,17 @@ function renderItemDetail() {
   renderItemAssignPanel();
 }
 
-/** 中列：选中道具的基本信息。 */
+/** 信息列：选中道具的基本信息（标题固定为「选中道具」，不随道具变化）。 */
 function renderItemInfo() {
   const container = document.getElementById('itemDetail');
-  const title = document.getElementById('itemDetailTitle');
-  if (!container || !title) return;
+  if (!container) return;
 
   const item = itemCatalog.find((it) => it.name === selectedItem);
   if (!item) {
-    title.textContent = '选择道具';
     container.innerHTML = '<div class="property-empty">点击左侧道具查看信息</div>';
     return;
   }
 
-  title.textContent = item.name;
   container.innerHTML = '';
 
   const info = propertySection(container, '基本信息');
@@ -159,20 +159,17 @@ function renderItemInfo() {
   addPropertyRow(info, '模组用途', item.usage || '—');
 }
 
-/** 右列：选中道具的玩家分配面板。 */
+/** 分配列：选中道具的玩家分配面板（标题固定为「分配道具」，不随道具变化）。 */
 function renderItemAssignPanel() {
   const container = document.getElementById('itemAssign');
-  const title = document.getElementById('itemAssignTitle');
-  if (!container || !title) return;
+  if (!container) return;
 
   const item = itemCatalog.find((it) => it.name === selectedItem);
   if (!item) {
-    title.textContent = '分配';
     container.innerHTML = '<div class="property-empty">选择道具后分配</div>';
     return;
   }
 
-  title.textContent = item.name;
   container.innerHTML = '';
   renderItemAssign(container, item);
 }
