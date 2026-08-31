@@ -30,6 +30,9 @@ main { flex: 1 1 0%; min-height: 0; overflow: hidden; display: flex; flex-direct
 .map-tabs::-webkit-scrollbar { display: none; }
 .map-tabs button {
   flex: 0 0 auto;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   padding: 0.25rem 0.75rem;
   border: 1px solid #495057;
   border-radius: 6px;
