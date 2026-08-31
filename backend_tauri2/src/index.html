@@ -103,19 +103,36 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="closeItemPicker()"></button>
         </div>
         <div class="modal-body">
-          <input id="pickerSearch" class="form-control form-control-sm mb-2" type="search" placeholder="搜索道具名 / 类别" autocomplete="off">
-          <div id="pickerCategory" class="d-flex flex-wrap gap-1 mb-2"></div>
-          <div class="row g-2">
-            <div class="col-12 col-md-6">
-              <div class="small text-secondary mb-1">点击道具查看属性</div>
-              <div id="pickerList" class="item-list modal-item-list"></div>
+          <!-- 参考道具模块 box 布局：三列各为一张带标题栏的卡片 -->
+          <div class="row gx-1">
+            <div class="col-12 col-sm-2 d-flex flex-column">
+              <div class="card bg-secondary bg-opacity-25 h-100">
+                <div class="card-header py-1 small text-center text-secondary">类型</div>
+                <div class="card-body p-1">
+                  <div id="pickerCategory" class="item-type-list"></div>
+                </div>
+              </div>
             </div>
-            <div class="col-12 col-md-6 border-md-start border-secondary ps-md-3">
-              <div class="small text-secondary mb-1" id="pickerDetailTitle">道具属性</div>
-              <div id="pickerDetail" class="property-list modal-detail-list"></div>
-              <div id="pickerQtyRow" class="d-flex align-items-center gap-2 mt-2 border-top border-secondary pt-2" style="display:none">
-                <span class="small text-secondary">数量</span>
-                <input id="pickerQty" class="form-control form-control-sm w-auto" type="number" min="1" max="99" value="1">
+            <div class="col-12 col-sm-6 d-flex flex-column">
+              <div class="card bg-secondary bg-opacity-25 h-100">
+                <div class="card-header py-1 small text-center text-secondary">道具</div>
+                <div class="card-body">
+                  <input id="pickerSearch" class="form-control form-control-sm mb-2" type="search" placeholder="搜索道具名 / 类别" autocomplete="off">
+                  <div id="pickerList" class="item-list modal-item-list"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-sm-4 d-flex flex-column">
+              <div class="card bg-secondary bg-opacity-25 h-100">
+                <div class="card-header py-1 small text-center text-secondary">道具属性</div>
+                <div class="card-body">
+                  <div id="pickerDetail" class="property-list modal-detail-list"></div>
+                  <!-- 数量行复用属性行结构（property-row），与上方属性严格对齐 -->
+                  <div id="pickerQtyRow" class="property-row" style="display:none">
+                    <span class="property-label">数量</span>
+                    <input id="pickerQty" class="form-control form-control-sm picker-qty-input" type="number" min="1" max="99" value="1">
+                  </div>
+                </div>
               </div>
             </div>
           </div>

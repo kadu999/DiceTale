@@ -390,6 +390,9 @@ main { flex: 1 1 0%; min-height: 0; overflow: hidden; display: flex; flex-direct
 }
 .item-cell-price { font-size: 0.68rem; color: #94a3b8; }
 .item-cell.selected .item-cell-price { color: #dbeafe; }
+/* 道具格子禁用态（弹框内库存已分完） */
+.item-cell.disabled { opacity: 0.4; cursor: default; }
+.item-cell.disabled:hover { background: #1e293b; border-color: #495057; }
 
 /* 玩家卡片 */
 /* 玩家列表容器自身滚动，避免整页出现滚动条 */
@@ -451,9 +454,68 @@ main { flex: 1 1 0%; min-height: 0; overflow: hidden; display: flex; flex-direct
   touch-action: none;
 }
 
-/* 弹框列表区高度约束 */
+/* 弹框列表区高度约束（竖屏堆叠时的兜底；横屏三列时由 modal-body flex 填满驱动内部滚动） */
 .modal-item-list { max-height: 40dvh; }
 .modal-detail-list { max-height: 40dvh; }
+/* 弹框内类型列限高滚动（与列表同高） */
+#itemPickerModal .item-type-list { max-height: 40dvh; }
+
+/* 添加道具弹框：固定宽高，不随选中道具变化而跳变
+   - dialog 固定宽度（视口内自适应到 800px 上限）；
+   - content 固定高度 70dvh，modal-body 内部区域各自滚动 */
+#itemPickerModal .modal-dialog { width: min(800px, 100vw - 1rem); }
+#itemPickerModal .modal-content { height: 70dvh; display: flex; flex-direction: column; }
+#itemPickerModal .modal-body { flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+#itemPickerModal .modal-body .row { flex: 1 1 0%; min-height: 0; height: 100%; }
+#itemPickerModal .modal-body .row > [class*="col-"] { height: 100%; min-height: 0; }
+/* 竖屏（<sm，弹框三列堆叠）时允许 modal-body 整体滚动 */
+@media (max-width: 575.98px) {
+  #itemPickerModal .modal-body { overflow-y: auto; }
+  #itemPickerModal .modal-body .row { height: auto; }
+}
+/* 横屏三列时：列表/属性/类型区由 flex 填满 modal-body 剩余高度并内部滚动（取消 max-height 限制） */
+@media (min-width: 576px) {
+  #itemPickerModal .modal-item-list,
+  #itemPickerModal .modal-detail-list,
+  #itemPickerModal .item-type-list { max-height: none; }
+}
+
+/* 添加道具弹框：box 卡片布局（参考道具模块）+ 暗色主题
+   弹框不在 .page 内，需要自建卡片 flex 高度链：card 撑满列高、card-body 填满、内容区内部滚动 */
+#itemPickerModal .modal-title { font-size: 1.1rem; font-weight: 700; color: #f8fafc; letter-spacing: 0.03em; }
+/* 去掉冗余分隔线：窗口标题栏/底部按钮栏的分隔线（卡片边框保留，维持 box 感） */
+#itemPickerModal .modal-header { border-bottom: none; }
+#itemPickerModal .modal-footer { border-top: none; }
+#itemPickerModal .card { display: flex; flex-direction: column; min-height: 0; }
+#itemPickerModal .card-body { flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; }
+/* 暗色主题输入框（搜索/数量），避免白底突兀 */
+#itemPickerModal .form-control {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-color: #495057;
+}
+#itemPickerModal .form-control:focus {
+  background: #1e293b;
+  color: #f8fafc;
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+#itemPickerModal .form-control::placeholder { color: #64748b; }
+/* 属性区：统一字号与配色 */
+#itemPickerModal .property-row { font-size: 0.85rem; }
+#itemPickerModal .property-label { color: #94a3b8; }
+#itemPickerModal .property-value { color: #f1f5f9; }
+/* 数量输入框：撑满行剩余空间（flex:1），与属性值区右缘对齐 */
+#itemPickerModal .picker-qty-input { flex: 1 1 0%; min-width: 0; }
+/* 弹框属性值：也撑满行剩余，与数量输入框宽度一致 */
+#itemPickerModal .property-value { flex: 1 1 0%; min-width: 0; }
+/* 数量行与属性行对齐：属性行在 property-section（padding-left 0.15rem）内，
+   数量行是 property-row（自身 0.25rem）→ 合计 0.4rem 与属性行缩进一致；
+   padding-right 10px 对齐属性列表滚动条占位，输入框右缘与属性值右缘一致 */
+#itemPickerModal #pickerQtyRow { padding-left: 0.4rem; padding-right: 14px; }
+/* 弹框底部按钮 */
+#itemPickerModal .modal-footer .btn { padding: 0.35rem 1.4rem; font-size: 0.9rem; }
+#itemPickerModal .modal-footer .btn-primary { font-weight: 600; }
 
 /* 窄屏堆叠布局（竖屏手机，宽度 < col-sm 断点 576px）：页面自身滚动、道具列表限高 */
 @media (max-width: 575.98px) {

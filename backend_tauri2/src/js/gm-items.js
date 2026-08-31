@@ -358,7 +358,7 @@ function confirmPickerAdd() {
   closeItemPicker();
 }
 
-/** 弹框道具列表：点击行选中并预览属性；库存已分完的行禁用。 */
+/** 弹框道具列表：背包式网格格子（与道具页一致），点击选中并预览属性；库存已分完的格子禁用。 */
 function renderPickerList() {
   const container = document.getElementById('pickerList');
   if (!container) return;
@@ -380,11 +380,12 @@ function renderPickerList() {
   for (const item of filtered) {
     const addable = canAddItem(item.name);
     const selected = item.name === pickerSelectedItem;
-    const row = document.createElement('button');
-    row.className = 'item-row' + (addable ? '' : ' disabled') + (selected ? ' selected' : '');
-    row.disabled = !addable;
-    row.title = addable ? (selected ? '已选中' : '点击查看属性') : '库存已分完，不可添加';
-    row.onclick = () => {
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'item-cell' + (addable ? '' : ' disabled') + (selected ? ' selected' : '');
+    cell.disabled = !addable;
+    cell.title = addable ? (selected ? '已选中' : '点击查看属性') : '库存已分完，不可添加';
+    cell.onclick = () => {
       if (!addable) return;
       pickerSelectedItem = item.name;
       renderPickerList();
@@ -392,35 +393,32 @@ function renderPickerList() {
     };
 
     const nameEl = document.createElement('span');
-    nameEl.className = 'item-row-name';
+    nameEl.className = 'item-cell-name';
     nameEl.textContent = item.name;
 
     const priceEl = document.createElement('span');
-    priceEl.className = 'item-row-price';
+    priceEl.className = 'item-cell-price';
     priceEl.textContent = item.price != null ? '$' + fmtPrice(item.price) : '价格自定';
 
-    row.appendChild(nameEl);
-    row.appendChild(priceEl);
-    container.appendChild(row);
+    cell.appendChild(nameEl);
+    cell.appendChild(priceEl);
+    container.appendChild(cell);
   }
 }
 
-/** 弹框右列：选中道具的属性预览 + 数量输入（数量行在底部，选中道具时显示）。 */
+/** 弹框属性卡：选中道具的属性预览 + 数量输入（标题固定在卡片头「道具属性」，不随道具变化）。 */
 function renderPickerDetail() {
   const container = document.getElementById('pickerDetail');
-  const title = document.getElementById('pickerDetailTitle');
   const confirmBtn = document.getElementById('pickerConfirm');
   const qtyRow = document.getElementById('pickerQtyRow');
   const qtyInput = document.getElementById('pickerQty');
-  if (!container || !title) return;
+  if (!container) return;
 
   const item = itemCatalog.find((it) => it.name === pickerSelectedItem);
   if (!item) {
-    title.textContent = '道具属性';
     container.innerHTML = '<div class="property-empty">点击左侧道具查看属性</div>';
     if (qtyRow) qtyRow.style.display = 'none';
   } else {
-    title.textContent = item.name;
     container.innerHTML = '';
     const info = propertySection(container, '基本信息');
     addPropertyRow(info, '类别', item.category || '—');
