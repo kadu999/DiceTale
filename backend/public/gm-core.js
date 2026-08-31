@@ -131,22 +131,26 @@ function fmtPos(pos) {
   if (!pos) return '-';
   return `(${pos.x.toFixed(2)}, ${pos.y.toFixed(2)})`;
 }
-// ---- 横屏时地图按 16:9 等比（高度决定宽度），避免 contain 两侧黑边 ----
+// ---- 横屏时地图按 16:9 等比（宽高都由比例决定，宽度受父容器限制），避免 contain 黑边 ----
 function fitMapContainer() {
   var container = document.getElementById('mapContainer');
   if (!container) return;
 
   var isLandscape = window.matchMedia('(orientation: landscape)').matches;
   if (isLandscape) {
-    var h = container.clientHeight;
     var maxW = container.parentElement.clientWidth;
-    container.style.width = Math.min(Math.round(h * 16 / 9), maxW) + 'px';
+    var maxH = (window.innerHeight || document.documentElement.clientHeight) - 80; // 与 CSS calc(100dvh - 80px) 一致
+    var w = Math.min(maxW, Math.max(0, Math.round(maxH * 16 / 9)));
+    container.style.width = w + 'px';
+    container.style.height = Math.round(w * 9 / 16) + 'px';
   } else {
     container.style.width = '';
+    container.style.height = '';
   }
 }
 
-/** 属性面板高度 = 地图所在框（mapContainer）的实际高度，保证两栏等高。 */
+/** 属性面板高度 = 地图所在框（mapContainer）的实际高度，保证两栏等高。
+ *  仅三列网格布局（横屏且宽度充足）下生效；手机/窄屏堆叠布局用自然高度。 */
 function syncPropertyHeight() {
   var mapContainer = document.getElementById('mapContainer');
   var propertyPanel = document.querySelector('.property-panel');
@@ -159,11 +163,24 @@ function syncPropertyHeight() {
   }
   if (page && !page.classList.contains('active')) return;
 
-  propertyPanel.style.height = mapContainer.clientHeight + 'px';
+  if (window.matchMedia('(orientation: landscape) and (min-width: 640px)').matches) {
+    propertyPanel.style.height = mapContainer.clientHeight + 'px';
+  } else {
+    propertyPanel.style.height = '';
+  }
 }
 
-/** 地图尺寸 + 属性面板等高一起刷新。 */
+/** 地图尺寸 + 属性面板等高 + 标记位置一起刷新。 */
 function fitLayout() {
   fitMapContainer();
   syncPropertyHeight();
+  if (typeof repositionMarkers === 'function') repositionMarkers();
 }
+
+/** 关闭横屏建议（点击提示条）。 */
+function dismissRotateHint() {
+  var el = document.getElementById('rotateHint');
+  if (el) el.style.display = 'none';
+}
+// 横屏建议只短暂提示，超时自动消失，不长期占屏
+setTimeout(dismissRotateHint, 8000);

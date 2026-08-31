@@ -605,7 +605,7 @@ main.layout {
   cursor: default;
 }
 
-/* ---- 手机竖屏时的横屏引导 ---- */
+/* ---- 手机竖屏时的横屏提示：小提示条，不阻挡操作，点击关闭，数秒后自动消失 ---- */
 .rotate-hint {
   display: none;
 }
@@ -613,22 +613,28 @@ main.layout {
 @media (max-width: 900px) and (orientation: portrait) {
   .rotate-hint {
     position: fixed;
-    inset: 0;
+    left: 50%;
+    bottom: 0.75rem;
+    transform: translateX(-50%);
     z-index: 100;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 1.2rem;
-    background: rgba(11, 18, 32, 0.96);
+    gap: 0.5rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(11, 18, 32, 0.92);
+    border: 1px solid rgba(148, 163, 184, 0.3);
     color: #fff;
-    text-align: center;
-    font-size: 1.15rem;
-    line-height: 1.8;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .rotate-icon {
-    font-size: 3.5rem;
+    font-size: 1rem;
     animation: rotate-pulse 1.6s ease-in-out infinite;
   }
 }
@@ -640,6 +646,8 @@ main.layout {
 @media (max-width: 900px) {
   header {
     padding: 0.6rem 0.75rem;
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
   }
 
   header h1 {
@@ -685,7 +693,8 @@ main.layout {
   }
 }
 
-/* 横屏且宽度足够（手机横屏 / 平板横屏）：地图选择 | 地图 | 属性 三列同网格，顶对齐、等高拉伸 */
+/* 横屏且宽度足够（手机 App 横屏 / 平板横屏 / 桌面，>=640px）：地图选择 | 地图 | 属性 三列同网格，顶对齐、等高拉伸。
+   竖屏（桌面窄窗 / 平板竖屏）不启用三列，改用上面的堆叠布局：地图占满整行，属性面板在下方。 */
 @media (orientation: landscape) and (min-width: 640px) {
   .map-grid {
     display: grid;
@@ -841,7 +850,7 @@ main.layout {
   color: #dbeafe;
 }
 
-/* 横屏且宽度足够：道具目录(240px) | 道具详情(弹性) | 玩家分配(220px，与地图页属性面板同宽) 三列等高拉伸 */
+/* 横屏且宽度足够（手机 App 横屏 / 平板横屏 / 桌面，>=640px）：道具目录(240px) | 道具详情(弹性) | 玩家分配(220px，与地图页属性面板同宽) 三列等高拉伸 */
 @media (orientation: landscape) and (min-width: 640px) {
   .item-grid {
     grid-template-columns: 240px minmax(0, 1fr) 220px;
@@ -896,6 +905,18 @@ main.layout {
   border-radius: 12px;
   padding: 0.75rem;
   box-shadow: 0 10px 36px rgba(0, 0, 0, 0.55);
+}
+
+/* 矮视口（手机横屏等）：vh 单位会把弹框压成很小的框（列表几乎不可见），
+   改为宽度主导、占满可用空间，内容在弹框内滚动。 */
+@media (max-height: 520px) {
+  .modal {
+    width: 94vw;
+    max-width: 100%;
+    height: 88dvh;
+    max-height: 100%;
+    aspect-ratio: auto;
+  }
 }
 
 .modal-header {

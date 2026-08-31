@@ -1,5 +1,42 @@
 // ---------- 地图视图 ----------
 
+/** 地图图片在当前容器内的实际显示矩形（考虑 object-fit: contain 的黑边）。
+ *  标记必须按这个矩形定位，而不是按整个容器——否则容器比例 ≠ 图片比例时（手机/窄屏）位置会错位。
+ *  图片未加载完成（naturalWidth=0）时返回 null。 */
+function mapImageRect() {
+  const img = document.getElementById('mapImage');
+  const container = document.getElementById('mapContainer');
+  if (!img || !container) return null;
+  const iw = img.naturalWidth;
+  const ih = img.naturalHeight;
+  if (!iw || !ih) return null;
+  const cw = container.clientWidth;
+  const ch = container.clientHeight;
+  const scale = Math.min(cw / iw, ch / ih);
+  const w = iw * scale;
+  const h = ih * scale;
+  return { left: (cw - w) / 2, top: (ch - h) / 2, width: w, height: h };
+}
+
+/** 归一化坐标 (x, y) -> 容器内像素位置（基于图片实际显示矩形；图片未加载时返回 null）。 */
+function mapPoint(x, y) {
+  const rect = mapImageRect();
+  if (!rect) return null;
+  return { left: rect.left + x * rect.width, top: rect.top + y * rect.height };
+}
+
+/** 把标记元素放到归一化坐标处：优先用图片实际矩形（px），图片未加载时退回容器百分比。 */
+function applyMarkerPosition(marker, x, y) {
+  const pt = mapPoint(x, y);
+  if (pt) {
+    marker.style.left = pt.left + 'px';
+    marker.style.top = pt.top + 'px';
+  } else {
+    marker.style.left = (x * 100) + '%';
+    marker.style.top = (y * 100) + '%';
+  }
+}
+
 function renderMapTabs() {
   const tabs = document.getElementById('mapTabs');
   tabs.innerHTML = '';
@@ -38,6 +75,7 @@ function renderMap() {
 
   const image = document.getElementById('mapImage');
   if (image.src !== `/maps/${map}.png`) {
+    image.onload = repositionMarkers; // 图片加载完成后按真实尺寸校正标记位置
     image.src = `/maps/${map}.png`;
   }
 
@@ -56,8 +94,8 @@ function renderMap() {
     const smParams = componentParams(obj, 'OptionValue') || {};
     const exParams = exchangeParams(obj);
     marker.title = `${obj.name || objectId} (${objectId})\n${smParams.currentOption ? '当前：' + smParams.currentOption : '未配置选项'}`;
-    marker.style.left = `${num(obj.position.x, 0.5) * 100}%`;
-    marker.style.top = `${num(obj.position.y, 0.5) * 100}%`;
+    marker.dataset.objectId = objectId;
+    applyMarkerPosition(marker, num(obj.position.x, 0.5), num(obj.position.y, 0.5));
 
     const dot = document.createElement('span');
     dot.className = 'object-marker-dot';
@@ -100,6 +138,7 @@ function renderPlayerMarkers() {
     let marker = playerMarkers[playerId];
     if (!marker) {
       marker = document.createElement('button');
+      marker.dataset.playerId = playerId;
       marker.onclick = () => selectObject(playerId);
       playerLayer.appendChild(marker);
       playerMarkers[playerId] = marker;
@@ -115,8 +154,7 @@ function renderPlayerMarkers() {
       fitPlayerName(marker); // 仅名字真正变化时才重新适配字号
     }
 
-    marker.style.left = `${num(player.position && player.position.x, 0.5) * 100}%`;
-    marker.style.top = `${num(player.position && player.position.y, 0.5) * 100}%`;
+    applyMarkerPosition(marker, num(player.position && player.position.x, 0.5), num(player.position && player.position.y, 0.5));
     seen[playerId] = true;
   }
 
@@ -125,6 +163,32 @@ function renderPlayerMarkers() {
     if (!seen[pid]) {
       playerMarkers[pid].remove();
       delete playerMarkers[pid];
+    }
+  }
+}
+
+/** 重定位所有已渲染的标记（不重建 DOM）：窗口尺寸变化 / 地图图片加载完成后调用。 */
+function repositionMarkers() {
+  if (!state) return;
+  const map = effectiveMap();
+
+  const layer = document.getElementById('overlayLayer');
+  if (layer) {
+    for (const marker of layer.querySelectorAll('.object-marker')) {
+      const objectId = marker.dataset.objectId;
+      const obj = objectId && state.objects && state.objects[objectId];
+      if (!obj || obj.mapName !== map || !obj.position) continue;
+      applyMarkerPosition(marker, obj.position.x, obj.position.y);
+    }
+  }
+
+  const playerLayer = document.getElementById('playerLayer');
+  if (playerLayer) {
+    for (const marker of playerLayer.querySelectorAll('.player-marker')) {
+      const playerId = marker.dataset.playerId;
+      const player = playerId && state.players && state.players[playerId];
+      if (!player || player.mapName !== map || !player.position) continue;
+      applyMarkerPosition(marker, player.position.x, player.position.y);
     }
   }
 }
