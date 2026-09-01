@@ -274,7 +274,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 87792fe991ffb3d4bbe5d87cb5836435, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SmartVideoPlayer
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.SmartVideoPlayer
   _placeholderTexture: {fileID: 2800000, guid: 3f5611eebe72475459cc867b1a17396c, type: 3}
   _target: {fileID: 6672985514799530406}
   _playOnAwake: 1
