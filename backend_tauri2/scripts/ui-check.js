@@ -1,4 +1,4 @@
-// DiceTale GM 前端布局验证闭环（移动优先）。
+﻿// DiceTale GM 前端布局验证闭环（移动优先）。
 // 起后端（若未运行）→ 在视口矩阵上逐页加载 → 注入演示 state 渲染真实内容 →
 // 断言（无横向溢出 / 触控目标 ≥44px / 桌面视口下 main 不整页滚动）→ 截图存档。
 //
@@ -19,7 +19,7 @@ const http = require('http');
 
 const ROOT = path.join(__dirname, '..');
 const BASE = 'http://localhost:1420';
-const DEFAULT_VIEWPORTS = ['360x640', '412x915', '768x1024', '1024x768', '1440x900'];
+const DEFAULT_VIEWPORTS = ['360x640', '412x915', '640x360', '873x393', '768x1024', '1024x768', '1440x900'];
 
 // ---- 参数 ----
 const args = process.argv.slice(2);
@@ -103,8 +103,8 @@ const CHECK_SCRIPT = `(() => {
     }
   }
 
-  // 3) 桌面视口（≥992px）下 main 不应整页滚动（布局已锁定在面板内）
-  const mainScrolls = vw >= 992 && main.scrollHeight > main.clientHeight + 2;
+  // 3) 三栏面板视口（≥576px，与 gm.css 断点一致）下 main 不应整页滚动（布局已锁定在面板内）
+  const mainScrolls = vw >= 576 && main.scrollHeight > main.clientHeight + 2;
 
   // 4) 越界元素（供定位用，截取前 8 个）
   const offenders = [];

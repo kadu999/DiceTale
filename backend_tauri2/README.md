@@ -20,7 +20,7 @@ GM 页面由后端托管、后端静态资源带 `Cache-Control: no-cache`，所
 
 ## 前端布局与自动验证（移动优先）
 
-- **布局策略**：移动优先——默认（<992px，与 `index.html` 的 `col-lg-*` 断点一致）为单列堆叠、整页滚动、列表不设内层滚动；桌面（≥992px）为三栏面板、视口锁定、列表内层滚动。全部收敛在 `css/gm.css`。
+- **布局策略**：移动优先——默认（<576px，与 `index.html` 的 `col-sm-*` 断点一致）为单列堆叠、整页滚动、列表不设内层滚动；≥576px 为三栏面板、视口锁定、列表内层滚动。Android 壳锁横屏（如 828×378），横屏手机与 PC 一样走左→右三栏；竖屏手机（<576px）才是单列堆叠。全部收敛在 `css/gm.css`。
 - **布局只由 CSS 负责**：`gm-core.js` 不再有 `fitMapContainer`/`syncPropertyHeight` 之类的 JS 布局计算（地图尺寸用纯 CSS：`aspect-ratio` + `dvh` 上限，旧 WebView 回退 `vh`）；JS 只做数据渲染与标记定位（`gm-map.js` 的 `mapImageRect` 按图片实际矩形算）。
 - **触控目标**：关键交互元素最小高度 44px；窄屏导航栏自动换行；安全区用 `env(safe-area-inset-*)`（不支持的 WebView 自动回退）。
 - **自动验证**：`npm run test:ui`（`scripts/ui-check.js`）——自动起后端，在视口矩阵（360×640 / 412×915 / 768×1024 / 1024×768 / 1440×900）上注入演示 state，逐页截图并断言：无横向溢出、导航栏不溢出、触控目标 ≥44px、桌面视口下 `main` 不整页滚动。截图与报告存 `ui-shots/`。浏览器优先用系统 Edge/Chrome，否则需先 `npx playwright install chromium`。
