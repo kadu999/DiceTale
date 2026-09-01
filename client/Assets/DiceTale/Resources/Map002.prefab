@@ -383,6 +383,7 @@ MonoBehaviour:
   _videoClips:
   - {fileID: 32900000, guid: d17f242877b191c41863420122479345, type: 3}
   _startIndex: 0
+  _fadeDuration: 0.5
 --- !u!114 &6152315340760772378
 MonoBehaviour:
   m_ObjectHideFlags: 0

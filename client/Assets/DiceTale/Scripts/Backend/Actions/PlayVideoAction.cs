@@ -21,7 +21,7 @@ namespace DiceTale
         {
             if (ConditionMet(component))
             {
-                _videoPlayer.Play(_index, _isLooping, _speed);
+                _videoPlayer.PlayWithFade(_index, _isLooping, _speed);
             }
         }
     }
