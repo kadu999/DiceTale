@@ -61,6 +61,61 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceTale.MapMarker
   id: 001
+--- !u!1 &2859791903850753036
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2114664073269320778}
+  - component: {fileID: 634056712906124172}
+  m_Layer: 0
+  m_Name: 0
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2114664073269320778
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2859791903850753036}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4362098352209419018}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &634056712906124172
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2859791903850753036}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 12aa4a3d26a7d774a92b96788c96b348, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.PlayVideoAction
+  condition:
+    valueType: 3
+    op: 0
+    targetBool: 0
+    targetString: 
+    targetNumber: 0
+    targetInteger: 0
+  _videoPlayer: {fileID: 7943050446445302326}
+  _index: 0
+  _isLooping: 1
+  _speed: 1
 --- !u!1 &3026762032238987909
 GameObject:
   m_ObjectHideFlags: 0
@@ -72,7 +127,7 @@ GameObject:
   - component: {fileID: 5285459483653472869}
   - component: {fileID: 3927184684739061598}
   - component: {fileID: 7003088684067041255}
-  - component: {fileID: 6315488296190087577}
+  - component: {fileID: 7943050446445302326}
   m_Layer: 0
   m_Name: Background
   m_TagString: Untagged
@@ -152,42 +207,96 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!328 &6315488296190087577
-VideoPlayer:
+--- !u!114 &7943050446445302326
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3026762032238987909}
   m_Enabled: 1
-  m_VideoClip: {fileID: 32900000, guid: 91a203a71a4932748b90e09ee17806e4, type: 3}
-  m_TargetCameraAlpha: 1
-  m_TargetCamera3DLayout: 0
-  m_TargetCamera: {fileID: 0}
-  m_TargetTexture: {fileID: 0}
-  m_TimeReference: 0
-  m_TargetMaterialRenderer: {fileID: 0}
-  m_TargetMaterialProperty: 
-  m_RenderMode: 3
-  m_AspectRatio: 2
-  m_DataSource: 0
-  m_TimeUpdateMode: 2
-  m_PlaybackSpeed: 1
-  m_AudioOutputMode: 0
-  m_TargetAudioSources:
-  - {fileID: 0}
-  m_DirectAudioVolumes:
-  - 1
-  m_Url: 
-  m_EnabledAudioTracks: 01
-  m_DirectAudioMutes: 00
-  m_ControlledAudioTrackCount: 1
-  m_PlayOnAwake: 1
-  m_SkipOnDrop: 0
-  m_Looping: 1
-  m_WaitForFirstFrame: 1
-  m_FrameReadyEventEnabled: 0
-  m_VideoShaders: []
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87792fe991ffb3d4bbe5d87cb5836435, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SmartVideoPlayer
+  _placeholderTexture: {fileID: 2800000, guid: 0e51783214a020e4db8b14474dccdfa5, type: 3}
+  _target: {fileID: 7003088684067041255}
+  _playOnAwake: 1
+  _isLooping: 1
+  _videoClips:
+  - {fileID: 32900000, guid: 91a203a71a4932748b90e09ee17806e4, type: 3}
+  - {fileID: 32900000, guid: b1aed3472b0f2b14db646b78f5ec8cd5, type: 3}
+  _startIndex: 0
+--- !u!1 &4302298143486584533
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4362098352209419018}
+  - component: {fileID: 4937755181924736817}
+  - component: {fileID: 949504374688264729}
+  m_Layer: 0
+  m_Name: Play Action
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4362098352209419018
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4302298143486584533}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2114664073269320778}
+  - {fileID: 5402775738795147621}
+  m_Father: {fileID: 6894538419123006058}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4937755181924736817
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4302298143486584533}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd0ce7c7e6ad5764797b0e0c574e3c03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.BackendObject
+  objectKind: 3
+  displayName: "\u64AD\u653E\u52A8\u753B"
+  objectId: 
+--- !u!114 &949504374688264729
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4302298143486584533}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5f079cd2b5b47898ac2228c012d11de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.OptionValue
+  displayName: "\u72B6\u6001"
+  actions:
+  - {fileID: 634056712906124172}
+  - {fileID: 2454325470141289321}
+  states:
+  - name: "\u6B63\u5E38"
+  - name: "\u574D\u584C"
+  selectedIndex: 0
 --- !u!1 &7907862588258075770
 GameObject:
   m_ObjectHideFlags: 0
@@ -220,6 +329,7 @@ Transform:
   m_Children:
   - {fileID: 5285459483653472869}
   - {fileID: 2842844007412446946}
+  - {fileID: 4362098352209419018}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &5603648189926027008
@@ -281,3 +391,58 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!1 &9147774379670643457
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5402775738795147621}
+  - component: {fileID: 2454325470141289321}
+  m_Layer: 0
+  m_Name: 1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5402775738795147621
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9147774379670643457}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4362098352209419018}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2454325470141289321
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9147774379670643457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 12aa4a3d26a7d774a92b96788c96b348, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceTale.PlayVideoAction
+  condition:
+    valueType: 3
+    op: 0
+    targetBool: 0
+    targetString: 
+    targetNumber: 1
+    targetInteger: 1
+  _videoPlayer: {fileID: 7943050446445302326}
+  _index: 1
+  _isLooping: 0
+  _speed: 1
