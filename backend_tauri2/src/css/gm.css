@@ -79,24 +79,34 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 .map-tabs button.active { background: #0d6efd; color: #fff; border-color: #0d6efd; }
 
 /* 地图容器与图片：宽撑满、高按 16:9 由宽推导，但不超过视口可用高度（dvh 精确 / vh 兜底）。
-   图片 object-fit: contain；标记按图片实际矩形定位（gm-map.js mapImageRect），与容器比例无关。 */
+   图片 object-fit: contain；标记按图片实际矩形定位（gm-map.js mapImageRect），与容器比例无关。
+   注意兼容性：Android 系统 WebView 可能是很老的 Chromium（如 MI 8 是 72）——
+   - aspect-ratio 需要 Chromium 88+，所以用 ::before padding-top 百分比（所有浏览器都支持）推导高度；
+   - calc 里 * / 需要 Chromium 111+，所以 max-width 写成纯加减法形式（= (100vh - 90px) * 16/9）。 */
 .map-container {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9;
-  max-width: calc((100vh - 90px) * 16 / 9);
-  max-width: calc((100dvh - 90px) * 16 / 9);
+  max-width: calc(177.78vh - 160px);
+  max-width: calc(177.78dvh - 160px);
   overflow: hidden;
   user-select: none;
 }
+.map-container::before {
+  content: '';
+  display: block;
+  padding-top: 56.25%; /* 16:9：百分比 padding 相对容器宽度推导高度，兼容 Chromium 72 */
+}
 #mapImage {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
-.overlay-layer { position: absolute; inset: 0; pointer-events: none; }
+.overlay-layer { position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none; }
 
 /* 玩家标记：圆形令牌，名字居中（尺寸含触控余量） */
 .player-marker {
@@ -132,7 +142,10 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 .player-marker::after {
   content: '';
   position: absolute;
-  inset: -8px;
+  top: -8px;
+  right: -8px;
+  bottom: -8px;
+  left: -8px;
   border-radius: 50%;
   border: 2px solid rgba(13, 110, 253, 0.5);
   opacity: 0;
@@ -446,12 +459,44 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 }
 .gm-toast.show { opacity: 1; }
 
-/* 遮罩编辑 */
+/* 遮罩编辑弹框：宽高按屏幕比例自适应（PC 最大 1100px，手机 ~90vw/85vh，都不超屏），
+   画布等比 contain 在弹框内居中。尺寸链：modal-dialog（max-width）→ modal-content（max-height）
+   → modal-body → mask-editor-body → canvas（JS fitMaskCanvas 按实测可用空间设置显示尺寸）。 */
+#maskEditorModal .modal-dialog {
+  /* fit-content：弹框宽度贴住内容（画布），而不是块级 flex 默认撑满可用宽度
+     （modal-dialog-centered 的 display:flex 会让 width:auto 占满屏宽，手机端几乎整屏） */
+  width: fit-content;
+  max-width: 90vw;
+  margin: 0.375rem auto;
+}
+@media (min-width: 1223px) {
+  #maskEditorModal .modal-dialog { max-width: 1100px; }
+}
+#maskEditorModal .modal-content {
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+@media (min-height: 1059px) {
+  #maskEditorModal .modal-content { max-height: 900px; }
+}
+#maskEditorModal .modal-header { border-bottom: none; }
+#maskEditorModal .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0.5rem;
+}
 .mask-editor-body {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 240px;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
   background: #0b1220;
   border: 1px solid #2b3952;
@@ -460,8 +505,9 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 }
 .mask-canvas {
   max-width: 100%;
-  max-height: 70vh;
-  max-height: 70dvh;
+  max-height: 100%;
+  width: auto;
+  height: auto;
   background-color: #0b1220;
   cursor: crosshair;
   touch-action: none;

@@ -14,10 +14,10 @@ Shader "DiceTale/BoxComposite"
     Properties
     {
         _MainTex ("背景纹理 (纹理1)", 2D) = "white" {}
-        _EffectTex ("效果纹理 (纹理2)", 2D) = "white" {}
+        _StaticTex ("静态纹理 (纹理2)", 2D) = "white" {}
         _MaskTex ("框遮罩", 2D) = "black" {}
         _BackgroundTint ("背景纹理颜色", Color) = (1, 1, 1, 1)
-        _EffectTint ("效果纹理颜色", Color) = (1, 1, 1, 1)
+        _StaticTint ("静态纹理颜色", Color) = (1, 1, 1, 1)
         _MaskEdgeSoftness ("遮罩端点截止比例 (0=线性, 0.5=硬边)", Range(0, 0.5)) = 0.05
     }
     SubShader
@@ -35,10 +35,10 @@ Shader "DiceTale/BoxComposite"
             #include "UnityCG.cginc"
 
             sampler2D _MainTex;
-            sampler2D _EffectTex;
+            sampler2D _StaticTex;
             sampler2D _MaskTex;
             fixed4 _BackgroundTint;
-            fixed4 _EffectTint;
+            fixed4 _StaticTint;
             float _MaskEdgeSoftness;
 
             struct appdata
@@ -67,7 +67,7 @@ Shader "DiceTale/BoxComposite"
 
                 fixed4 mask = tex2D(_MaskTex, uv);
                 fixed4 bg = tex2D(_MainTex, uv) * _BackgroundTint;
-                fixed4 fx = tex2D(_EffectTex, uv) * _EffectTint;
+                fixed4 fx = tex2D(_StaticTex, uv) * _StaticTint;
 
                 // 遮罩 alpha 直接作为混合权重：mask.a = 0 → 纹理2（效果），mask.a = 1 → 纹理1（背景），
                 // 中间值 = 半透明边缘，两张图按 alpha 线性交叉混合——羽化带整体成为融合区（不再以 0.5 为界截断）。
@@ -75,7 +75,7 @@ Shader "DiceTale/BoxComposite"
                 float edge = saturate(_MaskEdgeSoftness);
                 float t = saturate((mask.a - edge) / max(1.0 - 2.0 * edge, 1e-4));
                 float coverage = 1.0 - t;
-                return lerp(bg, fx, coverage);
+                return lerp(fx, bg, coverage);
             }
             ENDCG
         }

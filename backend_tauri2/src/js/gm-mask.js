@@ -7,9 +7,10 @@ let maskStroke = null; // 当前笔画轨迹（归一化坐标）+ 半径/软硬
 let maskStrokeSent = 0; // 已发送的轨迹点数（增量发送用）
 let maskStrokeTimer = null; // 拖动中节流发送定时器
 let maskCanvasFor = null; // 当前画布内容对应的对象 ID（同对象重开保留擦除结果）
-let maskStrokeSoftness = 1; // 笔刷软边带比例（0~1，0=硬边，1=全程衰减）：滑块/组件配置（edgeFeather）驱动，羽化带宽 = 笔刷半径 × 该值
+let maskStrokeSoftness = 1; // 笔刷软边带比例（0~1，0=硬边，1=全程衰减）：组件配置（edgeFeather）驱动，羽化带宽 = 笔刷半径 × 该值
 let maskImageData = null; // 遮罩像素缓冲（GM 侧真源）：幂等擦除（min）用，初始全黑不透明
 let maskMinPointDist = 12; // 记录轨迹点的最小像素间距（px）：由笔刷半径决定（≈半径×0.25，下限 4px）
+let maskMapAspect = 0; // 当前地图背景图的宽高比（naturalWidth/naturalHeight）：弹框画布按地图比例显示，前后端一致不拉伸
 
 /** 打开遮罩编辑弹框：为对象生成/保留黑色画布，可拖拽擦除。 */
 function openMaskEditor(objectId) {
@@ -22,10 +23,9 @@ function openMaskEditor(objectId) {
 
   maskEditorObjectId = objectId;
 
-  // 软边厚度：组件配置（edgeFeather）优先；滑块可再临时调整（拖动中改滑块即时生效）
+  // 软边厚度：组件配置（edgeFeather）决定，无配置时默认全软边（1）
   const feather = Number(params.edgeFeather);
   maskStrokeSoftness = Number.isFinite(feather) ? Math.min(1, Math.max(0, feather)) : 1;
-  syncMaskSoftnessUI();
 
   const modal = document.getElementById('maskEditorModal');
   const canvas = document.getElementById('maskCanvas');
@@ -40,15 +40,30 @@ function openMaskEditor(objectId) {
   }
 
   // 画布背面用当前地图图：擦除（透明）处直接透出地图，而不是棋盘格
-  canvas.style.backgroundImage = `url('${backendUrl('/maps/' + encodeURIComponent(effectiveMap()) + '.png')}')`;
+  // 显示比例必须与地图一致（不用遮罩纹理的原始像素比）——遮罩在客户端是盖在地图上的，
+  // 前后端比例一致才不会被拉长；地图尺寸未知前先按遮罩比例兜底，加载后重算
+  maskMapAspect = 0;
+  const mapSrc = backendUrl('/maps/' + encodeURIComponent(effectiveMap()) + '.png');
+  canvas.style.backgroundImage = `url('${mapSrc}')`;
   canvas.style.backgroundSize = '100% 100%';
   canvas.style.backgroundRepeat = 'no-repeat';
+  const probe = new Image();
+  probe.onload = () => {
+    if (probe.naturalWidth > 0 && probe.naturalHeight > 0) {
+      maskMapAspect = probe.naturalWidth / probe.naturalHeight;
+      fitMaskCanvas(); // 地图比例已知后重算画布显示尺寸
+    }
+  };
+  probe.src = mapSrc;
 
   document.getElementById('maskEditorTitle').textContent = '编辑遮罩：' + (obj.name || objectId);
   if (window.bootstrap) {
     bootstrap.Modal.getOrCreateInstance(modal).show();
+    // 弹框动画结束后再量尺寸（此时布局已稳定）；once 防止重复绑定
+    modal.addEventListener('shown.bs.modal', fitMaskCanvas, { once: true });
   } else {
     modal.style.display = 'flex';
+    setTimeout(fitMaskCanvas, 50); // 等一帧布局后再量
   }
 }
 
@@ -81,12 +96,44 @@ function initMaskPixels(canvas, width, height) {
   ctx.putImageData(maskImageData, 0, 0);
 }
 
-/** 把当前软边厚度同步到滑块 UI（打开弹框/组件配置变化时调用）。 */
-function syncMaskSoftnessUI() {
-  const slider = document.getElementById('maskSoftnessSlider');
-  const value = document.getElementById('maskSoftnessValue');
-  if (slider) slider.value = Math.round(maskStrokeSoftness * 100);
-  if (value) value.textContent = Math.round(maskStrokeSoftness * 100) + '%';
+/** 画布 CSS 尺寸自适应：等比 contain 在弹框可用空间内（宽高都不超过屏幕）。
+ *  弹框尺寸上限由 CSS 按屏幕比例定（90vw/1100px 宽、85vh/900px 高），这里读取解析后的 px
+ *  作为画布可用空间，显式设置画布显示尺寸——不依赖 flex 链（老 WebView 下
+ *  auto-height+max-height 的 flex 容器子项不收缩、max-height:100% 对 flex 项也不解析）。 */
+function fitMaskCanvas() {
+  const modal = document.getElementById('maskEditorModal');
+  const canvas = document.getElementById('maskCanvas');
+  const header = modal && modal.querySelector('.modal-header');
+  const body = modal && modal.querySelector('.modal-body');
+  const dlg = modal && modal.querySelector('.modal-dialog');
+  const content = modal && modal.querySelector('.modal-content');
+  const editor = document.querySelector('.mask-editor-body');
+  if (!modal || !canvas || !header || !body || !dlg || !content || !editor) return;
+  const modalRect = modal.getBoundingClientRect(); // fixed inset:0 → 视口大小
+  const dlgMaxW = parseFloat(getComputedStyle(dlg).maxWidth) || modalRect.width;
+  const contentMaxH = parseFloat(getComputedStyle(content).maxHeight) || modalRect.height;
+  const bcs = getComputedStyle(body);
+  const ecs = getComputedStyle(editor);
+  const padX = parseFloat(bcs.paddingLeft) + parseFloat(bcs.paddingRight)
+    + parseFloat(ecs.paddingLeft) + parseFloat(ecs.paddingRight) + 4; // +边框余量
+  const padY = parseFloat(bcs.paddingTop) + parseFloat(bcs.paddingBottom)
+    + parseFloat(ecs.paddingTop) + parseFloat(ecs.paddingBottom) + 4;
+  const availW = Math.min(modalRect.width - 12, dlgMaxW) - padX; // 12 = 弹框边距 0.375rem×2
+  const availH = Math.min(modalRect.height - 12, contentMaxH) - header.offsetHeight - padY;
+  if (availW <= 0 || availH <= 0 || !canvas.width || !canvas.height) return;
+  // 显示比例 = 地图背景图比例（遮罩盖在地图上，前后端一致）；地图尺寸未知时回退遮罩像素比。
+  // 由受限维度取整后反推另一维（round），保证画布显示比例与目标比例一致、不被拉伸。
+  const ratio = maskMapAspect > 0 ? maskMapAspect : canvas.width / canvas.height;
+  let w, h;
+  if (availW / availH > ratio) {
+    h = Math.floor(availH);
+    w = Math.round(h * ratio);
+  } else {
+    w = Math.floor(availW);
+    h = Math.round(w / ratio);
+  }
+  canvas.style.width = Math.max(1, w) + 'px';
+  canvas.style.height = Math.max(1, h) + 'px';
 }
 
 /** canvas 客户端坐标 -> 画布像素坐标（考虑 CSS 缩放）。 */
@@ -212,7 +259,7 @@ function scheduleMaskStrokeSend() {
   const canvas = document.getElementById('maskCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const brushRadius = 48; // 笔刷半径（画布像素）：软边厚度由 maskStrokeSoftness（滑块/组件配置）控制，客户端 shader 按同公式计算
+  const brushRadius = 48; // 笔刷半径（画布像素）：软边厚度由 maskStrokeSoftness（组件配置 edgeFeather）控制，客户端 shader 按同公式计算
   maskMinPointDist = Math.max(4, brushRadius * 0.25); // 记录轨迹点最小间距（px）：半径×0.25，远小于客户端打点步长（半径×0.5）
 
   canvas.addEventListener('pointerdown', (e) => {
@@ -249,7 +296,7 @@ function scheduleMaskStrokeSend() {
 
   canvas.addEventListener('pointermove', (e) => {
     if (!maskErasing || !maskEditorObjectId) return;
-    const soft = maskStrokeSoftness; // 拖动中调滑块即时生效：预览与发送都跟随最新软边厚度
+    const soft = maskStrokeSoftness; // 预览与发送都跟随组件配置的软边厚度
     maskStroke.softness = soft;
     const p = maskCanvasPoint(e);
     if (maskLastPoint) {
@@ -276,12 +323,8 @@ function scheduleMaskStrokeSend() {
   canvas.addEventListener('pointerup', endErase);
   canvas.addEventListener('pointercancel', endErase);
 
-  // 边缘厚度滑块：0~100% ↔ 软边比例 0~1（拖动中调滑块立即生效）
-  const softnessSlider = document.getElementById('maskSoftnessSlider');
-  if (softnessSlider) {
-    softnessSlider.addEventListener('input', () => {
-      maskStrokeSoftness = Number(softnessSlider.value) / 100;
-      syncMaskSoftnessUI();
-    });
-  }
+  // 窗口尺寸变化（旋转/分屏等）时重算画布显示尺寸，保持不超屏
+  window.addEventListener('resize', () => {
+    if (maskEditorObjectId) fitMaskCanvas();
+  });
 })();

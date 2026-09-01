@@ -20,7 +20,7 @@ namespace DiceTale
         [SerializeField]
         private Renderer outputRenderer;
 
-        [Tooltip("遮罩纹理写入的材质属性名（BoxComposite 为 _MaskTex）")]
+        [Tooltip("遮罩纹理写入的材质属性名（BoxComposite 为 _StaticTex）")]
         [SerializeField]
         private string maskPropertyName = "_MaskTex";
 
