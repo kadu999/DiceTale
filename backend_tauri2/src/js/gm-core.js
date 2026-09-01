@@ -1,26 +1,19 @@
-// 后端地址确定优先级（前端无设置界面，地址来自 config.js 配置）：
-//   1) DICETALE_BACKEND_URL 有值 → 强制使用（最高优先级，一般留空）
-//   2) Tauri 壳 Android 端 → DICETALE_BACKEND_ANDROID（手机连电脑填电脑局域网 IP；
-//      手机自身 localhost 不可达，不能走 PC 的 localhost fallback）
-//   3) 页面由后端同源托管（location.origin === DICETALE_BACKEND_FALLBACK）→ 直接同源
-//   4) DICETALE_BACKEND_FALLBACK（默认 http://localhost:1420，Tauri 壳 PC / 1421 预览页使用；
-//      后端端口改动时需同步修改该配置）
-const BACKEND_FALLBACK = (window.DICETALE_BACKEND_FALLBACK || 'http://localhost:1420').replace(/\/+$/, '');
-const BACKEND_ANDROID = (window.DICETALE_BACKEND_ANDROID || BACKEND_FALLBACK).replace(/\/+$/, '');
-let backendBase = (function () {
-  if (window.DICETALE_BACKEND_URL) return window.DICETALE_BACKEND_URL.replace(/\/+$/, '');
-  if (window.isDiceTaleTauri && window.isDiceTaleTauri() && /Android/i.test(navigator.userAgent)) {
-    return BACKEND_ANDROID;
-  }
-  if ((location.protocol === 'http:' || location.protocol === 'https:') && location.origin === BACKEND_FALLBACK) {
-    return location.origin;
-  }
-  return BACKEND_FALLBACK;
-})();
+// 页面始终由后端同源托管：
+//   - PC：serve-web.bat 启动后端，浏览器打开 http://localhost:1420/（后端直接托管页面）
+//   - Android：Tauri 壳引导页跳转到电脑局域网地址（http://192.168.x.x:1420）
+// 因此后端地址恒等于 location.origin，不再需要 config.js 的地址优先级逻辑，
+// 也不需要 Tauri 转发桥（同源后 CORS 消失）。改端口/换机器只需改后端 server/config.json。
+const backendBase = location.origin;
 
 /** 后端资源完整 URL（地图图片、items.json、api 等）。 */
 function backendUrl(path) {
   return backendBase + path;
+}
+
+/** 同源 GET 取 JSON（地图列表 / 道具目录）。 */
+async function backendFetchJson(path) {
+  const resp = await fetch(backendUrl(path));
+  return resp.json();
 }
 
 let ws;
@@ -136,7 +129,7 @@ function switchPage(page) {
   } else if (activePage === 'items') {
     renderItemPage();
   } else {
-    setTimeout(fitLayout, 50); // 地图页重新显示后重算地图尺寸与属性面板等高
+    setTimeout(fitLayout, 50); // 地图页重新显示后重算标记位置
   }
 }
 
@@ -147,7 +140,6 @@ function render() {
   renderPlayerList();
   renderItemPage();
   renderPropertyPanel();
-  syncPropertyHeight(); // 属性面板重新渲染后保持与地图框等高
 }
 
 function knownMaps() {
@@ -179,49 +171,8 @@ function fmtPos(pos) {
   if (!pos) return '-';
   return `(${pos.x.toFixed(2)}, ${pos.y.toFixed(2)})`;
 }
-// ---- 横屏时地图按 16:9 等比（宽高都由比例决定，宽度受父容器限制），避免 contain 黑边 ----
-function fitMapContainer() {
-  var container = document.getElementById('mapContainer');
-  if (!container) return;
-
-  var isLandscape = window.matchMedia('(orientation: landscape)').matches;
-  if (isLandscape) {
-    var maxW = container.parentElement.clientWidth;
-    var maxH = (window.innerHeight || document.documentElement.clientHeight) - 80; // 与 CSS calc(100dvh - 80px) 一致
-    var w = Math.min(maxW, Math.max(0, Math.round(maxH * 16 / 9)));
-    container.style.width = w + 'px';
-    container.style.height = Math.round(w * 9 / 16) + 'px';
-  } else {
-    container.style.width = '';
-    container.style.height = '';
-  }
-}
-
-/** 属性面板高度 = 地图所在框（mapContainer）的实际高度，保证两栏等高。
- *  仅三列网格布局（横屏且宽度充足）下生效；手机/窄屏堆叠布局用自然高度。 */
-function syncPropertyHeight() {
-  var mapContainer = document.getElementById('mapContainer');
-  var propertyPanel = document.querySelector('.property-panel');
-  if (!mapContainer || !propertyPanel) return;
-
-  // 属性面板所在页不可见时不设置（兼容旧 WebView，避免依赖 closest）
-  var page = propertyPanel;
-  while (page && !(page.classList && page.classList.contains('page'))) {
-    page = page.parentElement;
-  }
-  if (page && !page.classList.contains('active')) return;
-
-  // 与三栏网格的断点一致（col-sm-* = 576px）：仅横屏且宽度充足（三栏并排）时才同步高度
-  if (window.matchMedia('(orientation: landscape) and (min-width: 576px)').matches) {
-    propertyPanel.style.height = mapContainer.clientHeight + 'px';
-  } else {
-    propertyPanel.style.height = '';
-  }
-}
-
-/** 地图尺寸 + 属性面板等高 + 标记位置一起刷新。 */
+// ---- 布局全部由 CSS 负责（移动端单列堆叠 / 桌面三栏，见 css/gm.css）。
+// 这里只做一件事：窗口尺寸变化 / 页面切换后按图片实际矩形重定位标记。----
 function fitLayout() {
-  fitMapContainer();
-  syncPropertyHeight();
   if (typeof repositionMarkers === 'function') repositionMarkers();
 }

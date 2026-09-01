@@ -1,32 +1,67 @@
-/* DiceTale GM 控制台自定义样式（Bootstrap 5 之外的补充） */
+/* DiceTale GM 控制台自定义样式（Bootstrap 5 之外补充）。
+   布局策略：移动优先 —— 默认（<992px）为单列堆叠、整页滚动、列表不设内层滚动；
+   桌面三栏面板布局（视口锁定、面板撑满、列表内层滚动）收敛在 @media (min-width: 992px) 内。
+   断点与 index.html 的 col-lg-* 网格一致（992px）。 */
 
-/* 顶层布局锁死视口：body/main 永不产生滚动条，超出的内容一律交给子容器滚动 */
+/* ===== 设计令牌 ===== */
+:root {
+  --touch-min: 44px;      /* 触控目标下限 */
+  --radius: 10px;
+  --space: 0.75rem;
+}
+
+/* ===== 顶层骨架（两种形态共用）：html/body 锁视口，滚动一律发生在 main 内 ===== */
 html, body { height: 100%; overflow: hidden; }
 body { display: flex; flex-direction: column; }
-main { flex: 1 1 0%; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+main {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto;               /* 移动端：整页在 main 内滚动 */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+}
 
-/* 页面切换 */
-.page { display: none; flex: 1 1 0%; min-height: 0; overflow: hidden; }
-.page.active { display: flex; flex-direction: column; }
+/* 安全区（刘海/底部手势条）：env() 不支持的旧 WebView 自动回退到前一行的普通值 */
+nav.navbar {
+  flex-wrap: wrap;               /* 窄屏（360px 级）下状态徽章自动换行，避免横向溢出 */
+  padding-top: 0.5rem;
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+}
 
-/* 页面内的行 / 列 / 卡片：撑满可用高度，内部滚动区可收缩（min-height: 0）
-   注意：.row 是 flex-wrap: wrap 容器，仅靠 align-items: stretch 不会把列拉高，
-   必须显式 height: 100% 让列填满行，行填满页面。
-   所有布局层统一 flex-basis: 0%：内容超高时 max-content 高度不沿 flex 链向上传递，
-   避免撑破页面布局（如道具网格多行时 navbar 被压缩导致整页上移）。 */
-.page .row { flex: 1 1 0%; height: 100%; min-height: 0; }
-.page .row > [class*="col-"] { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-.page .card { flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; }
-/* 道具页合并列：信息卡与分配卡严格等高（flex-basis:0 均分剩余空间，内容多少不影响高度；内容区内部滚动） */
-#pageItems .split-card { flex: 1 1 0%; min-height: 0; }
-.page .card-body { flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; }
+/* 触控目标下限 + 去掉移动端点击高亮/双击缩放延迟 */
+button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.map-tabs button, .category-tag, .state-btn, .item-row, .page-tab { min-height: var(--touch-min); }
+
+/* ===== 页面：移动端（默认）单列堆叠，自然流动 ===== */
+.page { display: none; }
+.page.active { display: block; }
+
+/* 卡片纵向间距（桌面三栏断点内会被覆盖为 0） */
+.page .row > [class*="col-"] { padding-bottom: var(--space); }
+.page .card { margin-bottom: var(--space); }
+.map-cell { margin-bottom: var(--space); display: flex; justify-content: center; }
+#pageItems .split-card { margin-bottom: var(--space); }
+
+/* 卡片内容自然流动（不做 flex 撑高） */
+.page .card { display: block; }
+.page .card-body { display: block; }
+
+/* 列表在移动端不设内层滚动：超高时由整页滚动接管 */
+.property-list, .item-list, .item-type-list, #playerList,
+.modal-item-list, .modal-detail-list {
+  overflow: visible;
+  max-height: none;
+  flex: none;
+}
 
 /* 顶栏页面切换按钮（navbar 内） */
 .page-tab { color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2); }
 .page-tab.active { background: #0d6efd; color: #fff; border-color: #0d6efd; }
 
-/* 地图选择标签 */
-.map-tabs { scrollbar-width: none; flex: 1 1 0%; min-height: 0; }
+/* 地图选择标签：移动端横向滚动 */
+.map-tabs { overflow-x: auto; scrollbar-width: none; }
 .map-tabs::-webkit-scrollbar { display: none; }
 .map-tabs button {
   flex: 0 0 auto;
@@ -42,13 +77,14 @@ main { flex: 1 1 0%; min-height: 0; overflow: hidden; display: flex; flex-direct
 }
 .map-tabs button.active { background: #0d6efd; color: #fff; border-color: #0d6efd; }
 
-/* 地图容器与图片 */
-.map-cell { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; }
+/* 地图容器与图片：宽撑满、高按 16:9 由宽推导，但不超过视口可用高度（dvh 精确 / vh 兜底）。
+   图片 object-fit: contain；标记按图片实际矩形定位（gm-map.js mapImageRect），与容器比例无关。 */
 .map-container {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  min-height: 200px;
+  max-width: calc((100vh - 90px) * 16 / 9);
+  max-width: calc((100dvh - 90px) * 16 / 9);
   overflow: hidden;
   user-select: none;
 }
@@ -61,22 +97,22 @@ main { flex: 1 1 0%; min-height: 0; overflow: hidden; display: flex; flex-direct
 }
 .overlay-layer { position: absolute; inset: 0; pointer-events: none; }
 
-/* 玩家标记：圆形令牌，名字居中 */
+/* 玩家标记：圆形令牌，名字居中（尺寸含触控余量） */
 .player-marker {
   position: absolute;
   transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   padding: 2px;
   border-radius: 50%;
   background: #0d6efd;
   border: 2px solid rgba(255, 255, 255, 0.85);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
   color: #fff;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.1;
   text-align: center;
   white-space: nowrap;
@@ -86,9 +122,9 @@ main { flex: 1 1 0%; min-height: 0; overflow: hidden; display: flex; flex-direct
   transition: width 0.15s, height 0.15s, font-size 0.15s;
 }
 .player-marker.selected {
-  width: 48px;
-  height: 48px;
-  font-size: 13px;
+  width: 52px;
+  height: 52px;
+  font-size: 14px;
   border-color: #fff;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 1px 6px rgba(0, 0, 0, 0.7);
 }
@@ -148,19 +184,7 @@ main { flex: 1 1 0%; min-height: 0; overflow: hidden; display: flex; flex-direct
   line-height: 1.3;
 }
 
-/* 属性列表 */
-.property-list {
-  display: flex;
-  flex-direction: column;
-  /* flex-basis 0：内容超高（滚动）时不把 max-content 高度沿 flex 链向上传递，
-     避免撑破页面布局（如切道具页时 navbar 被压缩导致整页上移） */
-  flex: 1 1 0%;
-  overflow-x: hidden;
-  overflow-y: auto;
-  min-height: 0;
-  /* 与右侧滚动条保持间距 */
-  padding-right: 8px;
-}
+/* 属性列表（内容级样式；移动端不滚动，滚动见桌面断点） */
 .property-empty { color: #64748b; font-size: 0.85rem; padding: 0.25rem; }
 .property-section {
   display: flex;
@@ -263,9 +287,6 @@ main { flex: 1 1 0%; min-height: 0; overflow: hidden; display: flex; flex-direct
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  flex: 1 1 0%;
-  min-height: 0;
-  overflow-y: auto;
   padding-right: 6px;
 }
 .item-type-list .category-tag {
@@ -277,25 +298,18 @@ main { flex: 1 1 0%; min-height: 0; overflow: hidden; display: flex; flex-direct
   text-overflow: ellipsis;
 }
 
-/* 道具列表（背包式网格，撑满卡片、可滚动） */
+/* 道具列表（背包式网格；移动端格子略小） */
 .item-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
-  /* 固定行高：格子不会因 aspect-ratio/内容溢出轨道导致行间重叠 */
-  grid-auto-rows: 88px;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  grid-auto-rows: 76px;
   gap: 0.6rem;
   align-content: start;
-  /* flex-basis 0：内容超高（网格多行滚动）时不把 max-content 高度向上传递，避免撑破页面布局 */
-  flex: 1 1 0%;
-  min-height: 0;
-  overflow-y: auto;
-  /* 列表内容与右侧滚动条保持间距，避免贴边 */
-  padding-right: 10px;
 }
 .item-list > .property-empty { grid-column: 1 / -1; }
 
 /* 滚动条可见化：Android WebView / Chromium 默认是覆盖式滚动条，不滚动时不显示，
-   用户会误以为列表不能滚。这里强制常驻显示细滚动条（PC / Android 通用）。 */
+   用户会误以为列表不能滚。这里强制常驻显示细滚动条（桌面三栏的内层滚动生效；移动端整页滚动用系统滚动条）。 */
 .item-list::-webkit-scrollbar,
 .property-list::-webkit-scrollbar,
 #playerList::-webkit-scrollbar,
@@ -394,23 +408,20 @@ main { flex: 1 1 0%; min-height: 0; overflow: hidden; display: flex; flex-direct
 .item-cell.disabled { opacity: 0.4; cursor: default; }
 .item-cell.disabled:hover { background: #1e293b; border-color: #495057; }
 
-/* 玩家卡片 */
-/* 玩家列表容器自身滚动，避免整页出现滚动条 */
-#playerList { flex: 1 1 0%; min-height: 0; overflow-y: auto; padding-right: 8px; }
+/* 玩家卡片（移动端网格自适应，宽度撑满列；桌面断点内恢复固定 260px） */
+#playerList { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: var(--space); align-items: start; }
 .player-card {
-  flex: 0 0 260px;
-  width: 260px;
+  width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 90px);
   padding: 0.75rem;
   background: #1e293b;
   border: 1px solid #2b3952;
   border-radius: 10px;
   cursor: pointer;
 }
-.player-card .property-list { flex: 1 1 0%; min-height: 0; overflow-y: auto; }
+.player-card .property-list { overflow: visible; }
 .player-card:hover { background: #22304a; border-color: #3a4a66; }
 .player-card.selected { border-color: #0d6efd; background: #1c2b46; }
 .player-empty { color: #64748b; font-size: 0.85rem; }
@@ -449,49 +460,29 @@ main { flex: 1 1 0%; min-height: 0; overflow: hidden; display: flex; flex-direct
 .mask-canvas {
   max-width: 100%;
   max-height: 70vh;
+  max-height: 70dvh;
   background-color: #0b1220;
   cursor: crosshair;
   touch-action: none;
 }
 
-/* 弹框列表区高度约束（竖屏堆叠时的兜底；横屏三列时由 modal-body flex 填满驱动内部滚动） */
-.modal-item-list { max-height: 40vh; }
-.modal-detail-list { max-height: 40vh; }
-/* 弹框内类型列限高滚动（与列表同高） */
-#itemPickerModal .item-type-list { max-height: 40vh; }
-
-/* 添加道具弹框：整体紧凑（字号缩小、宽高自适应、上限收紧）
-   - 弹框基础字号 0.875rem（整体缩小）；高度随内容自适应最高 75vh，超高 body 滚动
-   - 宽度随内容收缩，最高 calc(100vw - 3rem)（四周留更大边距）
-   注意：用 vh/calc/max-width 兼容 Android 9 旧 WebView（不支持 dvh / min()） */
+/* 添加道具弹框（移动端：整体紧凑、单列堆叠、body 滚动；桌面三列见下方断点） */
 #itemPickerModal { font-size: 0.875rem; }
-#itemPickerModal .modal-dialog { width: auto; max-width: calc(100vw - 3rem); margin: auto; }
-#itemPickerModal .modal-content { height: auto; max-height: 75vh; display: flex; flex-direction: column; }
+#itemPickerModal .modal-dialog { width: auto; max-width: calc(100vw - 1.5rem); margin: auto; }
+#itemPickerModal .modal-content {
+  height: auto;
+  max-height: 85vh;
+  max-height: 85dvh;
+  display: flex;
+  flex-direction: column;
+}
 #itemPickerModal .modal-body { flex: 0 1 auto; min-height: 0; overflow-y: auto; }
-#itemPickerModal .modal-body .row { height: auto; }
-#itemPickerModal .modal-body .row > [class*="col-"] { height: auto; min-width: 0; }
-/* 三列最小宽度：内容自适应收缩时保证每列可用 */
-#itemPickerModal .modal-body .col-sm-2 { min-width: 80px; }
-#itemPickerModal .modal-body .col-sm-6 { min-width: 280px; }
-#itemPickerModal .modal-body .col-sm-4 { min-width: 140px; }
-/* 类型列限高（40vh）：未选中道具时弹框不至于被 9 个类型撑高 */
-#itemPickerModal .item-type-list { flex: 0 1 auto; min-height: 0; max-height: 40vh; }
-
-/* 添加道具弹框：box 卡片布局（参考道具模块）+ 暗色主题、紧凑字号 */
-#itemPickerModal .modal-title { font-size: 0.95rem; font-weight: 700; color: #f8fafc; letter-spacing: 0.03em; }
-#itemPickerModal .card-header { font-size: 0.72rem; }
-/* 去掉冗余分隔线：窗口标题栏/底部按钮栏的分隔线（卡片边框保留，维持 box 感） */
-#itemPickerModal .modal-header { border-bottom: none; }
-#itemPickerModal .modal-footer { border-top: none; }
-#itemPickerModal .card { display: flex; flex-direction: column; min-height: 0; }
-#itemPickerModal .card-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
-/* body 滚动模式下：弹框内列表/属性区按内容高度（basis auto），不塌陷 */
-#itemPickerModal .modal-item-list,
-#itemPickerModal .modal-detail-list { flex: 0 1 auto; min-height: 0; }
+#itemPickerModal .item-type-list { flex: 0 1 auto; }
+#itemPickerModal .modal-item-list, #itemPickerModal .modal-detail-list { flex: 0 1 auto; }
 /* 弹框内道具网格：格子更小更紧凑 */
 #itemPickerModal .item-list {
-  grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
-  grid-auto-rows: 68px;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  grid-auto-rows: 64px;
   gap: 0.4rem;
 }
 #itemPickerModal .item-cell-name { font-size: 0.68rem; }
@@ -517,21 +508,73 @@ main { flex: 1 1 0%; min-height: 0; overflow: hidden; display: flex; flex-direct
 #itemPickerModal .picker-qty-input { flex: 1 1 0%; min-width: 0; }
 /* 弹框属性值：也撑满行剩余，与数量输入框宽度一致 */
 #itemPickerModal .property-value { flex: 1 1 0%; min-width: 0; }
-/* 数量行与属性行对齐：属性行在 property-section（padding-left 0.15rem）内，
-   数量行是 property-row（自身 0.25rem）→ 合计 0.4rem 与属性行缩进一致；
-   padding-right 10px 对齐属性列表滚动条占位，输入框右缘与属性值右缘一致 */
+/* 数量行与属性行对齐 */
 #itemPickerModal #pickerQtyRow { padding-left: 0.4rem; padding-right: 14px; }
 /* 弹框底部按钮 */
 #itemPickerModal .modal-footer .btn { padding: 0.35rem 1.4rem; font-size: 0.9rem; }
 #itemPickerModal .modal-footer .btn-primary { font-weight: 600; }
+#itemPickerModal .modal-title { font-size: 0.95rem; font-weight: 700; color: #f8fafc; letter-spacing: 0.03em; }
+#itemPickerModal .card-header { font-size: 0.72rem; }
+#itemPickerModal .modal-header { border-bottom: none; }
+#itemPickerModal .modal-footer { border-top: none; }
+#itemPickerModal .card { display: flex; flex-direction: column; min-height: 0; }
+#itemPickerModal .card-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 
-/* 窄屏堆叠布局（竖屏手机，宽度 < col-sm 断点 576px）：页面自身滚动、道具列表限高 */
-@media (max-width: 575.98px) {
-  .map-cell { margin-bottom: 0.5rem; }
-  /* 堆叠时允许页面自身滚动，避免内容被裁掉 */
-  .page { overflow-y: auto; }
-  .page .row { flex: none; height: auto; }
-  .page .row > [class*="col-"] { height: auto; }
-  /* 堆叠布局下列高度不再受 flex 约束，道具列表需要固定上限才能在列表内滚动 */
-  .item-list { max-height: calc(100vh - 300px); }
+/* ===== 桌面三栏（≥992px，与 index.html 的 col-lg-* 一致）：视口锁定、面板撑满、列表内层滚动 ===== */
+@media (min-width: 992px) {
+  main { overflow: hidden; }
+  /* .page 必须作为 main 的 flex 子项撑满高度（flex-basis:0 + min-height:0），
+     否则面板只按内容高度渲染、视口下方留白/内容撑破页面 */
+  .page.active {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0%;
+    min-height: 0;
+  }
+
+  /* 布局层统一 flex-basis: 0%：内容超高时 max-content 高度不沿 flex 链向上传递 */
+  .page .row { flex: 1 1 0%; height: 100%; min-height: 0; }
+  .page .row > [class*="col-"] {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    padding-bottom: 0;
+  }
+  .page .card { flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; margin-bottom: 0; }
+  /* 道具页合并列：信息卡与分配卡严格等高（flex-basis:0 均分剩余空间，内容多少不影响高度；内容区内部滚动） */
+  #pageItems .split-card { flex: 1 1 0%; min-height: 0; margin-bottom: 0; }
+  .page .card-body { flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; }
+
+  /* 地图：撑满所在列并居中；宽高 16:9 等比由 .map-container 基础规则保证 */
+  .map-cell { flex: 1 1 auto; min-height: 0; margin-bottom: 0; display: flex; align-items: center; justify-content: center; }
+
+  /* 地图标签：纵向排列 */
+  .map-tabs { flex: 1 1 0%; min-height: 0; flex-direction: column; overflow-x: hidden; overflow-y: auto; }
+
+  /* 列表：内层滚动（flex-basis 0：内容超高时高度不向上传递） */
+  .property-list { flex: 1 1 0%; overflow-x: hidden; overflow-y: auto; min-height: 0; padding-right: 8px; }
+  .item-type-list { flex: 1 1 0%; min-height: 0; overflow-y: auto; padding-right: 6px; }
+  .item-list { flex: 1 1 0%; min-height: 0; overflow-y: auto; padding-right: 10px; }
+
+  /* 玩家页：横向排列的固定宽卡片 */
+  #playerList {
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+  .player-card { flex: 0 0 260px; width: 260px; max-height: calc(100vh - 90px); }
+  .player-card .property-list { flex: 1 1 0%; min-height: 0; overflow-y: auto; }
+
+  /* 弹框：三列并排、内容自适应收缩、内层列表限高滚动 */
+  #itemPickerModal .modal-content { max-height: 75vh; }
+  #itemPickerModal .modal-body .row { height: auto; }
+  #itemPickerModal .modal-body .row > [class*="col-"] { height: auto; min-width: 0; padding-bottom: 0; }
+  #itemPickerModal .modal-item-list, #itemPickerModal .modal-detail-list { max-height: 40vh; overflow-y: auto; }
+  #itemPickerModal .item-type-list { flex: 0 1 auto; min-height: 0; max-height: 40vh; }
 }

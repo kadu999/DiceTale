@@ -4,9 +4,7 @@
   "version": "0.1.0",
   "identifier": "com.dicetale.gm",
   "build": {
-    "frontendDist": "../src",
-    "devUrl": "http://localhost:1421",
-    "beforeDevCommand": "node scripts/serve.js 1421",
+    "frontendDist": "bootstrap",
     "beforeBuildCommand": "exit 0"
   },
   "app": {
@@ -15,8 +13,6 @@
         "title": "DiceTale GM",
         "width": 1440,
         "height": 900,
-        "minWidth": 900,
-        "minHeight": 600,
         "resizable": true,
         "fullscreen": false
       }
@@ -40,4 +36,3 @@
     }
   }
 }
-

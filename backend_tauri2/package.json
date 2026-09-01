@@ -1,15 +1,13 @@
 {
   "name": "backend_tauri2",
   "version": "0.1.0",
-  "description": "DiceTale GM 控制台（Tauri 2 三端：网页 / PC / Android）",
+  "description": "DiceTale GM 控制台（PC 浏览器 + Tauri 2 Android 壳）",
   "scripts": {
     "tauri": "tauri",
-    "dev": "node scripts/run-tauri.js dev",
-    "dev:android": "node scripts/run-tauri.js android:dev",
-    "build": "node scripts/run-tauri.js build",
-    "build:android": "node scripts/run-tauri.js android",
     "serve": "tsx server/src/index.ts",
-    "test": "jest"
+    "build:android": "node scripts/run-tauri.js android",
+    "test": "jest",
+    "test:ui": "node scripts/ui-check.js"
   },
   "keywords": [],
   "type": "commonjs",
@@ -22,6 +20,7 @@
     "@types/node": "^22.10.0",
     "@types/ws": "^8.5.13",
     "jest": "^29.7.0",
+    "playwright": "^1.62.1",
     "ts-jest": "^29.4.12",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"

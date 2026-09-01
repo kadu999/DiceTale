@@ -1,13 +1,13 @@
-// 统一 Tauri 构建/运行入口：
+// 统一 Tauri 构建入口（仅 Android 壳）：
 //   先探测并设置 Rust/Android 环境（cargo PATH、ANDROID_HOME、JAVA_HOME），
 //   再调用 @tauri-apps/cli。这样 npm scripts 在任何机器上都能直接跑，
 //   不需要用户手动配全局环境变量。
 //
 // 用法：
-//   node scripts/run-tauri.js dev        -> tauri dev            （PC 开发模式）
-//   node scripts/run-tauri.js build      -> tauri build          （PC 打包）
-//   node scripts/run-tauri.js android    -> tauri android build --apk（Android APK）
-//   node scripts/run-tauri.js android:dev-> tauri android dev    （Android 开发/模拟器）
+//   node scripts/run-tauri.js android -> tauri android build --apk --debug（Android APK）
+//
+// 说明：PC 端已回归"浏览器 + serve-web.bat"（后端同源托管页面），不再有 Tauri PC 壳；
+//       Android 壳只内嵌引导页（填后端地址 → 跳转），前端迭代不需要重打包。
 const { spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -55,18 +55,40 @@ function detectJavaHome() {
   return null;
 }
 
+// ---- 生成工程补丁：Gradle 依赖仓库镜像 ----
+// dl.google.com 在某些网络（如国内）不可达/被拦截，Gradle 拉 AGP 等依赖会 404。
+// 在生成的 gen/android Gradle 文件里把阿里云镜像插到 google() 前面（幂等：已含镜像则跳过）。
+// gen/android 由 tauri android init 生成，重跑 init 后本函数会在下次构建前自动重新打补丁。
+function patchGradleMirrors() {
+  const genAndroid = path.join(ROOT, 'src-tauri', 'gen', 'android');
+  if (!fs.existsSync(genAndroid)) return; // 工程尚未生成（CLI 首次会 init），下次构建再打补丁
+  for (const rel of ['build.gradle.kts', 'buildSrc/build.gradle.kts']) {
+    const file = path.join(genAndroid, rel);
+    if (!fs.existsSync(file)) continue;
+    let src = fs.readFileSync(file, 'utf8');
+    if (src.includes('maven.aliyun.com')) continue;
+    const before = src;
+    src = src.replace(/^([ \t]*)google\(\)\r?\n\1mavenCentral\(\)/gm, (_m, indent) => {
+      return `${indent}maven { url = uri("https://maven.aliyun.com/repository/google") }\n` +
+        `${indent}maven { url = uri("https://maven.aliyun.com/repository/central") }\n` +
+        `${indent}google()\n${indent}mavenCentral()`;
+    });
+    if (src !== before) {
+      fs.writeFileSync(file, src, 'utf8');
+      console.log(`[run-tauri] 已为 ${rel} 添加阿里云 Maven 镜像（dl.google.com 不可达时必需）`);
+    }
+  }
+}
+
 const command = process.argv[2];
 if (!command) {
-  console.error('用法: node scripts/run-tauri.js <dev|build|android|android:dev>');
+  console.error('用法: node scripts/run-tauri.js <android>');
   process.exit(1);
 }
 
 // ---- 组装 tauri CLI 参数 ----
 const tauriArgs = {
-  dev: ['dev'],
-  build: ['build'],
   android: ['android', 'build', '--apk', '--debug'],
-  'android:dev': ['android', 'dev'],
 }[command];
 if (!tauriArgs) {
   console.error('未知命令: ' + command);
@@ -75,15 +97,16 @@ if (!tauriArgs) {
 
 // ---- 设置环境 ----
 const env = { ...process.env };
-// 保证 PATH 至少包含 cargo、node 与系统基础目录（后台/受限 shell 里 env.PATH 可能为空）
+// 保证 PATH 至少包含 cargo、项目 scripts（pnpm.cmd 垫片）、node 与系统基础目录
 const nodeBin = path.dirname(process.execPath);
+const SCRIPTS_DIR = __dirname;
 const basePath = [
   env.PATH,
   nodeBin,
   path.join(env.SystemRoot || 'C:\\Windows', 'System32'),
   env.SystemRoot || 'C:\\Windows',
 ].filter(Boolean).join(path.delimiter);
-env.PATH = [CARGO_BIN, basePath].filter(Boolean).join(path.delimiter);
+env.PATH = [CARGO_BIN, SCRIPTS_DIR, basePath].filter(Boolean).join(path.delimiter);
 
 const androidHome = detectAndroidHome();
 if (androidHome) {
@@ -104,6 +127,9 @@ console.log(`[run-tauri] ${command}`);
 console.log(`  cargo:  ${CARGO_BIN}`);
 console.log(`  ANDROID_HOME: ${env.ANDROID_HOME || '(未找到)'}`);
 console.log(`  JAVA_HOME:    ${env.JAVA_HOME || '(未找到)'}`);
+
+// Android 构建前先确保 Gradle 仓库镜像已就位
+if (command === 'android') patchGradleMirrors();
 
 // ---- 调用 CLI ----
 // @tauri-apps/cli 的 bin 入口是 node_modules/@tauri-apps/cli/tauri.js（NAPI-RS 封装）。

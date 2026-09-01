@@ -14,12 +14,12 @@ DiceTale/
 │       ├── Server/               # WebSocket 连接层（连接、命令分发、JSON 解析）
 │       ├── BackendManager.cs     # 后端入口（默认连后台，可切本地 Mock）
 │       └── ...
-├── backend_tauri2/               # 当前版 GM 控制台（网页 / PC / Android 三端）
-│   ├── server/                   # Node.js 后台（TypeScript + ws，含 jest 测试）
-│   ├── src/                      # GM 控制台前端（静态网页，可被后台/预览页/Tauri 壳加载）
-│   ├── src-tauri/                # Tauri 2 壳（PC / Android，Rust 只做 HTTP 转发）
-│   ├── scripts/                  # serve.js（预览页 + 自带后端拉起）、run-tauri.js（构建入口）
-│   └── README.md                 # 详细配置与启动说明（配置项全部收敛于此）
+├── backend_tauri2/               # 当前版 GM 控制台（PC 浏览器 + Android 壳）
+│   ├── server/                   # Node.js 后台（TypeScript + ws，含 jest 测试；同源托管前端页面）
+│   ├── src/                      # GM 控制台前端（静态网页，由后端同源托管，改完刷新即生效）
+│   ├── src-tauri/                # Tauri 2 Android 壳（窗口 + 引导页跳转后端 URL，不内嵌 GM 页面）
+│   ├── scripts/                  # run-tauri.js（Android 构建入口）、ui-check.js（前端布局自动验证）
+│   └── README.md                 # 详细配置、启动与开发回路说明（配置项全部收敛于此）
 ├── backend/                      # 旧版后台（已由 backend_tauri2 取代，仅存档）
 ├── tools/                        # 工具脚本（items.json 转换、前端测试等）
 └── docs/                         # 设计与实现文档
@@ -30,17 +30,18 @@ DiceTale/
 ```bat
 cd backend_tauri2
 npm install
-serve-web.bat        :: 单端口：后台 + 网页，浏览器打开 http://localhost:1420/
-dev-pc.bat           :: Tauri PC 开发模式（热更新）
-dev-android.bat      :: Tauri Android 开发模式（模拟器/真机）
-build-pc.bat         :: 打包 PC 安装包（msi / nsis）
+serve-web.bat        :: PC 入口：单端口后台 + 网页，浏览器打开 http://localhost:1420/
+dev-android.bat      :: 构建并安装 Android debug APK（壳，只需构建一次；前端迭代靠刷新）
 build-android.bat    :: 打包 Android APK
+install-apk.bat      :: 安装 APK 到已连接设备
+open-port.bat        :: 放行防火墙端口，让手机能访问电脑后端（手机首次使用前执行）
 ```
 
-- GM 控制台：<http://localhost:1420/>
+- GM 控制台：<http://localhost:1420/>（页面由后端同源托管，前端改动后刷新即生效，无需重打包）
 - 客户端 WebSocket：`ws://localhost:1420/client`
 - GM WebSocket：`ws://localhost:1420/gm`
-- 全部配置项与说明见 [backend_tauri2/README.md](backend_tauri2/README.md)：`server/config.json`（端口、地图目录、调试开关、WS 消息上限）+ `src/config.js`（后端地址）。
+- Android 壳首次打开时填电脑局域网 IP（如 `http://192.168.1.33:1420`），地址保存在手机本机；
+  全部配置项与说明见 [backend_tauri2/README.md](backend_tauri2/README.md)：`server/config.json`（端口、地图目录、调试开关、WS 消息上限）。
 
 ## 地图资源配置
 

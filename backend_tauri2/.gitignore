@@ -1,6 +1,9 @@
 # Node
 node_modules/
 
+# 前端布局验证产物（npm run test:ui 生成的截图与报告）
+ui-shots/
+
 # Rust / Tauri build output
 src-tauri/target/
 

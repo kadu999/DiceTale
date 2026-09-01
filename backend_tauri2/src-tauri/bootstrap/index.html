@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>DiceTale GM 连接</title>
+  <style>
+    /* DiceTale GM Android 壳引导页：只负责"填后端地址 -> 跳转"。
+       真正的 GM 页面由后端同源托管（PC 上 serve-web.bat 的 http://localhost:1420/
+       就是同一份页面），所以前端改动只需在 App 内刷新，永远不需要重打 APK。 */
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: flex; align-items: center; justify-content: center;
+      background: #0b1220; color: #e2e8f0;
+      font-family: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+      padding: 1.5rem;
+    }
+    .card {
+      width: 100%; max-width: 420px;
+      background: #111c33; border: 1px solid #2b3952; border-radius: 14px;
+      padding: 1.4rem 1.2rem;
+      box-shadow: 0 8px 30px rgba(0,0,0,.45);
+    }
+    h1 { font-size: 1.15rem; margin: 0 0 .35rem; color: #f8fafc; }
+    .sub { color: #94a3b8; font-size: .82rem; margin: 0 0 1.1rem; line-height: 1.5; }
+    label { display: block; font-size: .82rem; color: #cbd5e1; margin-bottom: .4rem; }
+    input[type=url] {
+      width: 100%; padding: .65rem .7rem; margin-bottom: .9rem;
+      background: #1e293b; color: #f8fafc; border: 1px solid #495057; border-radius: 8px;
+      font-size: .95rem;
+    }
+    input[type=url]:focus { outline: none; border-color: #0d6efd; box-shadow: 0 0 0 3px rgba(13,110,253,.25); }
+    button {
+      width: 100%; padding: .7rem; border: none; border-radius: 8px;
+      background: #0d6efd; color: #fff; font-size: .95rem; font-weight: 600;
+    }
+    button:active { opacity: .85; }
+    .hint { color: #64748b; font-size: .74rem; margin-top: .8rem; line-height: 1.5; }
+    .connect {
+      text-align: center;
+    }
+    .connect .url { color: #93c5fd; font-size: .95rem; word-break: break-all; margin: .6rem 0 1rem; }
+    .connect .count { color: #94a3b8; font-size: .82rem; margin-bottom: 1rem; }
+    .secondary {
+      background: transparent; color: #94a3b8; border: 1px solid #495057;
+      margin-top: .6rem; font-weight: 400;
+    }
+    .error { color: #fca5a5; font-size: .8rem; margin: -.4rem 0 .8rem; display: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <!-- 已记住地址：自动跳转（带倒计时与修改入口） -->
+    <div id="connectView" class="connect" style="display:none">
+      <h1>正在连接 GM 控制台</h1>
+      <div class="url" id="connectUrl"></div>
+      <div class="count" id="connectCount"></div>
+      <button id="btnGo">立即连接</button>
+      <button class="secondary" id="btnEdit">修改地址</button>
+      <div class="hint">地址保存在本机，下次打开自动连接；换电脑 / 换网络时点"修改地址"即可，无需重新安装。</div>
+    </div>
+
+    <!-- 地址输入 -->
+    <div id="editView" style="display:none">
+      <h1>DiceTale GM 连接设置</h1>
+      <p class="sub">填写运行后端的电脑地址（手机与电脑需在同一网络）。<br>电脑上运行 <code>serve-web.bat</code> 后用 <code>open-port.bat</code> 放行端口，然后填电脑的局域网 IP。</p>
+      <label for="serverUrl">后端地址</label>
+      <input id="serverUrl" type="url" placeholder="http://192.168.1.33:1420" autocomplete="off">
+      <div class="error" id="urlError">地址无效：请以 http:// 或 https:// 开头</div>
+      <button id="btnSave">连接</button>
+      <div class="hint">地址仅保存在本机（下次打开自动连接）。GM 页面由后端托管，前端更新后直接在 App 内点"刷新"即可，无需重新安装。</div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var STORAGE_KEY = 'dicetale.gm.backendUrl';
+      var DEFAULT_URL = 'http://192.168.1.33:1420';
+      var COUNTDOWN = 5; // 秒
+
+      function loadSaved() {
+        try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
+      }
+      function save(url) {
+        try { localStorage.setItem(STORAGE_KEY, url); } catch (e) { /* 私密模式等场景忽略 */ }
+      }
+      function validUrl(s) {
+        return /^https?:\/\/.+/i.test(s || '');
+      }
+
+      var connectView = document.getElementById('connectView');
+      var editView = document.getElementById('editView');
+      var serverUrl = document.getElementById('serverUrl');
+      var urlError = document.getElementById('urlError');
+      var connectUrl = document.getElementById('connectUrl');
+      var connectCount = document.getElementById('connectCount');
+
+      function showConnect(saved) {
+        editView.style.display = 'none';
+        connectView.style.display = 'block';
+        connectUrl.textContent = saved;
+        var left = COUNTDOWN;
+        connectCount.textContent = left + ' 秒后自动跳转…';
+        var timer = setInterval(function () {
+          left -= 1;
+          if (left <= 0) { clearInterval(timer); go(saved); return; }
+          connectCount.textContent = left + ' 秒后自动跳转…';
+        }, 1000);
+        document.getElementById('btnGo').onclick = function () { clearInterval(timer); go(saved); };
+        document.getElementById('btnEdit').onclick = function () {
+          clearInterval(timer);
+          showEdit(saved);
+        };
+      }
+
+      function showEdit(prefill) {
+        connectView.style.display = 'none';
+        editView.style.display = 'block';
+        serverUrl.value = prefill || DEFAULT_URL;
+        urlError.style.display = 'none';
+        serverUrl.focus();
+      }
+
+      function go(url) {
+        window.location.href = url;
+      }
+
+      document.getElementById('btnSave').onclick = function () {
+        var v = serverUrl.value.trim();
+        if (!validUrl(v)) {
+          urlError.style.display = 'block';
+          return;
+        }
+        save(v);
+        go(v);
+      };
+      serverUrl.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') document.getElementById('btnSave').click();
+      });
+
+      var saved = loadSaved();
+      if (saved && validUrl(saved)) {
+        showConnect(saved);
+      } else {
+        showEdit(saved || '');
+      }
+    })();
+  </script>
+</body>
+</html>
