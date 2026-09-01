@@ -580,3 +580,15 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   #itemPickerModal .modal-item-list, #itemPickerModal .modal-detail-list { max-height: 40vh; overflow-y: auto; }
   #itemPickerModal .item-type-list { flex: 0 1 auto; min-height: 0; max-height: 40vh; }
 }
+
+/* 手机横屏（576–991px，三栏但面板较窄）：收紧属性面板字号与标签列宽，
+   让 label 与 value 尽量保持一行横向排列，避免窄栏里竖排堆叠 */
+@media (min-width: 576px) and (max-width: 991.98px) {
+  .property-row { font-size: 0.82rem; gap: 0.4rem; padding: 0.15rem 0.2rem; }
+  .property-label { min-width: 3.4em; }
+  .property-value { font-size: 0.82rem; }
+  .property-section-title { font-size: 0.66rem; }
+  .property-section { gap: 0.25rem; padding: 0.45rem 0.1rem; }
+  .state-btn { font-size: 0.78rem; padding: 0.25rem 0.55rem; }
+  .property-distribute-name { font-size: 0.8rem; }
+}
