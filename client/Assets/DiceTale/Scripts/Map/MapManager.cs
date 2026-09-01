@@ -111,35 +111,28 @@ namespace DiceTale
         }
 
         /// <summary>把世界坐标换算成地图图片上的归一化坐标（y 向下，左上角为原点）。
-        /// 地图精灵平铺在 XZ 平面（可能带旋转，如 Map001 绕 X 90° + Y 倾斜）：
-        /// 用 InverseTransformPoint 还原到精灵本地坐标再换算，任何旋转/缩放下都能与 GM 页面显示的地图图精确对齐。</summary>
+        /// 地图大小以 GridMap 的格子数量 × 格子大小计算（不依赖 SpriteRenderer——地图视觉可能已移到子物体或缺失）。</summary>
         public Server.Position GetNormalizedPosition(Vector3 worldPosition)
         {
             var gridMap = CurrentMap != null ? CurrentMap.GetComponent<GridMap>() : null;
-            var spriteRenderer = gridMap != null ? gridMap.GetMapSpriteRenderer() : null;
-            if (spriteRenderer == null || spriteRenderer.sprite == null)
+            if (gridMap == null)
             {
                 return new Server.Position { x = 0.5f, y = 0.5f };
             }
 
-            // 地图精灵未平铺到 XZ（仍是 2D 竖放，如尚未转换的地图）时无法换算，返回图片中心兜底
-            if (spriteRenderer.bounds.size.z <= 0.001f)
+            var origin = gridMap.GridOrigin;
+            var width = gridMap.GridWidth;
+            var height = gridMap.GridHeight;
+            if (width <= 0f || height <= 0f)
             {
                 return new Server.Position { x = 0.5f, y = 0.5f };
             }
 
-            var sprite = spriteRenderer.sprite;
-            var bounds = sprite.bounds; // 精灵自身本地包围盒（未旋转/缩放）
-            if (bounds.size.x <= 0f || bounds.size.y <= 0f)
-            {
-                return new Server.Position { x = 0.5f, y = 0.5f };
-            }
-
-            var local = spriteRenderer.transform.InverseTransformPoint(worldPosition);
+            // 网格左下角（-X/-Z）→ 图片 (0,0) 左上角；网格上边界（+Z）→ 图片 y=0（顶部）
             return new Server.Position
             {
-                x = Mathf.Clamp01((local.x - bounds.min.x) / bounds.size.x),
-                y = Mathf.Clamp01(1f - (local.y - bounds.min.y) / bounds.size.y)
+                x = Mathf.Clamp01((worldPosition.x - origin.x) / width),
+                y = Mathf.Clamp01(1f - (worldPosition.z - origin.z) / height)
             };
         }
 
