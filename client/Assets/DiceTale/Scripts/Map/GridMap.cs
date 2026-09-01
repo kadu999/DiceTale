@@ -26,13 +26,17 @@ namespace DiceTale
         private GridCellType[,] cellGrid;
         private HashSet<Vector2Int> dynamicObstacles = new HashSet<Vector2Int>();
 
+        /// <summary>编辑态是否已加载过 .bytes 网格数据（Scene 视图直接显示阻挡格，避免每帧重载）。</summary>
+        private bool dataLoadedInEditor;
+
         public Vector2Int GridSize => gridSize;
         public float CellSize => cellSize;
 
+        /// <summary>网格原点：网格左下角（XZ 平面，Y 取地图所在高度）。</summary>
         public Vector3 GridOrigin => transform.position - new Vector3(
             gridSize.x * cellSize * 0.5f,
-            gridSize.y * cellSize * 0.5f,
-            0f
+            0f,
+            gridSize.y * cellSize * 0.5f
         );
 
         public float GridWidth => gridSize.x * cellSize;
@@ -53,20 +57,54 @@ namespace DiceTale
             }
         }
 
+        /// <summary>
+        /// 地图视觉精灵：优先根节点自身的 SpriteRenderer，否则取子物体中占地最大的精灵（地图图）。
+        /// 地图视觉可能已移到子物体（如 Map001 根节点已无 SpriteRenderer），根节点直接 GetComponent 会拿不到。
+        /// </summary>
+        public SpriteRenderer GetMapSpriteRenderer()
+        {
+            var own = GetComponent<SpriteRenderer>();
+            if (own != null && own.sprite != null)
+            {
+                return own;
+            }
+
+            SpriteRenderer best = null;
+            var bestArea = 0f;
+            foreach (var sr in GetComponentsInChildren<SpriteRenderer>(true))
+            {
+                if (sr == null || sr.sprite == null)
+                {
+                    continue;
+                }
+
+                var b = sr.bounds;
+                // 平铺精灵看 XZ 占地（竖放精灵看 XY），取面积最大的作为地图图
+                var area = b.size.x * Mathf.Max(b.size.y, b.size.z);
+                if (area > bestArea)
+                {
+                    bestArea = area;
+                    best = sr;
+                }
+            }
+
+            return best;
+        }
+
         public void UpdateCellSize()
         {
-
-            var spriteRenderer = GetComponent<SpriteRenderer>();
+            var spriteRenderer = GetMapSpriteRenderer();
             if (spriteRenderer == null || spriteRenderer.sprite == null)
             {
                 return;
             }
 
-            var size = spriteRenderer.bounds.size;
-            if (gridSize.x > 0)
-            {
-                cellSize = size.x / gridSize.x;
-            }
+            //// 世界宽度 = 精灵本地宽度 × 世界缩放：绕 Y 倾斜不会膨胀 AABB，保证网格与地图图精确对齐
+            //var worldWidth = spriteRenderer.sprite.bounds.size.x * spriteRenderer.transform.lossyScale.x;
+            //if (gridSize.x > 0)
+            //{
+            //    cellSize = worldWidth / gridSize.x;
+            //}
         }
 
         public void LoadData(string fileName = null)
@@ -226,21 +264,23 @@ namespace DiceTale
             }
         }
 
+        /// <summary>世界坐标 → 格子坐标（地面为 XZ 平面，Y 不参与换算）。</summary>
         public Vector2Int WorldToGrid(Vector3 worldPosition)
         {
             var localPosition = worldPosition - GridOrigin;
             return new Vector2Int(
                 Mathf.FloorToInt(localPosition.x / cellSize),
-                Mathf.FloorToInt(localPosition.y / cellSize)
+                Mathf.FloorToInt(localPosition.z / cellSize)
             );
         }
 
+        /// <summary>格子坐标 → 格子中心的世界坐标（XZ 平面，Y 为网格所在高度）。</summary>
         public Vector3 GridToWorld(Vector2Int gridPos)
         {
             return GridOrigin + new Vector3(
                 gridPos.x * cellSize + cellSize * 0.5f,
-                gridPos.y * cellSize + cellSize * 0.5f,
-                0f
+                0f,
+                gridPos.y * cellSize + cellSize * 0.5f
             );
         }
 
@@ -330,12 +370,21 @@ namespace DiceTale
 
         private void OnDrawGizmos()
         {
-            if (!drawBlockedCells)
-            {
-                return;
-            }
+            EnsureCellGrid();
 
-            if (cellGrid == null)
+#if UNITY_EDITOR
+            // 编辑态（未运行）也能在 Scene 视图看到阻挡格子：直接加载 .bytes 网格数据
+            if (!Application.isPlaying && !dataLoadedInEditor)
+            {
+                LoadData();
+                dataLoadedInEditor = true;
+            }
+#endif
+
+            // 完整网格线（全部行列）：便于在 Scene 视图核对网格与地图是否对齐
+            DrawGridLines();
+
+            if (!drawBlockedCells)
             {
                 return;
             }
@@ -359,6 +408,27 @@ namespace DiceTale
             foreach (var obstacle in dynamicObstacles)
             {
                 DrawCellGizmo(obstacle, dynamicColor);
+            }
+        }
+
+        /// <summary>画完整网格线（XZ 平面，Y 取网格所在高度），不依赖格子数据。线条较淡，仅作对齐参考。</summary>
+        private void DrawGridLines()
+        {
+            Gizmos.color = new Color(1f, 1f, 1f, 0.3f);
+            var origin = GridOrigin;
+            var width = gridSize.x * cellSize;
+            var height = gridSize.y * cellSize;
+
+            for (int x = 0; x <= gridSize.x; x++)
+            {
+                var from = origin + new Vector3(x * cellSize, 0f, 0f);
+                Gizmos.DrawLine(from, from + new Vector3(0f, 0f, height));
+            }
+
+            for (int y = 0; y <= gridSize.y; y++)
+            {
+                var from = origin + new Vector3(0f, 0f, y * cellSize);
+                Gizmos.DrawLine(from, from + new Vector3(width, 0f, 0f));
             }
         }
 
@@ -416,7 +486,7 @@ namespace DiceTale
 
             Gizmos.color = color;
             var center = GridToWorld(gridPos);
-            var size = new Vector3(cellSize, cellSize, 0.1f);
+            var size = new Vector3(cellSize, 0.1f, cellSize);
             Gizmos.DrawCube(center, size);
         }
     }

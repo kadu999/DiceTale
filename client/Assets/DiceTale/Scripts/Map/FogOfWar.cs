@@ -44,6 +44,9 @@ namespace DiceTale
         private int width;
         private int height;
 
+        // 代码生成的雾地面网格（XZ 平面，法线朝上），随物体销毁
+        private Mesh groundMesh;
+
         // GPU 羽化链
         private RenderTexture[] blurRTs;
         private Material blurMaterial;
@@ -70,6 +73,11 @@ namespace DiceTale
             if (fogState != null)
             {
                 Destroy(fogState);
+            }
+
+            if (groundMesh != null)
+            {
+                Destroy(groundMesh);
             }
 
             if (blurRTs != null)
@@ -170,6 +178,7 @@ namespace DiceTale
                         continue;
                     }
 
+                    // 地面网格 UV V=0 在 -Z 侧，与格子第 0 行同侧，行序无需翻转（列方向同理）
                     var index = y * width + x;
                     colors[index] = new Color(fogColor.r, fogColor.g, fogColor.b, 1f);
 
@@ -211,20 +220,53 @@ namespace DiceTale
 
         private void CreateDisplayObject(float gridWidth, float gridHeight)
         {
-            //displayMaterial = new Material(Shader.Find("Sprites/Default"));
             displayMaterial = new Material(Shader.Find("Unlit/Transparent"));
 
             var go = new GameObject("FogOverlay");
             go.transform.SetParent(transform, false);
-            go.transform.localPosition = Vector3.zero;
-            go.transform.localScale = new Vector3(gridWidth, gridHeight, 1f);
+            go.transform.localPosition = new Vector3(0, 0.2f, 0);
+            // 战争雾平铺在 XZ 地面：不用内置 Quad（其原生朝向是 2D 的 XY 平面，需旋转），
+            // 也不用内置 Plane（UV 方向有已知坑），改为代码生成的地面网格：
+            // 法线朝上 +Y、无需旋转，UV 与格子行列一一对应（V=0 在 -Z 侧）。
+            go.transform.localRotation = Quaternion.identity;
+            go.transform.localScale = new Vector3(gridWidth, 1f, gridHeight);
 
             var meshFilter = go.AddComponent<MeshFilter>();
-            meshFilter.mesh = Resources.GetBuiltinResource<Mesh>("Quad.fbx");
+            meshFilter.mesh = CreateGroundMesh();
 
             var meshRenderer = go.AddComponent<MeshRenderer>();
             meshRenderer.material = displayMaterial;
             meshRenderer.sortingOrder = fogSortingOrder;
+        }
+
+        /// <summary>
+        /// 生成 1×1 的 XZ 地面网格：法线朝上 +Y，UV(0,0) 在 (-0.5, 0, -0.5)（-Z 侧）。
+        /// 缩放 (gridWidth, 1, gridHeight) 后与网格范围一致，纹理行/列与格子行列一一对应。
+        /// </summary>
+        private Mesh CreateGroundMesh()
+        {
+            groundMesh = new Mesh
+            {
+                name = "FogGroundPlane",
+                vertices = new[]
+                {
+                    new Vector3(-0.5f, 0f, -0.5f), // uv (0,0)：-Z 侧，对应格子第 0 行
+                    new Vector3(0.5f, 0f, -0.5f),  // uv (1,0)
+                    new Vector3(-0.5f, 0f, 0.5f),  // uv (0,1)：+Z 侧
+                    new Vector3(0.5f, 0f, 0.5f),   // uv (1,1)
+                },
+                uv = new[]
+                {
+                    new Vector2(0f, 0f),
+                    new Vector2(1f, 0f),
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                },
+                triangles = new[] { 0, 2, 1, 1, 2, 3 } // 绕序保证法线朝 +Y
+            };
+            groundMesh.RecalculateNormals();
+            groundMesh.RecalculateBounds();
+            return groundMesh;
         }
 
         // ---------------------------------------------------------------- 每帧渲染

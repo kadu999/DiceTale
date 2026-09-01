@@ -9,9 +9,6 @@ namespace DiceTale
         [SerializeField]
         private Camera playerCamera;
 
-        [SerializeField]
-        private float maxDistance = 100f;
-
         private void Update()
         {
             var game = Object.FindFirstObjectByType<Game>();
@@ -45,7 +42,7 @@ namespace DiceTale
             }
         }
 
-        /// <summary>鼠标当前世界坐标（z=0，供其他系统查询）。</summary>
+        /// <summary>鼠标当前世界坐标（投射到网格所在 XZ 平面，供其他系统查询）。</summary>
         public Vector3 GetMouseWorldPosition()
         {
             var camera = playerCamera != null ? playerCamera : Camera.main;
@@ -60,9 +57,7 @@ namespace DiceTale
                 return Vector3.zero;
             }
 
-            var world = camera.ScreenToWorldPoint(mouse.position.ReadValue());
-            world.z = 0f;
-            return world;
+            return ScreenToGridPlane(camera, mouse.position.ReadValue());
         }
 
         public void HandleClick()
@@ -79,20 +74,30 @@ namespace DiceTale
                 return;
             }
 
-            var screenPosition = mouse.position.ReadValue();
-            var worldPosition = camera.ScreenToWorldPoint(screenPosition);
-            worldPosition.z = 0f;
+            MovePlayerTo(ScreenToGridPlane(camera, mouse.position.ReadValue()));
+        }
 
-            var ray = camera.ScreenPointToRay(screenPosition);
-            var hit = Physics2D.Raycast(ray.origin, ray.direction, maxDistance);
-
-            if (hit.collider != null)
+        /// <summary>把屏幕坐标投射到网格所在 XZ 平面（Y 取 GridMap 的高度；无 GridMap 时取 0）。</summary>
+        private static Vector3 ScreenToGridPlane(Camera camera, Vector2 screenPosition)
+        {
+            var planeY = 0f;
+            var gridMap = Object.FindFirstObjectByType<GridMap>();
+            if (gridMap != null)
             {
-                MovePlayerTo(worldPosition);
-                return;
+                planeY = gridMap.transform.position.y;
             }
 
-            MovePlayerTo(worldPosition);
+            var plane = new Plane(Vector3.up, new Vector3(0f, planeY, 0f));
+            var ray = camera.ScreenPointToRay(screenPosition);
+            if (plane.Raycast(ray, out var distance))
+            {
+                return ray.GetPoint(distance);
+            }
+
+            // 视线与平面平行（罕见）：退回正交投影结果
+            var fallback = camera.ScreenToWorldPoint(screenPosition);
+            fallback.y = planeY;
+            return fallback;
         }
 
         private void MovePlayerTo(Vector3 targetPosition)

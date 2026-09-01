@@ -110,25 +110,36 @@ namespace DiceTale
             BackendRegistry.Instance.ReportAll();
         }
 
-        /// <summary>把世界坐标换算成地图图片上的归一化坐标（y 向下，左上角为原点）。</summary>
+        /// <summary>把世界坐标换算成地图图片上的归一化坐标（y 向下，左上角为原点）。
+        /// 地图精灵平铺在 XZ 平面（可能带旋转，如 Map001 绕 X 90° + Y 倾斜）：
+        /// 用 InverseTransformPoint 还原到精灵本地坐标再换算，任何旋转/缩放下都能与 GM 页面显示的地图图精确对齐。</summary>
         public Server.Position GetNormalizedPosition(Vector3 worldPosition)
         {
-            var spriteRenderer = CurrentMap != null ? CurrentMap.GetComponent<SpriteRenderer>() : null;
+            var gridMap = CurrentMap != null ? CurrentMap.GetComponent<GridMap>() : null;
+            var spriteRenderer = gridMap != null ? gridMap.GetMapSpriteRenderer() : null;
             if (spriteRenderer == null || spriteRenderer.sprite == null)
             {
                 return new Server.Position { x = 0.5f, y = 0.5f };
             }
 
-            var bounds = spriteRenderer.bounds;
+            // 地图精灵未平铺到 XZ（仍是 2D 竖放，如尚未转换的地图）时无法换算，返回图片中心兜底
+            if (spriteRenderer.bounds.size.z <= 0.001f)
+            {
+                return new Server.Position { x = 0.5f, y = 0.5f };
+            }
+
+            var sprite = spriteRenderer.sprite;
+            var bounds = sprite.bounds; // 精灵自身本地包围盒（未旋转/缩放）
             if (bounds.size.x <= 0f || bounds.size.y <= 0f)
             {
                 return new Server.Position { x = 0.5f, y = 0.5f };
             }
 
+            var local = spriteRenderer.transform.InverseTransformPoint(worldPosition);
             return new Server.Position
             {
-                x = Mathf.Clamp01((worldPosition.x - bounds.min.x) / bounds.size.x),
-                y = Mathf.Clamp01(1f - (worldPosition.y - bounds.min.y) / bounds.size.y)
+                x = Mathf.Clamp01((local.x - bounds.min.x) / bounds.size.x),
+                y = Mathf.Clamp01(1f - (local.y - bounds.min.y) / bounds.size.y)
             };
         }
 
@@ -177,7 +188,7 @@ namespace DiceTale
 
             var spawnGo = new GameObject("Spawn_Default");
             spawnGo.transform.SetParent(dynamicGo.transform, false);
-            spawnGo.transform.position = dynamicGrid.GridOrigin + new Vector3(dynamicGrid.CellSize * 0.5f, dynamicGrid.CellSize * 0.5f, 0f);
+            spawnGo.transform.position = dynamicGrid.GridOrigin + new Vector3(dynamicGrid.CellSize * 0.5f, 0f, dynamicGrid.CellSize * 0.5f);
 
             return dynamicGo;
         }
@@ -227,7 +238,7 @@ namespace DiceTale
                     var grid = CurrentMap != null ? CurrentMap.GetComponent<GridMap>() : null;
                     if (grid != null)
                     {
-                        target = grid.GridOrigin + new Vector3(grid.CellSize * 0.5f, grid.CellSize * 0.5f, 0f);
+                        target = grid.GridOrigin + new Vector3(grid.CellSize * 0.5f, 0f, grid.CellSize * 0.5f);
                         targetDesc = "grid anchor (no spawn point / marker)";
                     }
                     else
@@ -259,7 +270,7 @@ namespace DiceTale
         {
             var spacing = GetPlayerSpacing();
             var cols = Mathf.Max(1, Mathf.CeilToInt(Mathf.Sqrt(total)));
-            return new Vector3((index % cols) * spacing, (index / cols) * spacing, 0f);
+            return new Vector3((index % cols) * spacing, 0f, (index / cols) * spacing);
         }
 
         /// <summary>玩家落位间距：取玩家精灵的世界宽度 ×1.2（宽度 + 20% 间隙）；无玩家/无精灵时回退 0.5。</summary>
