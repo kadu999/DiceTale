@@ -1,0 +1,115 @@
+.page-placeholder {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.map-page {
+  height: calc(100vh - 50px);
+}
+
+.map-page__row {
+  height: 100%;
+  margin: 0;
+}
+
+.map-page__side {
+  height: 100%;
+  overflow: auto;
+}
+
+.map-page__main {
+  height: 100%;
+  overflow: hidden;
+}
+
+.map-list,
+.map-property-panel {
+  height: 100%;
+  overflow: auto;
+}
+
+.map-view {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.map-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.map-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.object-marker,
+.player-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  min-width: 2rem;
+  min-height: 2rem;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  background: rgba(255, 255, 255, 0.85);
+  color: #1976d2;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+}
+
+.object-marker--selected,
+.player-marker--selected {
+  background: #1976d2;
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.35);
+}
+
+.player-marker {
+  color: #388e3c;
+}
+
+.player-marker--selected {
+  background: #388e3c;
+  box-shadow: 0 0 0 3px rgba(56, 142, 60, 0.35);
+}
+
+.property-field + .property-field {
+  margin-top: 0.5rem;
+}
+
+.property-distribute-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.property-distribute-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.property-distribute-count {
+  min-width: 1.5rem;
+  text-align: center;
+  font-weight: 600;
+}
